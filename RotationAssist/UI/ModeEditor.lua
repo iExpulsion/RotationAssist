@@ -9,9 +9,11 @@ RA.ModeEditor = Editor
 local S = RA.Style
 local C = S.colors
 local W = RA.Widgets
-local GAP, CONTROL_H = S.GAP, S.CONTROL_H
+local PAD, GAP, CONTROL_H = S.PAD, S.GAP, S.CONTROL_H
 local ROW_H = CONTROL_H + 6
-local LEFT_W = 310
+local LEFT_W = 300
+local UP_W, DOWN_W, REMOVE_W = 36, 44, 60
+local OPTION_H = CONTROL_H + 14
 
 local frame
 
@@ -23,15 +25,15 @@ local SWITCHES = {
 local SWITCH_HELP = {
 	none = "Add a second mode to switch between them.",
 	toggle = "Without a spell the Mode key only cycles modes. With one, mode 2 casts it and mode 1 cancels it, so mode 1 is without it and mode 2 with it. Out of combat the mode follows the buff.",
-	rule = "Conditions, then the mode number, like [form:3] 2; 1. Buffs and procs can't be seen by macro conditions, so a buff like Lich Form needs the Mode key instead.",
+	rule = "Conditions, then the mode number, like [form:4] 2; 1 for a form on the fourth stance button. Macro conditions can't see buffs or procs; use hints for those.",
 }
 local OPTIONS = {
-	{ key = "target", label = "Target the Nearest Enemy", tip = "When you have no target (or a dead one), the press targets the nearest enemy first." },
-	{ key = "attack", label = "Start Auto-Attack", tip = "Each press starts melee or ranged auto-attack on a living enemy." },
-	{ key = "pet", label = "Send the Pet to Attack", tip = "Each press sends your pet at your target." },
-	{ key = "channels", label = "Don't Interrupt Channels", tip = "Presses do nothing while you channel a spell like Blizzard, so mashing can't cut it short." },
-	{ key = "cycle", label = "One Spell per Press", tip = "Each press tries only the next spell on the global cooldown, in GSE's priority order (1, 1 2, 1 2 3...), so the top ones come up most. Off-GCD lines still fire every press. For Death Knights without Smart Picks: a spell waiting on runes stops the rest of a press, so a plain list never gets past it." },
-	{ key = "smart", label = "Smart Picks", tip = "Each press casts the spell the Rotation Button suggests, hints included: it can see buffs, procs, debuffs, runes and cooldowns. It works by clearing your target for an instant before every other line, so target frames flicker while you mash. It needs a target to cast. Replaces One Spell per Press." },
+	{ key = "target", label = "Target the Nearest Enemy", note = "When you have no target, or a dead one.", tip = "When you have no target (or a dead one), the press targets the nearest enemy first." },
+	{ key = "attack", label = "Start Auto-Attack", note = "Melee or ranged, on a living enemy.", tip = "Each press starts melee or ranged auto-attack on a living enemy." },
+	{ key = "pet", label = "Send the Pet to Attack", note = "At your target.", tip = "Each press sends your pet at your target." },
+	{ key = "channels", label = "Don't Interrupt Channels", note = "Mashing can't cut a spell like Blizzard short.", tip = "Presses do nothing while you channel a spell like Blizzard, so mashing can't cut it short." },
+	{ key = "cycle", label = "One Spell per Press", note = "One GCD spell a press, top ones most often.", tip = "Each press tries only the next spell on the global cooldown, in GSE's priority order (1, 1 2, 1 2 3...), so the top ones come up most. Off-GCD lines still fire every press. For Death Knights without Smart Picks: a spell waiting on runes stops the rest of a press, so a plain list never gets past it." },
+	{ key = "smart", label = "Smart Picks", note = "Casts what the Rotation Button shows, hints included.", tip = "Each press casts the spell the Rotation Button suggests, hints included: it can see buffs, procs, debuffs, runes and cooldowns. It works by clearing your target for an instant before every other line, so target frames flicker while you mash. It needs a target to cast. Replaces One Spell per Press." },
 }
 
 local function edit(fn)
@@ -48,21 +50,22 @@ local function newRow(parent, i)
 	row.number = S.Text(row, "normal", C.muted)
 	row.number:SetPoint("LEFT", 0, 0)
 	row.number:SetText(i)
-	row.input = S.Input(row, "RotationAssistModeName" .. i, 130, "Mode " .. i, 24)
+	local inputW = LEFT_W - 18 - UP_W - DOWN_W - REMOVE_W - 3 * GAP
+	row.input = S.Input(row, "RotationAssistModeName" .. i, inputW, "Mode " .. i, 24)
 	row.input:SetPoint("LEFT", 18, 0)
 	row.input:SetScript("OnTextChanged", function(self, userInput)
 		self:UpdatePlaceholder()
 		if userInput then edit(function(r) r.modes[i].label = self:GetText() end) end
 	end)
-	row.up = S.Button(row, "Up", "secondary", 40, function()
+	row.up = S.Button(row, "Up", "secondary", UP_W, function()
 		edit(function(r) RA.Rotation.Move(r.modes, i, -1) end)
 	end, "Move this mode earlier. Mode numbers in a Condition Rule don't follow.")
 	row.up:SetPoint("LEFT", row.input, "RIGHT", GAP, 0)
-	row.down = S.Button(row, "Down", "secondary", 48, function()
+	row.down = S.Button(row, "Down", "secondary", DOWN_W, function()
 		edit(function(r) RA.Rotation.Move(r.modes, i, 1) end)
 	end, "Move this mode later. Mode numbers in a Condition Rule don't follow.")
 	row.down:SetPoint("LEFT", row.up, "RIGHT", GAP, 0)
-	row.remove = S.Button(row, "Remove", "danger", 64, function()
+	row.remove = S.Button(row, "Remove", "danger", REMOVE_W, function()
 		edit(function(r)
 			table.remove(r.modes, i)
 			RA.Window.state.mode = 1
@@ -88,8 +91,17 @@ function Editor.Create(parent, width, height)
 	f.addMode = S.Button(f, "Add Mode", "secondary", 90, function()
 		edit(function(r) RA.Rotation.AddMode(r, "") end)
 	end, "Another list of actions, like an AoE mode or a mode for a form.")
+	f.modesHelp = S.Text(f, "small", C.muted)
+	f.modesHelp:SetWidth(LEFT_W)
+	f.modesHelp:SetJustifyH("LEFT")
+	f.modesHelp:SetText("Each mode is its own priority list on the Actions tab. A Condition Rule switches by these numbers, so moving a mode changes which rule value picks it.")
 
-	local rightX = LEFT_W + 2 * GAP
+	local divider = S.Solid(f, "BORDER", C.border)
+	divider:SetWidth(1)
+	divider:SetPoint("TOPLEFT", LEFT_W + PAD, 0)
+	divider:SetPoint("BOTTOMLEFT", LEFT_W + PAD, 0)
+
+	local rightX = LEFT_W + 2 * PAD + 1
 	local rightW = width - rightX
 	local switching = W.Heading(f, "Switching Modes")
 	switching:SetPoint("TOPLEFT", rightX, 0)
@@ -120,6 +132,7 @@ function Editor.Create(parent, width, height)
 	end)
 	f.help = S.Text(f, "small", C.muted)
 	f.help:SetWidth(rightW)
+	f.help:SetJustifyH("LEFT")
 	f.help:SetJustifyV("TOP")
 
 	f.pressHeading = W.Heading(f, "Every Press")
@@ -131,6 +144,11 @@ function Editor.Create(parent, width, height)
 				r.options[opt.key] = on or nil
 			end)
 		end)
+		t.note = S.Text(f, "small", C.muted)
+		t.note:SetPoint("TOPLEFT", t, "BOTTOMLEFT", 14 + GAP, 4)
+		t.note:SetWidth(rightW - 14 - GAP)
+		t.note:SetJustifyH("LEFT")
+		t.note:SetText(opt.note)
 		f.options[i] = t
 	end
 	return f
@@ -160,6 +178,8 @@ function Editor.Render(rotation)
 	frame.addMode:ClearAllPoints()
 	frame.addMode:SetPoint("TOPLEFT", 18, -(16 + count * ROW_H))
 	if count < RA.Rotation.MAX_MODES then frame.addMode:Enable() else frame.addMode:Disable() end
+	frame.modesHelp:ClearAllPoints()
+	frame.modesHelp:SetPoint("TOPLEFT", 0, -(16 + count * ROW_H + CONTROL_H + 2 * GAP))
 
 	local switch = rotation.switch or { kind = "none" }
 	local kind = count > 1 and switch.kind or "none"
@@ -186,9 +206,12 @@ function Editor.Render(rotation)
 	frame.pressHeading:SetPoint("TOPLEFT", frame.help, "BOTTOMLEFT", 0, -2 * GAP)
 	local options = rotation.options or {}
 	for i, t in ipairs(frame.options) do
+		local key = OPTIONS[i].key
 		t:ClearAllPoints()
-		t:SetPoint("TOPLEFT", frame.pressHeading, "BOTTOMLEFT", 0, -(4 + (i - 1) * CONTROL_H))
-		t:SetChecked(options[OPTIONS[i].key])
+		t:SetPoint("TOPLEFT", frame.pressHeading, "BOTTOMLEFT", 0, -(4 + (i - 1) * OPTION_H))
+		t:SetChecked(options[key])
+		-- Smart Picks replaces One Spell per Press, so that one is grayed out while it's on
+		t:SetEnabled(not (key == "cycle" and options.smart))
 	end
 
 	local compiled = RA.Compiler.Compile(rotation)
