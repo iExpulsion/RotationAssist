@@ -5,7 +5,7 @@ local RA = NS.RA
 --
 -- rotation = { name, classes, modes = { { label, actions } }, switch, options, notes }
 -- action   = { kind = "spell", spell, when, offGcd }
---          | { kind = "sequence", spells = { ... }, reset, when }
+--          | { kind = "sequence", spells = { ... }, reset, when, once }   (once: stop after the last spell until reset)
 --          | { kind = "steps", steps = { "line", ... } }
 --          | { kind = "macro", text, offGcd }
 -- switch   = { kind = "none" } | { kind = "toggle", spell } | { kind = "rule", rule = "[form:3] 2; 1" }
@@ -129,33 +129,39 @@ Rotation.TEMPLATES = {
 	{
 		key = "frostLich",
 		label = "Frost Death Knight with Lich Form",
-		classes = { "DEATHKNIGHT", "MAGE" },
+		classes = { "DEATHKNIGHT" },
 		build = function()
 			local function spell(name, when, offGcd)
 				return { kind = "spell", spell = name, when = when, offGcd = offGcd }
 			end
+			local function once(spells)
+				return { kind = "sequence", spells = spells, reset = "target/combat", once = true }
+			end
 			return {
 				modes = {
 					{ label = "Melee", actions = {
-						spell("Empower Rune Weapon", "[combat]", true),
+						spell("Deathchill", "[combat]", true),
+						spell("Blood Tap", "[combat]", true),
+						spell("Unbreakable Armor", "[combat]", true),
+						once({ "Icy Touch", "Plague Strike" }),
 						spell("Obliterate"),
+						spell("Blood Strike"),
 						spell("Frost Strike"),
 						spell("Howling Blast"),
-						spell("Icy Touch"),
-						spell("Plague Strike"),
 						spell("Horn of Winter"),
 					} },
 					{ label = "Lich Form AoE", actions = {
+						spell("Deathchill", "[combat]", true),
+						once({ "Mark of Frost" }),
 						spell("Howling Blast"),
-						spell("Death and Decay"),
-						spell("Blizzard"),
 						spell("Icy Touch"),
+						spell("Death Coil"),
 						spell("Horn of Winter"),
 					} },
 				},
 				switch = { kind = "toggle", spell = "Lich Form" },
-				options = { target = true, attack = true, channels = true },
-				notes = "Melee priority, and an AoE mode for Lich Form. The Mode key casts Lich Form and moves to the AoE mode in one press; pressing it again leaves Lich Form.",
+				options = { target = true, attack = true },
+				notes = "Melee: diseases once per target, then Obliterate on Frost and Unholy runes, Blood Strike on Blood runes, Frost Strike with Runic Power, Howling Blast when Rime makes it free (or when Obliterate can't reach). Deathchill, Blood Tap and Unbreakable Armor go off on cooldown.\nLich Form: Mark of Frost once per target, then Howling Blast on every rune pair, Icy Touch with a leftover rune, Death Coil to spend Runic Power.\nThe Mode key casts Lich Form and moves to the AoE mode in one press; pressing it again leaves Lich Form. Leave it to heal.",
 			}
 		end,
 	},

@@ -56,11 +56,12 @@ local function tooltip(self)
 end
 
 -- The first GCD spell in the mode that looks ready now: conditions hold, usable, off cooldown (or only on the
--- global cooldown) and in range. A Sequence or Steps block stops the search, since which spell it casts isn't known.
+-- global cooldown) and in range. A Sequence or Steps block stops the search, since which spell it casts isn't known;
+-- a once-per-reset Sequence is passed over, since most presses find it already done.
 function RB.Predict(casts)
 	local found
 	for _, cast in ipairs(casts or {}) do
-		if not found and not cast.offGcd then
+		if not found and not cast.offGcd and not cast.once then
 			if cast.kind == "spell" then
 				local condOk = cast.cond == "" or SecureCmdOptionParse(cast.cond .. " x") == "x"
 				local start, duration = GetSpellCooldown(cast.name)

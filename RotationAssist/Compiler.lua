@@ -83,10 +83,12 @@ function Compiler.CompileMode(rotation, mode, env, firstStep)
 				end
 			end
 			if #names > 0 then
+				-- a step no spell is named after never casts, so the sequence waits on it until it resets
+				if action.once then names[#names + 1] = "null" end
 				local reset = trim(action.reset)
 				local cond = Compiler.Merge(action.when, guard)
 				emit(action, command("/castsequence", cond, (reset ~= "" and ("reset=" .. reset .. " ") or "") .. table.concat(names, ", ")))
-				result.casts[#result.casts + 1] = { index = index, kind = "sequence", name = names[1], cond = cond }
+				result.casts[#result.casts + 1] = { index = index, kind = "sequence", name = names[1], cond = cond, once = action.once }
 				status = missing > 0 and "partial" or "ok"
 			else
 				status = "skipped"

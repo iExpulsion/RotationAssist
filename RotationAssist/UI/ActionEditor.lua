@@ -145,6 +145,9 @@ local function createDetail(parent, width, height)
 		self:UpdatePlaceholder()
 		if userInput then edit(function(a) a.reset = self:GetText() end) end
 	end)
+	d.once = W.Toggle(d, "Once per Reset",
+		"Casts each spell once, then stops until the sequence resets (on a new target, after combat). Good for diseases or a mark the button can't see.",
+		function(on) edit(function(a) a.once = on or nil end) end)
 	d.offGcd = W.Toggle(d, "Off the Global Cooldown",
 		"Runs before the other lines on every press, alongside whatever casts: trinkets, racials, Empower Rune Weapon.",
 		function(on) edit(function(a) a.offGcd = on or nil end) end)
@@ -181,6 +184,7 @@ local function layoutDetail(d, kind)
 		{ d.whenLabel, d.when, show = kind == "spell" or kind == "sequence" },
 		{ d.spellsLabel, d.spells, show = kind == "sequence" },
 		{ d.resetLabel, d.reset, show = kind == "sequence" },
+		{ d.once, show = kind == "sequence" },
 		{ d.offGcd, show = kind == "spell" or kind == "macro" },
 		{ d.textLabel, d.text, show = kind == "steps" or kind == "macro" },
 	}
@@ -263,6 +267,7 @@ local function subText(action)
 	local when = RA.Spells.Trim(action.when)
 	if when ~= "" then parts[#parts + 1] = when end
 	if action.kind == "sequence" and RA.Spells.Trim(action.reset) ~= "" then parts[#parts + 1] = "reset=" .. action.reset end
+	if action.kind == "sequence" and action.once then parts[#parts + 1] = "Once" end
 	if action.offGcd then parts[#parts + 1] = "Off-GCD" end
 	return #parts > 0 and table.concat(parts, "  ") or nil
 end
@@ -285,6 +290,7 @@ local function renderDetail(rotation, state, compiled)
 		setText(d.spells, RA.Spells.ListText(action.spells))
 		setText(d.reset, action.reset)
 		d.offGcd:SetChecked(action.offGcd)
+		d.once:SetChecked(action.once)
 		d.text:SetValue(action.kind == "steps" and table.concat(action.steps or {}, "\n") or action.text)
 		d.textLabel:SetText(action.kind == "steps" and "Steps, One per Line (a Spell Name or a Macro Line)" or "Lines")
 		if state.action > 1 then d.up:Enable() else d.up:Disable() end

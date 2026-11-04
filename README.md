@@ -10,7 +10,9 @@ your priority list that's ready.
 - **Modes:** keep separate lists, like single target and AoE, or one for a form. Switch with a Mode key that can
   also cast a spell on the way, or automatically with a macro condition rule.
 - **Off-GCD Lines:** trinkets, racials and cooldowns like Empower Rune Weapon fire alongside the main spell.
-- **Sequences and Steps:** `/castsequence` blocks, and Steps blocks that run one line per press.
+- **Sequences and Steps:** `/castsequence` blocks, and Steps blocks that run one line per press. A sequence
+  can be **Once per Reset**: it casts each spell once (diseases, a mark), then waits until a new target or the
+  next fight.
 - **Rotation Button:** a large on-screen button showing the likely next spell, the mode and the key. You can
   click it like the key, and resize or move it.
 - **Quiet Errors:** hides the "Not ready yet" errors that a priority list causes on purpose.
