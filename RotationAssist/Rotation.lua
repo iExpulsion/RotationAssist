@@ -4,7 +4,7 @@ local RA = NS.RA
 -- Rotations: one or more modes, each an ordered list of actions the button tries top to bottom.
 --
 -- rotation = { name, classes, modes = { { label, actions } }, switch, options, notes }
--- action   = { kind = "spell", spell, when, offGcd }
+-- action   = { kind = "spell", spell, when, offGcd, hint }   (hint: see Hints.lua; only the suggestion uses it)
 --          | { kind = "sequence", spells = { ... }, reset, when, once }   (once: stop after the last spell until reset)
 --          | { kind = "steps", steps = { "line", ... } }
 --          | { kind = "macro", text, offGcd }
@@ -131,8 +131,8 @@ Rotation.TEMPLATES = {
 		label = "Frost Death Knight with Lich Form",
 		classes = { "DEATHKNIGHT" },
 		build = function()
-			local function spell(name, when, offGcd)
-				return { kind = "spell", spell = name, when = when, offGcd = offGcd }
+			local function spell(name, when, offGcd, hint)
+				return { kind = "spell", spell = name, when = when, offGcd = offGcd, hint = hint }
 			end
 			local function once(spells, reset)
 				return { kind = "sequence", spells = spells, reset = reset or "target/combat", once = true }
@@ -147,9 +147,9 @@ Rotation.TEMPLATES = {
 						spell("Blood Strike"),
 						spell("Frost Strike"),
 						-- with Glyph of Howling Blast this also keeps Frost Fever up
-						spell("Howling Blast"),
+						spell("Howling Blast", nil, nil, "[buff:Freezing Fog][nodebuff:Frost Fever<3]"),
 						-- low, so it's tried now and then and keeps Blood Plague up without taking many runes
-						spell("Plague Strike"),
+						spell("Plague Strike", nil, nil, "[nodebuff:Blood Plague<3]"),
 						spell("Horn of Winter"),
 					} },
 					{ label = "Lich Form AoE", actions = {
@@ -163,7 +163,7 @@ Rotation.TEMPLATES = {
 				},
 				switch = { kind = "toggle", spell = "Lich Form" },
 				options = { target = true, attack = true, cycle = true },
-				notes = "One Spell per Press is on: each press tries one spell, top ones most often, so mash the key. A Death Knight spell waiting on runes stops the rest of a press, so a plain priority list would stall.\nMelee: Obliterate on Frost and Unholy runes, Blood Strike on Blood runes, Frost Strike with Runic Power, Howling Blast (Glyph of Howling Blast keeps Frost Fever up), and Plague Strike now and then to keep Blood Plague up. Deathchill, Blood Tap and Unbreakable Armor go off on cooldown every press.\nLich Form: Mark of Frost once per target, then Howling Blast on every rune pair, Icy Touch with a leftover rune, Death Coil to spend Runic Power.\nThe Mode key casts Lich Form and moves to the AoE mode in one press; pressing it again leaves Lich Form. Leave it to heal.",
+				notes = "One Spell per Press is on: each press tries one spell, top ones most often, so mash the key. A Death Knight spell waiting on runes stops the rest of a press, so a plain priority list would stall.\nMelee: Obliterate on Frost and Unholy runes, Blood Strike on Blood runes, Frost Strike with Runic Power, Howling Blast (Glyph of Howling Blast keeps Frost Fever up), and Plague Strike now and then to keep Blood Plague up. Deathchill, Blood Tap and Unbreakable Armor go off on cooldown every press.\nHints: the Rotation Button glows on Howling Blast when Rime is up or Frost Fever is about to fall off, and on Plague Strike when Blood Plague is. They only change the suggestion, not what a press casts.\nLich Form: Mark of Frost once per target, then Howling Blast on every rune pair, Icy Touch with a leftover rune, Death Coil to spend Runic Power.\nThe Mode key casts Lich Form and moves to the AoE mode in one press; pressing it again leaves Lich Form. Leave it to heal.",
 			}
 		end,
 	},

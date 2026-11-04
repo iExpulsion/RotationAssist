@@ -130,6 +130,24 @@ local function createDetail(parent, width, height)
 		self:UpdatePlaceholder()
 		if userInput then edit(function(a) a.when = self:GetText() end) end
 	end)
+	d.hintLabel = label(d, "Hint")
+	d.hint = S.Input(d, "RotationAssistHint", inner, "None, or Like [buff:Freezing Fog] or [nodebuff:Blood Plague<3]", 200)
+	d.hint:SetScript("OnTextChanged", function(self, userInput)
+		self:UpdatePlaceholder()
+		if userInput then edit(function(a) a.hint = self:GetText() end) end
+	end)
+	d.hint:HookScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		GameTooltip:AddLine("Hint", 1, 1, 1)
+		GameTooltip:AddLine("Only for the Rotation Button's suggestion: the button can't see buffs or debuffs, so what a press casts stays the same. While the hint holds and the spell is ready, the button shows it first and glows; otherwise it isn't suggested.", 0.8, 0.8, 0.8, true)
+		GameTooltip:AddLine(" ")
+		GameTooltip:AddLine("[buff:Name]  [nobuff:Name]  on you", 0.8, 0.8, 0.8)
+		GameTooltip:AddLine("[debuff:Name]  [nodebuff:Name<3]  yours on the target, <3 is under 3 seconds left", 0.8, 0.8, 0.8)
+		GameTooltip:AddLine("[power>=40]  [hp<35]  [targethp<20]", 0.8, 0.8, 0.8)
+		GameTooltip:AddLine("Commas mean and; [a][b] means a or b.", 0.8, 0.8, 0.8)
+		GameTooltip:Show()
+	end)
+	d.hint:HookScript("OnLeave", function() GameTooltip:Hide() end)
 	d.spellsLabel = label(d, "Spells")
 	d.spells = S.Input(d, "RotationAssistSeqSpells", inner, "Spells, Comma-Separated", 250)
 	d.spells:SetScript("OnEnterPressed", function(self)
@@ -182,6 +200,7 @@ end
 local function layoutDetail(d, kind)
 	local controls = {
 		{ d.whenLabel, d.when, show = kind == "spell" or kind == "sequence" },
+		{ d.hintLabel, d.hint, show = kind == "spell" },
 		{ d.spellsLabel, d.spells, show = kind == "sequence" },
 		{ d.resetLabel, d.reset, show = kind == "sequence" },
 		{ d.once, show = kind == "sequence" },
@@ -268,6 +287,7 @@ local function subText(action)
 	if when ~= "" then parts[#parts + 1] = when end
 	if action.kind == "sequence" and RA.Spells.Trim(action.reset) ~= "" then parts[#parts + 1] = "reset=" .. action.reset end
 	if action.kind == "sequence" and action.once then parts[#parts + 1] = "Once" end
+	if action.kind == "spell" and RA.Hints.Has(action.hint) then parts[#parts + 1] = "Hint " .. RA.Spells.Trim(action.hint) end
 	if action.offGcd then parts[#parts + 1] = "Off-GCD" end
 	return #parts > 0 and table.concat(parts, "  ") or nil
 end
@@ -283,10 +303,13 @@ local function renderDetail(rotation, state, compiled)
 		d.title:SetText(RA.Rotation.ActionText(action))
 		local status = compiled.status[state.action]
 		local kindText = ({ spell = "Spell", sequence = "Sequence", steps = "Steps", macro = "Macro" })[action.kind]
+		local problems = action.kind == "spell" and RA.Hints.Problems(action.hint) or {}
 		d.status:SetText(("%s %d of %d"):format(kindText, state.action, #mode.actions) .. (status == "skipped"
 			and ("  " .. S.Hex(C.bad, "Skipped: Not Known on This Character")) or status == "partial"
-			and ("  " .. S.Hex(C.warn, "Some Spells Not Known")) or ""))
+			and ("  " .. S.Hex(C.warn, "Some Spells Not Known")) or "")
+			.. (#problems > 0 and ("  " .. S.Hex(C.warn, problems[1])) or ""))
 		setText(d.when, action.when)
+		setText(d.hint, action.hint)
 		setText(d.spells, RA.Spells.ListText(action.spells))
 		setText(d.reset, action.reset)
 		d.offGcd:SetChecked(action.offGcd)

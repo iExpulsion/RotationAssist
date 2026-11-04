@@ -50,30 +50,37 @@ local function tooltip(self)
 	if self == toggle then
 		GameTooltip:AddLine("Click or press the Mode key to go to the next mode.", 0.8, 0.8, 0.8, true)
 	else
-		GameTooltip:AddLine("Click or press the Rotation key to cast the first ready spell. The icon is the likely next one.", 0.8, 0.8, 0.8, true)
+		GameTooltip:AddLine("Click or press the Rotation key to cast the first ready spell. The icon is the likely next one; a glow means a hint picked it, such as a proc.", 0.8, 0.8, 0.8, true)
 	end
 	GameTooltip:Show()
 end
 
--- The first GCD spell in the mode that looks ready now: conditions hold, usable, off cooldown (or only on the
--- global cooldown) and in range. A Sequence or Steps block stops the search, since which spell it casts isn't known;
--- a once-per-reset Sequence is passed over, since most presses find it already done.
+-- Conditions hold, usable, off cooldown (or only on the global cooldown) and in range.
+local function looksReady(cast)
+	local condOk = cast.cond == "" or SecureCmdOptionParse(cast.cond .. " x") == "x"
+	local start, duration = GetSpellCooldown(cast.name)
+	local ready = start == nil or start == 0 or (duration or 0) <= GCD
+	local range = IsSpellInRange(cast.name, "target")
+	return condOk and IsUsableSpell(cast.name) and ready and range ~= 0
+end
+
+-- The spell to suggest next, and whether a hint picked it. A ready spell whose hint holds comes first, wherever it
+-- is in the list. Otherwise it's the first ready GCD spell without a hint (a spell with a hint is only suggested
+-- while it holds). A Sequence or Steps block stops that search, since which spell it casts isn't known; a
+-- once-per-reset Sequence is passed over, since most presses find it already done.
 function RB.Predict(casts)
-	local found
-	for _, cast in ipairs(casts or {}) do
-		if not found and not cast.offGcd and not cast.once then
-			if cast.kind == "spell" then
-				local condOk = cast.cond == "" or SecureCmdOptionParse(cast.cond .. " x") == "x"
-				local start, duration = GetSpellCooldown(cast.name)
-				local ready = start == nil or start == 0 or (duration or 0) <= GCD
-				local range = IsSpellInRange(cast.name, "target")
-				if condOk and IsUsableSpell(cast.name) and ready and range ~= 0 then found = cast end
-			else
-				found = cast
-			end
+	casts = casts or {}
+	for _, cast in ipairs(casts) do
+		local spell = cast.kind == "spell" and not cast.offGcd
+		if spell and RA.Hints.Has(cast.hint) and RA.Hints.Holds(cast.hint) and looksReady(cast) then return cast, true end
+	end
+	for _, cast in ipairs(casts) do
+		if not cast.offGcd and not cast.once then
+			if cast.kind ~= "spell" then return cast, false end
+			if not RA.Hints.Has(cast.hint) and looksReady(cast) then return cast, false end
 		end
 	end
-	return found
+	return nil, false
 end
 
 local function modeLabel()
@@ -85,7 +92,15 @@ end
 local function update()
 	local compiled = RA.Engine.compiled
 	local mode = compiled and compiled.modes[RA.Engine.ModeIndex()]
-	local upcoming = mode and RB.Predict(mode.casts)
+	local upcoming, hinted = nil, false
+	if mode then upcoming, hinted = RB.Predict(mode.casts) end
+	RB.hinted = hinted
+	if hinted then
+		exec.glow:Show()
+		exec.glow:SetAlpha(0.55 + 0.45 * math.sin(GetTime() * 6))
+	else
+		exec.glow:Hide()
+	end
 	local icon = RA.Spells.QUESTION
 	if upcoming and upcoming.kind == "spell" then
 		icon = RA.Spells.Icon(upcoming.name)
@@ -107,6 +122,14 @@ local function create()
 	exec:SetClampedToScreen(true)
 	dress(exec, SIZE, 3)
 	exec:SetBackdropBorderColor(unpack(C.accent))
+	-- shown while a hint picked the suggestion, such as a proc
+	exec.glow = CreateFrame("Frame", nil, exec)
+	exec.glow:SetPoint("TOPLEFT", -3, 3)
+	exec.glow:SetPoint("BOTTOMRIGHT", 3, -3)
+	exec.glow:SetFrameLevel(exec:GetFrameLevel() + 2)
+	exec.glow:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 2 })
+	exec.glow:SetBackdropBorderColor(unpack(C.warn))
+	exec.glow:Hide()
 	exec.mode = S.Text(exec, "small", C.muted, "OVERLAY")
 	exec.mode:SetPoint("TOP", exec, "BOTTOM", 0, -4)
 	exec.mode:SetJustifyH("CENTER")

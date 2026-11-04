@@ -66,7 +66,7 @@ function Compiler.CompileMode(rotation, mode, env, firstStep)
 			if name and env.known(name) then
 				local cond = Compiler.Merge(action.when, guard)
 				emit(action, command("/cast", cond, name))
-				result.casts[#result.casts + 1] = { index = index, kind = "spell", name = name, cond = cond, offGcd = action.offGcd }
+				result.casts[#result.casts + 1] = { index = index, kind = "spell", name = name, cond = cond, offGcd = action.offGcd, hint = trim(action.hint) }
 			else
 				status = "skipped"
 				result.skipped[#result.skipped + 1] = name or ("#" .. tostring(action.spell))

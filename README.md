@@ -18,6 +18,9 @@ your priority list that's ready.
   next fight.
 - **Rotation Button:** a large on-screen button showing the likely next spell, the mode and the key. You can
   click it like the key, and resize or move it.
+- **Hints:** give a spell a hint like `[buff:Freezing Fog]` or `[nodebuff:Blood Plague<3]`, and the Rotation
+  Button glows and shows that spell while the hint holds. Hints can check your buffs, your debuffs on the target,
+  power and health. They only change what the button suggests, not what a press casts.
 - **Quiet Errors:** hides the "Not ready yet" errors that a priority list causes on purpose.
 - **Per Spec:** link a rotation to a talent spec, and it switches with your spec.
 - **Preview:** see exactly which macro each mode runs on your character, and which spells were left out
@@ -33,7 +36,8 @@ Shot), or one out of range. It casts the first one left.
 So the button can't react to procs, buffs, debuffs or target health on its own. It can't prefer Howling Blast
 when Rime procs, or refresh diseases when they're about to fall off. If something a macro condition can see
 changes (a form, a stance, a modifier key, your target), a condition rule can switch modes. For a buff, use the
-Mode key. Every cast still needs a key press.
+Mode key. Hints can show you a proc or a disease about to fall off, but the press still casts what the macro
+says. Every cast still needs a key press.
 
 ## Installation
 

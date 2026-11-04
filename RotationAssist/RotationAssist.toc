@@ -15,6 +15,7 @@ Engine.lua
 Keys.lua
 Quiet.lua
 Trace.lua
+Hints.lua
 UI\List.lua
 UI\Widgets.lua
 UI\RotationButton.lua
