@@ -126,7 +126,19 @@ function Compiler.CompileMode(rotation, mode, env, firstStep)
 	if options.attack then lines[#lines + 1] = "/startattack [harm,nodead]" end
 	if options.pet then lines[#lines + 1] = "/petattack [harm,nodead]" end
 	for _, line in ipairs(early) do lines[#lines + 1] = line end
-	for _, line in ipairs(late) do lines[#lines + 1] = line end
+	if options.cycle and #late > 0 then
+		-- One Spell per Press: the GCD lines go on a step button in GSE's priority order (1, 1 2, 1 2 3, ...), since
+		-- a press stops at the first GCD spell that isn't ready
+		local order = {}
+		for i = 1, #late do
+			for j = 1, i do order[#order + 1] = late[j] end
+		end
+		local number = firstStep + #result.steps
+		result.steps[#result.steps + 1] = { lines = order, cycle = true }
+		lines[#lines + 1] = "/click " .. Compiler.STEP_BUTTON .. number
+	else
+		for _, line in ipairs(late) do lines[#lines + 1] = line end
+	end
 	result.text = table.concat(lines, "\n")
 
 	if #early + #late == 0 then result.warnings[#result.warnings + 1] = "Nothing to Cast in This Mode" end

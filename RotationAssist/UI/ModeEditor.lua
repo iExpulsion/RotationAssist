@@ -30,6 +30,7 @@ local OPTIONS = {
 	{ key = "attack", label = "Start Auto-Attack", tip = "Each press starts melee or ranged auto-attack on a living enemy." },
 	{ key = "pet", label = "Send the Pet to Attack", tip = "Each press sends your pet at your target." },
 	{ key = "channels", label = "Don't Interrupt Channels", tip = "Presses do nothing while you channel a spell like Blizzard, so mashing can't cut it short." },
+	{ key = "cycle", label = "One Spell per Press", tip = "Each press tries only the next spell on the global cooldown, in GSE's priority order (1, 1 2, 1 2 3...), so the top ones come up most. Off-GCD lines still fire every press. Use it for Death Knights: a spell waiting on runes stops the rest of a press, so a plain list never gets past it." },
 }
 
 local function edit(fn)

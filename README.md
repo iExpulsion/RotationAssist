@@ -9,6 +9,9 @@ your priority list that's ready.
   press during the global cooldown does nothing, so mashing the key is safe.
 - **Modes:** keep separate lists, like single target and AoE, or one for a form. Switch with a Mode key that can
   also cast a spell on the way, or automatically with a macro condition rule.
+- **One Spell per Press:** for Death Knights and anything else a plain list can't get past. Each press tries the
+  next spell in a cycle that returns to the top ones most often (1, 1 2, 1 2 3...), like GSE's Priority
+  sequences, so mashing the key gives every spell its turn.
 - **Off-GCD Lines:** trinkets, racials and cooldowns like Empower Rune Weapon fire alongside the main spell.
 - **Sequences and Steps:** `/castsequence` blocks, and Steps blocks that run one line per press. A sequence
   can be **Once per Reset**: it casts each spell once (diseases, a mark), then waits until a new target or the
