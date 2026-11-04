@@ -58,7 +58,7 @@ function Widgets.Segmented(parent, width, onSelect)
 	seg:SetSize(width, S.CONTROL_H)
 	seg.buttons = {}
 	function seg:SetOptions(options)
-		local w = math.floor((width + #options - 1) / #options)
+		local w = math.floor((self:GetWidth() + #options - 1) / #options)
 		for i, opt in ipairs(options) do
 			local b = self.buttons[i]
 			if not b then
