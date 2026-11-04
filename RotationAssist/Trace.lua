@@ -28,7 +28,7 @@ function Trace.Pressed()
 		press = press + 1
 		watchUntil = GetTime() + Trace.WINDOW
 		local mode = RA.Engine.rotation and RA.Engine.rotation.modes[RA.Engine.ModeIndex()]
-		RA:Print("Press %d (%s)", press, mode and mode.label or "no rotation")
+		RA:Print("Press %d (%s, %d enemies)", press, mode and mode.label or "no rotation", RA.Enemies.Count())
 	end
 end
 

@@ -15,6 +15,7 @@ Engine.lua
 Keys.lua
 Quiet.lua
 Trace.lua
+Enemies.lua
 Hints.lua
 Smart.lua
 Codec.lua
