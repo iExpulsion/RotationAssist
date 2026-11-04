@@ -1,0 +1,200 @@
+local _, NS = ...
+local RA = NS.RA
+
+-- The on-screen Rotation Button: the secure rotation button itself, drawn as a flat square with the spell it will
+-- most likely cast next, the mode's name under it and the key in the corner, plus a smaller Mode button beside it.
+-- It can be clicked with the mouse like the key. Showing, hiding, moving and scaling only happen out of combat.
+local RB = {}
+RA.RotationButton = RB
+
+local S = RA.Style
+local C = S.colors
+local SIZE, TOGGLE_SIZE = 56, 30
+local THROTTLE = 0.1
+local GCD = 1.5
+
+local exec, toggle, mover
+
+local function savePosition()
+	local point, _, relPoint, x, y = exec:GetPoint()
+	RA.db.button.point = { point = point, relPoint = relPoint, x = x, y = y }
+end
+
+local function place()
+	local pos = RA.db.button.point
+	exec:ClearAllPoints()
+	if pos then exec:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y) else exec:SetPoint("CENTER", 0, -180) end
+	exec:SetScale(RA.db.button.scale or 1)
+end
+
+local function dress(b, size, iconInset)
+	b:SetSize(size, size)
+	S.Panel(b, C.well, C.border)
+	b.icon = b:CreateTexture(nil, "ARTWORK")
+	b.icon:SetPoint("TOPLEFT", iconInset, -iconInset)
+	b.icon:SetPoint("BOTTOMRIGHT", -iconInset, iconInset)
+	b.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+	local hover = S.Solid(b, "HIGHLIGHT", C.hover)
+	hover:SetAllPoints()
+	b:SetPushedTexture("Interface\\Buttons\\WHITE8X8")
+	b:GetPushedTexture():SetVertexColor(C.accent[1], C.accent[2], C.accent[3], 0.25)
+	b.key = S.Text(b, "small", C.text, "OVERLAY")
+	b.key:SetPoint("TOPRIGHT", -3, -3)
+	b.key:SetJustifyH("RIGHT")
+end
+
+local function tooltip(self)
+	GameTooltip:SetOwner(self, "ANCHOR_TOP")
+	local rotation = RA.Engine.rotation
+	GameTooltip:AddLine(rotation and rotation.name or "No Rotation", 1, 1, 1)
+	if self == toggle then
+		GameTooltip:AddLine("Click or press the Mode key to go to the next mode.", 0.8, 0.8, 0.8, true)
+	else
+		GameTooltip:AddLine("Click or press the Rotation key to cast the first ready spell. The icon is the likely next one.", 0.8, 0.8, 0.8, true)
+	end
+	GameTooltip:Show()
+end
+
+-- The first GCD spell in the mode that looks ready now: conditions hold, usable, off cooldown (or only on the
+-- global cooldown) and in range. A Sequence or Steps block stops the search, since which spell it casts isn't known.
+function RB.Predict(casts)
+	local found
+	for _, cast in ipairs(casts or {}) do
+		if not found and not cast.offGcd then
+			if cast.kind == "spell" then
+				local condOk = cast.cond == "" or SecureCmdOptionParse(cast.cond .. " x") == "x"
+				local start, duration = GetSpellCooldown(cast.name)
+				local ready = start == nil or start == 0 or (duration or 0) <= GCD
+				local range = IsSpellInRange(cast.name, "target")
+				if condOk and IsUsableSpell(cast.name) and ready and range ~= 0 then found = cast end
+			else
+				found = cast
+			end
+		end
+	end
+	return found
+end
+
+local function modeLabel()
+	local rotation = RA.Engine.rotation
+	local mode = rotation and rotation.modes[RA.Engine.ModeIndex()]
+	return mode and mode.label or ""
+end
+
+local function update()
+	local compiled = RA.Engine.compiled
+	local mode = compiled and compiled.modes[RA.Engine.ModeIndex()]
+	local upcoming = mode and RB.Predict(mode.casts)
+	local icon = RA.Spells.QUESTION
+	if upcoming and upcoming.kind == "spell" then
+		icon = RA.Spells.Icon(upcoming.name)
+	elseif upcoming then
+		icon = RA.Rotation.ActionIcon(RA.Engine.rotation.modes[RA.Engine.ModeIndex()].actions[upcoming.index])
+	end
+	exec.icon:SetTexture(icon)
+	exec.icon:SetDesaturated(upcoming == nil)
+	exec.mode:SetText(modeLabel())
+	exec.key:SetText(RA.Keys.Get("main") and RA.Keys.Text("main") or "")
+	toggle.key:SetText(RA.Keys.Get("toggle") and RA.Keys.Text("toggle") or "")
+end
+
+local function create()
+	exec, toggle = RA.Engine.Buttons()
+	exec:SetParent(UIParent)
+	exec:SetFrameStrata("MEDIUM")
+	exec:SetMovable(true)
+	exec:SetClampedToScreen(true)
+	dress(exec, SIZE, 3)
+	exec:SetBackdropBorderColor(unpack(C.accent))
+	exec.mode = S.Text(exec, "small", C.muted, "OVERLAY")
+	exec.mode:SetPoint("TOP", exec, "BOTTOM", 0, -4)
+	exec.mode:SetJustifyH("CENTER")
+	exec:SetScript("OnEnter", tooltip)
+	exec:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+	dress(toggle, TOGGLE_SIZE, 2)
+	toggle:SetParent(exec)
+	toggle:ClearAllPoints()
+	toggle:SetPoint("BOTTOMLEFT", exec, "BOTTOMRIGHT", 4, 0)
+	toggle:SetScript("OnEnter", tooltip)
+	toggle:SetScript("OnLeave", function() GameTooltip:Hide() end)
+	toggle:HookScript("OnClick", update)
+
+	-- an insecure cover that takes the mouse while unlocked, so dragging never clicks the secure button
+	mover = CreateFrame("Frame", nil, exec)
+	mover:SetAllPoints()
+	mover:SetFrameLevel(exec:GetFrameLevel() + 5)
+	mover:EnableMouse(true)
+	mover:RegisterForDrag("LeftButton")
+	local tint = S.Solid(mover, "OVERLAY", C.selected)
+	tint:SetAllPoints()
+	mover:SetScript("OnDragStart", function()
+		if not InCombatLockdown() then exec:StartMoving() end
+	end)
+	mover:SetScript("OnDragStop", function()
+		exec:StopMovingOrSizing()
+		savePosition()
+	end)
+	mover:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_TOP")
+		GameTooltip:AddLine("Drag to move. Lock it in the Keys tab or with /rota lock.", 1, 1, 1, true)
+		GameTooltip:Show()
+	end)
+	mover:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+	local elapsed = 0
+	exec:SetScript("OnUpdate", function(_, dt)
+		elapsed = elapsed + dt
+		if elapsed >= THROTTLE then
+			elapsed = 0
+			update()
+		end
+	end)
+	place()
+end
+
+-- Out of combat: shows the button when a rotation is active and the player wants it, and the Mode button when the
+-- rotation has more than one mode.
+function RB.Refresh()
+	if exec and not InCombatLockdown() then
+		local active = RA.Engine.rotation ~= nil
+		if active and RA.db.button.shown then exec:Show() else exec:Hide() end
+		if RA.Engine.ModeCount() > 1 then toggle:Show() else toggle:Hide() end
+		if RA.db.button.locked then mover:Hide() else mover:Show() end
+		place()
+		update()
+	end
+end
+
+-- Entering combat locks the button, since a protected frame can't move then.
+function RB.Lock()
+	if mover then mover:Hide() end
+end
+
+function RB.SetShown(on)
+	RA.db.button.shown = on and true or false
+	RB.Refresh()
+end
+
+function RB.SetLocked(on)
+	RA.db.button.locked = on and true or false
+	RB.Refresh()
+end
+
+function RB.SetScale(scale)
+	RA.db.button.scale = scale
+	RB.Refresh()
+end
+
+function RB.ResetPosition()
+	RA.db.button.point = nil
+	RB.Refresh()
+end
+
+local loader = CreateFrame("Frame")
+loader:RegisterEvent("PLAYER_LOGIN")
+loader:SetScript("OnEvent", function(self)
+	create()
+	RB.Refresh()
+	self:UnregisterEvent("PLAYER_LOGIN")
+end)

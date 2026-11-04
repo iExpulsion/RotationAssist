@@ -1,0 +1,27 @@
+## Interface: 30300
+## Title: Rotation Assist
+## Notes: One-button rotations: each press casts the first ready spell of a priority list, with modes, a Mode key and an on-screen button. /rota
+## Author: Expulsion
+## Version: 0.1.0
+## SavedVariables: RotationAssistDB
+## SavedVariablesPerCharacter: RotationAssistCharDB
+
+Core.lua
+Spells.lua
+UI\Style.lua
+Rotation.lua
+Compiler.lua
+Engine.lua
+Keys.lua
+Quiet.lua
+UI\List.lua
+UI\Widgets.lua
+UI\RotationButton.lua
+UI\Dialogs.lua
+UI\ActionEditor.lua
+UI\ModeEditor.lua
+UI\KeysEditor.lua
+UI\PreviewEditor.lua
+UI\Window.lua
+UI\Minimap.lua
+Commands.lua
