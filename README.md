@@ -70,7 +70,89 @@ Every cast still needs a key press.
    macros.
 4. Click **Use Rotation** to link it to your active spec.
 
-Changes made in combat apply as soon as combat ends.
+Changes made in combat apply as soon as combat ends. For a step-by-step walk through, read on.
+
+## Building a Rotation
+
+This guide builds a Fire Mage rotation, but the steps are the same for any class.
+
+### 1. List Your Spells, Most Important First
+
+Click **New Rotation**, name it, and add your spells on the **Actions** tab. Drag them from your spellbook, or
+type a name and click **Add**. Put them in the order you'd want them if everything were ready at once: big
+cooldowns and procs near the top, your filler spell last.
+
+| # | Spell         | Why it's here                               |
+|---|---------------|---------------------------------------------|
+| 1 | Combustion    | A cooldown; mark it Off the Global Cooldown |
+| 2 | Pyroblast     | Only worth casting when Hot Streak procs    |
+| 3 | Living Bomb   | Keep it on the target                       |
+| 4 | Fireball      | The filler                                  |
+
+Select an action to change it. **Off the Global Cooldown** lets a line fire alongside whatever else casts on that
+press, which suits trinkets, racials and cooldowns like Combustion.
+
+### 2. Choose How a Press Works
+
+On the **Modes** tab, pick one of three ways to run the list:
+
+| Setting                | What a press does                                 | Good for                                  |
+|------------------------|---------------------------------------------------|-------------------------------------------|
+| Neither (a plain list) | Casts the first spell the game lets it cast       | Simple lists, healing, anything friendly  |
+| **Smart Picks**        | Casts the spell the Rotation Button shows         | Procs, debuffs to keep up, most damage    |
+| **One Spell per Press**| Tries one spell per press, top ones most often    | Healing or no target, when a plain list stalls |
+
+Smart Picks is the one that lets triggers (next step) decide what casts, so turn it on for a damage rotation. It
+needs an enemy targeted, and target frames flicker a little while you mash. Also turn on **Target the Nearest
+Enemy** and **Start Auto-Attack** if you want a press to pick a target and start attacking for you.
+
+### 3. Add Triggers
+
+A plain list can't see buffs or debuffs, so Pyroblast would go off without Hot Streak, and Living Bomb would be
+recast while it's still ticking. A trigger fixes that. Select the spell and fill in **Trigger**:
+
+| Spell       | Trigger                   | Means                                                    |
+|-------------|---------------------------|----------------------------------------------------------|
+| Pyroblast   | `[buff:Hot Streak]`       | Only when Hot Streak is up, and then before anything else |
+| Living Bomb | `[nodebuff:Living Bomb]`  | Only when your Living Bomb isn't on the target            |
+
+While a spell's trigger is met, it jumps the queue and the Rotation Button glows. While it isn't, the spell is
+skipped. A spell with no trigger is always a candidate. Some more you can use:
+
+- `[nodebuff:X<3]`: your debuff is missing or has under 3 seconds left, to refresh before it falls off
+- `[nobuff:X]`: a self-buff is missing
+- `[power>=60]`, `[hp<35]`, `[targethp<20]`, `[combo>=5]`: power, your health, the target's health, combo points
+- `[enemies>=3]`: three or more enemies in the fight, for AoE spells
+- `[a, b]` means a and b; `[a][b]` means a or b
+
+Hover over the Trigger box in game for the full list.
+
+### 4. Handle AoE
+
+The easy way is one mode: add your AoE spell with an `[enemies>=3]` trigger, say Flamestrike, near the top. It
+takes over on packs and steps aside on single targets.
+
+For a whole different list, add a second mode on the **Modes** tab and fill it on the Actions tab (pick the mode
+from the dropdown at the top). Then choose how to switch: a **Mode Key** you press, or a **Condition Rule** that
+follows a form, stance or modifier key, like `[mod:shift] 2; 1` for mode 2 while Shift is held.
+
+### 5. Bind It and Test
+
+1. In **Settings**, set the **Rotation Key** (and the Mode Key if you use one).
+2. Click **Use Rotation** so your spec runs it.
+3. Find a training dummy and mash the key. Watch the Rotation Button: it shows the spell the next press should cast.
+4. If a spell never goes, or goes too often, check its trigger and its place in the list. `/rota trace` prints what
+   each press tried, and the **Preview** tab shows the exact macro each mode runs.
+
+When you're happy with it, click **Export** to share it as a string.
+
+### Tips
+
+- Fewer, well-ordered spells beat a long list. Leave out anything you'd only cast by hand.
+- A spell you can't cast yet (not learned, wrong spec) is left out of the macro. The Preview tab lists those.
+- Smart Picks passes over spells with a cast time while you move, and finishers until you have combo points.
+  A proc that makes a spell instant isn't seen, so it waits until you stop.
+- Don't use Smart Picks for healing: it needs an enemy targeted.
 
 ## Commands
 
