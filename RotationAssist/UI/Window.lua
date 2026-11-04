@@ -362,10 +362,11 @@ local function createSidebar(f)
 	footer:SetPoint("BOTTOMRIGHT")
 	footer:SetHeight(FOOTER_H)
 	S.Rule(footer, "TOP")
-	local new = S.Button(footer, "New Rotation", "secondary", 100, newRotation,
+	local half = (SIDEBAR_W - 2 * PAD - GAP) / 2
+	local new = S.Button(footer, "New Rotation", "secondary", half, newRotation,
 		"Start a blank rotation for your classes.")
 	new:SetPoint("LEFT", PAD, 0)
-	f.import = S.Button(footer, "Import", "secondary", 70, function()
+	f.import = S.Button(footer, "Import", "secondary", half, function()
 		RA.Dialogs.ShowImport(function(rotation)
 			RA.Rotation.Add(rotation)
 			state.search = ""
@@ -375,7 +376,7 @@ local function createSidebar(f)
 			Window.Message(S.Hex(C.good, "Imported as " .. rotation.name))
 		end)
 	end, "Add a rotation from a string someone shared.")
-	f.import:SetPoint("RIGHT", -PAD, 0)
+	f.import:SetPoint("LEFT", new, "RIGHT", GAP, 0)
 end
 
 local function createHeader(main)
