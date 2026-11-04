@@ -243,7 +243,6 @@ function Window.Render()
 		renderStatus()
 		local rotation = Window.Selected()
 		local settings = state.settings
-		if rotation and not settings then frame.export:Enable() else frame.export:Disable() end
 		frame.settingsButton:SetKind(settings and "selected" or "ghost")
 		setShown(frame.settings, settings)
 		setShown(frame.main, rotation ~= nil and not settings)
@@ -367,12 +366,7 @@ local function createSidebar(f)
 	local new = S.Button(footer, "New Rotation", "secondary", 100, newRotation,
 		"Start a blank rotation for your classes, or start from an example.")
 	new:SetPoint("LEFT", PAD, 0)
-	f.export = S.Button(footer, "Export", "secondary", 50, function()
-		local rotation = Window.Selected()
-		if rotation then RA.Dialogs.ShowExport(rotation) end
-	end, "Get the selected rotation as a string to share.")
-	f.export:SetPoint("RIGHT", -PAD, 0)
-	f.import = S.Button(footer, "Import", "secondary", 50, function()
+	f.import = S.Button(footer, "Import", "secondary", 70, function()
 		RA.Dialogs.ShowImport(function(rotation)
 			RA.Rotation.Add(rotation)
 			state.search = ""
@@ -382,7 +376,7 @@ local function createSidebar(f)
 			Window.Message(S.Hex(C.good, "Imported as " .. rotation.name))
 		end)
 	end, "Add a rotation from a string someone shared.")
-	f.import:SetPoint("RIGHT", f.export, "LEFT", -GAP, 0)
+	f.import:SetPoint("RIGHT", -PAD, 0)
 end
 
 local function createHeader(main)
@@ -458,7 +452,12 @@ local function createHeader(main)
 		local rotation = Window.Selected()
 		if rotation then Window.Select(RA.Rotation.Duplicate(rotation).name) end
 	end, "Make a copy of this rotation to try changes on. The copy isn't linked to a spec.")
-	f.duplicate:SetPoint("RIGHT", f.use, "LEFT", -GAP, 0)
+	f.export = S.Button(main, "Export", "secondary", 70, function()
+		local rotation = Window.Selected()
+		if rotation then RA.Dialogs.ShowExport(rotation) end
+	end, "Get this rotation as a string to share.")
+	f.export:SetPoint("RIGHT", f.use, "LEFT", -GAP, 0)
+	f.duplicate:SetPoint("RIGHT", f.export, "LEFT", -GAP, 0)
 	f.delete = S.Button(main, "Delete", "danger", 70, function()
 		local rotation = Window.Selected()
 		if rotation then
