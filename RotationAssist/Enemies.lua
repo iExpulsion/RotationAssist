@@ -1,7 +1,7 @@
 local _, NS = ...
 local RA = NS.RA
 
--- Enemies in the fight, for the [enemies>=N] hint: every hostile unit you or your pet hit (damage, a miss, an
+-- Enemies in the fight, for the [enemies>=N] trigger: every hostile unit you or your pet hit (damage, a miss, an
 -- aura) or that hit you within the last few seconds, until it dies, plus your target. 3.3.5 has no nameplate
 -- units, so this is what an addon can count; mobs that haven't been touched yet don't count.
 -- It also follows which of them carry your auras, for [without:Blood Plague>=1] (enemies missing your disease).

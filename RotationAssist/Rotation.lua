@@ -4,7 +4,7 @@ local RA = NS.RA
 -- Rotations: one or more modes, each an ordered list of actions the button tries top to bottom.
 --
 -- rotation = { name, classes, modes = { { label, actions } }, switch, options, notes }
--- action   = { kind = "spell", spell, when, offGcd, hint }   (hint: see Hints.lua; steers the suggestion and Smart Picks)
+-- action   = { kind = "spell", spell, when, offGcd, trigger }   (trigger: see Triggers.lua; steers the suggestion and Smart Picks)
 --          | { kind = "sequence", spells = { ... }, reset, when, once }   (once: stop after the last spell until reset)
 --          | { kind = "steps", steps = { "line", ... } }
 --          | { kind = "macro", text, offGcd }
@@ -131,8 +131,8 @@ Rotation.TEMPLATES = {
 		label = "Frost Death Knight with Lich Form",
 		classes = { "DEATHKNIGHT" },
 		build = function()
-			local function spell(name, when, offGcd, hint)
-				return { kind = "spell", spell = name, when = when, offGcd = offGcd, hint = hint }
+			local function spell(name, when, offGcd, trigger)
+				return { kind = "spell", spell = name, when = when, offGcd = offGcd, trigger = trigger }
 			end
 			return {
 				modes = {

@@ -162,6 +162,17 @@ function RA:Changed()
 	if self.Window then self.Window.Refresh() end
 end
 
+-- Brings saved rotations up to date: spell actions' hint field was renamed trigger.
+function RA:Migrate()
+	for _, rotation in pairs(self.db.rotations) do
+		for _, mode in ipairs(rotation.modes or {}) do
+			for _, action in ipairs(mode.actions or {}) do
+				if action.hint ~= nil then action.trigger, action.hint = action.trigger or action.hint, nil end
+			end
+		end
+	end
+end
+
 local frame = CreateFrame("Frame")
 RA.frame = frame
 frame:RegisterEvent("ADDON_LOADED")
@@ -176,6 +187,7 @@ frame:SetScript("OnEvent", function(self, event, name)
 		RotationAssistCharDB = RotationAssistCharDB or {}
 		RotationAssistCharDB.keys = RotationAssistCharDB.keys or {}
 		RA.db, RA.charDB = db, RotationAssistCharDB
+		RA:Migrate()
 		self:UnregisterEvent("ADDON_LOADED")
 	end
 end)

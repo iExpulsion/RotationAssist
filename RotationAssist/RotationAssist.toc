@@ -17,7 +17,7 @@ Quiet.lua
 Trace.lua
 Enemies.lua
 Runes.lua
-Hints.lua
+Triggers.lua
 Smart.lua
 Codec.lua
 UI\List.lua

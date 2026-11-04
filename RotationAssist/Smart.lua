@@ -2,7 +2,7 @@ local _, NS = ...
 local RA = NS.RA
 
 -- Smart Picks: the macro's /run lines call these at press time. RAPick asks the Rotation Button's prediction
--- (hints included) which action to cast; RAGate clears the target before every other GCD line, so its
+-- (triggers included) which action to cast; RAGate clears the target before every other GCD line, so its
 -- [exists] condition fails, and the line after it retargets. ClearTarget is allowed in combat on 3.3.5;
 -- ClearFocus isn't.
 local Smart = {}

@@ -50,7 +50,7 @@ local function tooltip(self)
 	if self == toggle then
 		GameTooltip:AddLine("Click or press the Mode key to go to the next mode.", 0.8, 0.8, 0.8, true)
 	else
-		GameTooltip:AddLine("Click or press the Rotation key to cast the first ready spell. The icon is the likely next one; a glow means a hint picked it, such as a proc.", 0.8, 0.8, 0.8, true)
+		GameTooltip:AddLine("Click or press the Rotation key to cast the first ready spell. The icon is the likely next one; a glow means a trigger picked it, such as a proc.", 0.8, 0.8, 0.8, true)
 	end
 	GameTooltip:Show()
 end
@@ -64,20 +64,21 @@ local function looksReady(cast)
 	return condOk and IsUsableSpell(cast.name) and RA.Runes.Enough(cast.name) and ready and range ~= 0
 end
 
--- The spell to suggest next, and whether a hint picked it. A ready spell whose hint holds comes first, wherever it
--- is in the list. Otherwise it's the first ready GCD spell without a hint (a spell with a hint is only suggested
--- while it holds). A Sequence or Steps block stops that search, since which spell it casts isn't known; a
--- once-per-reset Sequence is passed over, since most presses find it already done.
+-- The spell to suggest next, and whether a trigger picked it. A ready spell whose trigger is met comes first,
+-- wherever it is in the list. Otherwise it's the first ready GCD spell without a trigger (a spell with a trigger is
+-- only suggested while it's met). A Sequence or Steps block stops that search, since which spell it casts isn't
+-- known; a once-per-reset Sequence is passed over, since most presses find it already done.
 function RB.Predict(casts)
 	casts = casts or {}
+	local T = RA.Triggers
 	for _, cast in ipairs(casts) do
 		local spell = cast.kind == "spell" and not cast.offGcd
-		if spell and RA.Hints.Has(cast.hint) and RA.Hints.Holds(cast.hint) and looksReady(cast) then return cast, true end
+		if spell and T.Has(cast.trigger) and T.Holds(cast.trigger) and looksReady(cast) then return cast, true end
 	end
 	for _, cast in ipairs(casts) do
 		if not cast.offGcd and not cast.once then
 			if cast.kind ~= "spell" then return cast, false end
-			if not RA.Hints.Has(cast.hint) and looksReady(cast) then return cast, false end
+			if not T.Has(cast.trigger) and looksReady(cast) then return cast, false end
 		end
 	end
 	return nil, false
@@ -92,10 +93,10 @@ end
 local function update()
 	local compiled = RA.Engine.compiled
 	local mode = compiled and compiled.modes[RA.Engine.ModeIndex()]
-	local upcoming, hinted = nil, false
-	if mode then upcoming, hinted = RB.Predict(mode.casts) end
-	RB.hinted = hinted
-	if hinted then
+	local upcoming, triggered = nil, false
+	if mode then upcoming, triggered = RB.Predict(mode.casts) end
+	RB.triggered = triggered
+	if triggered then
 		exec.glow:Show()
 		exec.glow:SetAlpha(0.55 + 0.45 * math.sin(GetTime() * 6))
 	else
@@ -122,7 +123,7 @@ local function create()
 	exec:SetClampedToScreen(true)
 	dress(exec, SIZE, 3)
 	exec:SetBackdropBorderColor(unpack(C.accent))
-	-- shown while a hint picked the suggestion, such as a proc
+	-- shown while a trigger picked the suggestion, such as a proc
 	exec.glow = CreateFrame("Frame", nil, exec)
 	exec.glow:SetPoint("TOPLEFT", -3, 3)
 	exec.glow:SetPoint("BOTTOMRIGHT", 3, -3)

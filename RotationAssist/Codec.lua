@@ -6,7 +6,7 @@ local RA = NS.RA
 --
 -- n= name, c= classes, o= options that are on, w= switch (t:spell or r:rule), x= notes, then m= a mode's label
 -- followed by that mode's a= actions in order:
---   s:spell:when:hint:flags   q:spell.spell:reset:when:flags   p:line.line   k:text:flags
+--   s:spell:when:trigger:flags   q:spell.spell:reset:when:flags   p:line.line   k:text:flags
 -- Flags: g off the global cooldown, o once per reset.
 local Codec = {}
 RA.Codec = Codec
@@ -80,7 +80,7 @@ local function joinParts(parts)
 end
 
 local writers = {
-	spell = function(a) return { "s", spellOut(a.spell), esc(a.when), esc(a.hint), flags(a) } end,
+	spell = function(a) return { "s", spellOut(a.spell), esc(a.when), esc(a.trigger), flags(a) } end,
 	sequence = function(a) return { "q", listOut(a.spells, spellOut), esc(a.reset), esc(a.when), flags(a) } end,
 	steps = function(a) return { "p", listOut(a.steps, esc) } end,
 	macro = function(a) return { "k", esc(a.text), flags(a) } end,
@@ -131,7 +131,7 @@ end
 local readers = {
 	s = function(p)
 		local spell, ok = spellIn(p[2] or "")
-		return ok and readFlags({ kind = "spell", spell = spell, when = unesc(p[3] or ""), hint = unesc(p[4] or "") }, p[5]) or nil
+		return ok and readFlags({ kind = "spell", spell = spell, when = unesc(p[3] or ""), trigger = unesc(p[4] or "") }, p[5]) or nil
 	end,
 	q = function(p)
 		local spells, ok = readSpells(p[2])

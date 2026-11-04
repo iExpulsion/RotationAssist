@@ -1,8 +1,9 @@
 local _, NS = ...
 local RA = NS.RA
 
--- Hints: conditions the secure button can't check (buffs, procs, debuffs, health, power), written like macro
--- conditions. They steer the Rotation Button's suggestion, and with Smart Picks what a press casts.
+-- Triggers: conditions the secure button can't check (buffs, procs, debuffs, health, power, enemies), written like
+-- macro conditions. A ready spell whose trigger is met goes first in the Rotation Button's pick, and a spell whose
+-- trigger isn't met is passed over; with Smart Picks that's what a press casts.
 --
 --   [buff:Freezing Fog]            the player has the buff
 --   [nobuff:Horn of Winter]        the player doesn't have the buff
@@ -17,8 +18,8 @@ local RA = NS.RA
 --   [without:Blood Plague>=1]      enemies in the fight that don't carry your Blood Plague
 --
 -- Terms in a group must all hold; any one group holding is enough ("[buff:A][buff:B]" is A or B).
-local Hints = {}
-RA.Hints = Hints
+local Triggers = {}
+RA.Triggers = Triggers
 
 local trim = RA.Spells.Trim
 local cache = {}
@@ -92,7 +93,7 @@ local function parseTerm(term)
 		local name, op, number = rest:match("^(.-)%s*([<>]=?)%s*(%d+%.?%d*)$")
 		name = trim(name or rest)
 		if no ~= "" and not negate then
-			problem = ("\"%s\" Isn't a Hint"):format(term)
+			problem = ("\"%s\" Isn't a Trigger"):format(term)
 		else
 			local limit = op and tonumber(number)
 			test = function()
@@ -111,14 +112,14 @@ local function parseTerm(term)
 			local limit = tonumber(number)
 			test = function() return COMPARE[op](VALUES[key](), limit) end
 		else
-			problem = ("\"%s\" Isn't a Hint"):format(term)
+			problem = ("\"%s\" Isn't a Trigger"):format(term)
 		end
 	end
 	return test, problem
 end
 
 -- Text to { groups = { { test, ... } }, problems = { text } }; text without brackets is one group.
-function Hints.Parse(text)
+function Triggers.Parse(text)
 	text = trim(text)
 	local parsed = cache[text]
 	if not parsed then
@@ -142,9 +143,9 @@ function Hints.Parse(text)
 	return parsed
 end
 
--- Whether the hint holds now. No hint always holds.
-function Hints.Holds(text)
-	local parsed = Hints.Parse(text)
+-- Whether the trigger is met now. No trigger always is.
+function Triggers.Holds(text)
+	local parsed = Triggers.Parse(text)
 	local holds = #parsed.groups == 0
 	for _, group in ipairs(parsed.groups) do
 		local all = true
@@ -156,10 +157,10 @@ function Hints.Holds(text)
 	return holds
 end
 
-function Hints.Problems(text)
-	return Hints.Parse(text).problems
+function Triggers.Problems(text)
+	return Triggers.Parse(text).problems
 end
 
-function Hints.Has(text)
+function Triggers.Has(text)
 	return trim(text) ~= ""
 end

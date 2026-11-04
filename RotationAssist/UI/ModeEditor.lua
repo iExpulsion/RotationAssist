@@ -25,7 +25,7 @@ local SWITCHES = {
 local SWITCH_HELP = {
 	none = "Add a second mode to switch between them.",
 	toggle = "Without a spell the Mode key only cycles modes. With one, mode 2 casts it and mode 1 cancels it, so mode 1 is without it and mode 2 with it. Out of combat the mode follows the buff.",
-	rule = "Conditions, then the mode number, like [form:4] 2; 1 for a form on the fourth stance button. Macro conditions can't see buffs or procs; use hints for those.",
+	rule = "Conditions, then the mode number, like [form:4] 2; 1 for a form on the fourth stance button. Macro conditions can't see buffs or procs; use triggers for those.",
 }
 local OPTIONS = {
 	{ key = "target", label = "Target the Nearest Enemy", note = "When you have no target, or a dead one.", tip = "When you have no target (or a dead one), the press targets the nearest enemy first." },
@@ -33,7 +33,7 @@ local OPTIONS = {
 	{ key = "pet", label = "Send the Pet to Attack", note = "At your target.", tip = "Each press sends your pet at your target." },
 	{ key = "channels", label = "Don't Interrupt Channels", note = "Mashing can't cut a spell like Blizzard short.", tip = "Presses do nothing while you channel a spell like Blizzard, so mashing can't cut it short." },
 	{ key = "cycle", label = "One Spell per Press", note = "One GCD spell a press, top ones most often.", tip = "Each press tries only the next spell on the global cooldown, in GSE's priority order (1, 1 2, 1 2 3...), so the top ones come up most. Off-GCD lines still fire every press. For Death Knights without Smart Picks: a spell waiting on runes stops the rest of a press, so a plain list never gets past it." },
-	{ key = "smart", label = "Smart Picks", note = "Skips what isn't ready; a holding hint goes first.", tip = "Each press casts the spell the Rotation Button shows: the first one that's really ready (cooldowns, runes, power, range), except that a ready spell whose hint holds goes first. It works by clearing your target for an instant before every other line, so target frames flicker while you mash. It needs a target to cast. Replaces One Spell per Press." },
+	{ key = "smart", label = "Smart Picks", note = "Skips what isn't ready; a met trigger goes first.", tip = "Each press casts the spell the Rotation Button shows: the first one that's really ready (cooldowns, runes, power, range), except that a ready spell whose trigger is met goes first. It works by clearing your target for an instant before every other line, so target frames flicker while you mash. It needs a target to cast. Replaces One Spell per Press." },
 }
 
 local function edit(fn)

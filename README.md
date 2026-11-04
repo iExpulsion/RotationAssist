@@ -18,20 +18,21 @@ your priority list that's ready.
   next fight.
 - **Rotation Button:** a large on-screen button showing the likely next spell, the mode and the key. You can
   click it like the key, and resize or move it.
-- **Hints:** give a spell a hint like `[buff:Freezing Fog]` or `[nodebuff:Blood Plague<3]`, and the Rotation
-  Button glows and shows that spell while the hint holds. Hints can check your buffs, your debuffs on the target,
+- **Triggers:** give a spell a trigger like `[buff:Freezing Fog]` or `[nodebuff:Blood Plague<3]`. While it's met
+  and the spell is ready, the spell goes first and the Rotation Button glows; while it isn't, the spell is passed
+  over. Triggers can check your buffs, your debuffs on the target,
   power and health, debuffs from anyone (`[noanydebuff:Mark of Frost]`), and for spells that leave no aura to
   see, whether you've cast them on this target this fight (`[nocast:Icy Touch]`). `[enemies>=3]` counts the
   enemies you've hit or that hit you in the last few seconds, so one mode can switch to AoE spells on a pack
   (mobs nothing has touched yet don't count), and `[without:Blood Plague>=1]` counts the ones missing your
   disease, so a spread like Pestilence only goes while there's something to spread to. With Smart Picks on, a press
-  casts what the button shows; without it, hints only change the button.
+  casts what the button shows; without it, triggers only change the button.
 - **Smart Picks:** each press casts the spell the Rotation Button shows: the first one that's really ready
-  (cooldowns, runes, power, range), with any ready spell whose hint holds going first. So a rotation can react to
+  (cooldowns, runes, power, range), with any ready spell whose trigger is met going first. So a rotation can react to
   procs, debuffs, runes and cooldowns. It works by clearing your target for an instant before every
   line it didn't pick (a line conditioned on `[exists]` then can't cast) and retargeting right after, so target
   frames flicker while you mash, and it needs a target to cast.
-- **Import and Export:** share a rotation, with all its modes, actions, hints and notes, as one string. Export
+- **Import and Export:** share a rotation, with all its modes, actions, triggers and notes, as one string. Export
   and Import are at the bottom of the rotation list.
 - **Quiet Errors:** hides the "Not ready yet" errors that a priority list causes on purpose.
 - **Per Spec:** link a rotation to a talent spec, and it switches with your spec.
@@ -48,7 +49,8 @@ Shot), or one out of range. It casts the first one left.
 So a plain list can't react to procs, buffs, debuffs or target health. It can't prefer Howling Blast when Rime
 procs, or refresh diseases when they're about to fall off. If something a macro condition can see changes (a
 form, a stance, a modifier key, your target), a condition rule can switch modes. For a buff, use the Mode key.
-Smart Picks gets around this with the target trick above; without it, hints only change what the button shows.
+Smart Picks gets around this with the target trick above; without it, triggers only change what the button
+shows.
 Every cast still needs a key press.
 
 ## Installation
