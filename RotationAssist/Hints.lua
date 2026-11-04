@@ -14,6 +14,7 @@ local RA = NS.RA
 --                                  aura to see); [nocast:X>30] also holds when the last one was over 30s ago
 --   [power>=40] [hp<35] [targethp<20]
 --   [enemies>=3]                   enemies in the fight (see Enemies.lua)
+--   [without:Blood Plague>=1]      enemies in the fight that don't carry your Blood Plague
 --
 -- Terms in a group must all hold; any one group holding is enough ("[buff:A][buff:B]" is A or B).
 local Hints = {}
@@ -79,7 +80,14 @@ local VALUES = {
 local function parseTerm(term)
 	local test, problem
 	local no, kind, rest = term:match("^(n?o?)(%a+):%s*(.+)$")
-	if kind == "buff" or kind == "debuff" or kind == "anydebuff" or kind == "cast" then
+	local missing, countOp, count = (rest or ""):match("^(.-)%s*([<>=]=?)%s*(%d+%.?%d*)$")
+	if no == "" and kind == "without" and missing and COMPARE[countOp] then
+		local limit = tonumber(count)
+		missing = trim(missing)
+		test = function() return COMPARE[countOp](RA.Enemies.Without(missing), limit) end
+	elseif kind == "without" then
+		problem = ("\"%s\" Needs a Count, Like without:Blood Plague>=1"):format(term)
+	elseif kind == "buff" or kind == "debuff" or kind == "anydebuff" or kind == "cast" then
 		local negate = no == "no"
 		local name, op, number = rest:match("^(.-)%s*([<>]=?)%s*(%d+%.?%d*)$")
 		name = trim(name or rest)

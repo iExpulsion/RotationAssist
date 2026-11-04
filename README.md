@@ -23,7 +23,8 @@ your priority list that's ready.
   power and health, debuffs from anyone (`[noanydebuff:Mark of Frost]`), and for spells that leave no aura to
   see, whether you've cast them on this target this fight (`[nocast:Icy Touch]`). `[enemies>=3]` counts the
   enemies you've hit or that hit you in the last few seconds, so one mode can switch to AoE spells on a pack
-  (mobs nothing has touched yet don't count). With Smart Picks on, a press
+  (mobs nothing has touched yet don't count), and `[without:Blood Plague>=1]` counts the ones missing your
+  disease, so a spread like Pestilence only goes while there's something to spread to. With Smart Picks on, a press
   casts what the button shows; without it, hints only change the button.
 - **Smart Picks:** each press casts the spell the Rotation Button shows: the first one that's really ready
   (cooldowns, runes, power, range), with any ready spell whose hint holds going first. So a rotation can react to
