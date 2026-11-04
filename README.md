@@ -27,6 +27,8 @@ your priority list that's ready.
   react to procs, debuffs, runes and cooldowns. It works by clearing your target for an instant before every
   line it didn't pick (a line conditioned on `[exists]` then can't cast) and retargeting right after, so target
   frames flicker while you mash, and it needs a target to cast.
+- **Import and Export:** share a rotation, with all its modes, actions, hints and notes, as one string. Export
+  and Import are at the bottom of the rotation list.
 - **Quiet Errors:** hides the "Not ready yet" errors that a priority list causes on purpose.
 - **Per Spec:** link a rotation to a talent spec, and it switches with your spec.
 - **Preview:** see exactly which macro each mode runs on your character, and which spells were left out

@@ -17,6 +17,7 @@ Quiet.lua
 Trace.lua
 Hints.lua
 Smart.lua
+Codec.lua
 UI\List.lua
 UI\Widgets.lua
 UI\RotationButton.lua

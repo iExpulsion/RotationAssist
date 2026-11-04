@@ -1,8 +1,7 @@
 local _, NS = ...
 local RA = NS.RA
 
--- Controls the editors share, built on the style kit: a multi-line text well, a segmented switch and a labeled
--- checkbox.
+-- Controls the editors share, built on the style kit: a multi-line text well and a labeled checkbox.
 local Widgets = {}
 RA.Widgets = Widgets
 

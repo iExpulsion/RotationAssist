@@ -1,7 +1,7 @@
 local _, NS = ...
 local RA = NS.RA
 
--- The New Rotation sheet (a name and what to start from) and the confirmation popups.
+-- The New Rotation sheet (a name and what to start from), the Export and Import sheet, and the confirmation popups.
 local Dialogs = {}
 RA.Dialogs = Dialogs
 
@@ -101,6 +101,85 @@ end
 
 function Dialogs.NewFrame()
 	return sheet
+end
+
+-- The Export and Import sheet: one text box that holds a rotation string to copy, or takes one pasted in.
+local SHARE_W, SHARE_H = 460, 250
+local share
+
+local function createShare()
+	S.RefreshFonts()
+	local f = CreateFrame("Frame", "RotationAssistShareFrame", UIParent)
+	f:SetSize(SHARE_W, SHARE_H)
+	f:SetPoint("CENTER", 0, 80)
+	f:SetFrameStrata("DIALOG")
+	f:EnableMouse(true)
+	S.Panel(f, { C.window[1], C.window[2], C.window[3], 1 }, C.border)
+	tinsert(UISpecialFrames, "RotationAssistShareFrame")
+	f:HookScript("OnHide", S.Dismiss)
+
+	f.title = S.Text(f, "large")
+	f.title:SetPoint("TOPLEFT", PAD, -PAD)
+	local boxH = SHARE_H - (PAD + 16 + PAD) - (GAP + CONTROL_H + PAD)
+	f.box = RA.Widgets.TextArea(f, "RotationAssistShareText", SHARE_W - 2 * PAD, boxH, function()
+		if f.exported then
+			f.box.edit:SetText(f.exported)
+			f.box.edit:HighlightText()
+		end
+	end)
+	f.box:SetPoint("TOPLEFT", PAD, -(PAD + 16 + PAD))
+	f.box.edit:HookScript("OnEditFocusGained", function(self)
+		if f.exported then self:HighlightText() end
+	end)
+
+	f.close = S.Button(f, "Close", "secondary", 80, function() f:Hide() end)
+	f.close:SetPoint("BOTTOMRIGHT", -PAD, PAD)
+	f.import = S.Button(f, "Import", "primary", 80, function()
+		local rotation, err = RA.Codec.Decode(f.box.edit:GetText())
+		if rotation then
+			rotation.name = RA.Rotation.UniqueName(rotation.name)
+			f:Hide()
+			f.onImport(rotation)
+		else
+			f.note:SetText(S.Hex(C.bad, err))
+		end
+	end)
+	f.import:SetPoint("RIGHT", f.close, "LEFT", -GAP, 0)
+	f.note = S.Text(f, "small", C.muted)
+	f.note:SetPoint("LEFT", f, "BOTTOMLEFT", PAD, PAD + CONTROL_H / 2)
+	f.note:SetPoint("RIGHT", f.import, "LEFT", -GAP, 0)
+	f.note:SetJustifyH("LEFT")
+	return f
+end
+
+local function showShare(title, text, note)
+	share = share or createShare()
+	share.title:SetText(title)
+	share.box.edit:ClearFocus()
+	share.box.edit:SetText(text)
+	share.note:SetText(note)
+	share:Show()
+	return share
+end
+
+function Dialogs.ShowExport(rotation)
+	local f = showShare("Export " .. rotation.name, RA.Codec.Encode(rotation), "Click the Box, Then Press Ctrl+C to Copy")
+	f.exported = f.box.edit:GetText()
+	f.import:Hide()
+	f.close:SetLabel("Close")
+end
+
+-- onImport(rotation) gets the new rotation, already renamed if its name was taken.
+function Dialogs.ShowImport(onImport)
+	local f = showShare("Import Rotation", "", "Paste a Rotation String, Then Click Import")
+	f.exported = nil
+	f.onImport = onImport
+	f.import:Show()
+	f.close:SetLabel("Cancel")
+end
+
+function Dialogs.ShareFrame()
+	return share
 end
 
 StaticPopupDialogs["RA_DELETE"] = {

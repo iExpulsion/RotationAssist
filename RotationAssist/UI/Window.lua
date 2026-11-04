@@ -236,6 +236,7 @@ function Window.Render()
 		renderSidebar()
 		renderStatus()
 		local rotation = Window.Selected()
+		if rotation then frame.export:Enable() else frame.export:Disable() end
 		setShown(frame.main, rotation ~= nil)
 		setShown(frame.empty, rotation == nil)
 		if rotation then renderRotation(rotation) end
@@ -346,9 +347,25 @@ local function createSidebar(f)
 	footer:SetPoint("BOTTOMRIGHT")
 	footer:SetHeight(FOOTER_H)
 	S.Rule(footer, "TOP")
-	local new = S.Button(footer, "New Rotation", "secondary", SIDEBAR_W - 2 * PAD, newRotation,
+	local new = S.Button(footer, "New Rotation", "secondary", 100, newRotation,
 		"Start a blank rotation for your classes, or start from an example.")
 	new:SetPoint("LEFT", PAD, 0)
+	f.export = S.Button(footer, "Export", "secondary", 50, function()
+		local rotation = Window.Selected()
+		if rotation then RA.Dialogs.ShowExport(rotation) end
+	end, "Get the selected rotation as a string to share.")
+	f.export:SetPoint("RIGHT", -PAD, 0)
+	f.import = S.Button(footer, "Import", "secondary", 50, function()
+		RA.Dialogs.ShowImport(function(rotation)
+			RA.Rotation.Add(rotation)
+			state.search = ""
+			frame.search:SetText("")
+			state.collapsed[table.concat(rotation.classes, "/")] = false
+			Window.Select(rotation.name)
+			Window.Message(S.Hex(C.good, "Imported as " .. rotation.name))
+		end)
+	end, "Add a rotation from a string someone shared.")
+	f.import:SetPoint("RIGHT", f.export, "LEFT", -GAP, 0)
 end
 
 local function createHeader(main)
