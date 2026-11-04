@@ -8,7 +8,7 @@ local Runes = {}
 RA.Runes = Runes
 
 local BLOOD, UNHOLY, FROST, DEATH = 1, 2, 3, 4
-local MAX_RUNES = 24
+local RUNES = 6
 local B, U, F = { [BLOOD] = 1 }, { [UNHOLY] = 1 }, { [FROST] = 1 }
 local FU, BFU = { [FROST] = 1, [UNHOLY] = 1 }, { [BLOOD] = 1, [FROST] = 1, [UNHOLY] = 1 }
 
@@ -27,12 +27,11 @@ function Runes.Enough(name)
 	local enough = true
 	if cost and GetRuneCooldown and GetRuneCooldown(1) ~= nil then
 		local ready = { [BLOOD] = 0, [UNHOLY] = 0, [FROST] = 0, [DEATH] = 0 }
-		local i = 1
-		while i <= MAX_RUNES and GetRuneCooldown(i) ~= nil do
+		-- the client raises "Invalid slot" past the last rune rather than returning nil
+		for i = 1, RUNES do
 			local _, _, isReady = GetRuneCooldown(i)
 			local kind = GetRuneType(i)
 			if isReady and ready[kind] then ready[kind] = ready[kind] + 1 end
-			i = i + 1
 		end
 		local short = 0
 		for kind, count in pairs(cost) do short = short + math.max(0, count - ready[kind]) end
