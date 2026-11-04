@@ -143,13 +143,13 @@ Rotation.TEMPLATES = {
 						spell("Deathchill", "[combat]", true),
 						spell("Blood Tap", "[combat]", true),
 						spell("Unbreakable Armor", "[combat]", true),
-						-- first, so it's tried most and gets the runes before Obliterate when diseases are due; the
-						-- timer restarts it before they fall off on long fights
-						once({ "Icy Touch", "Plague Strike" }, "target/combat/14"),
 						spell("Obliterate"),
 						spell("Blood Strike"),
 						spell("Frost Strike"),
+						-- with Glyph of Howling Blast this also keeps Frost Fever up
 						spell("Howling Blast"),
+						-- low, so it's tried now and then and keeps Blood Plague up without taking many runes
+						spell("Plague Strike"),
 						spell("Horn of Winter"),
 					} },
 					{ label = "Lich Form AoE", actions = {
@@ -163,7 +163,7 @@ Rotation.TEMPLATES = {
 				},
 				switch = { kind = "toggle", spell = "Lich Form" },
 				options = { target = true, attack = true, cycle = true },
-				notes = "One Spell per Press is on: each press tries one spell, top ones most often, so mash the key. A Death Knight spell waiting on runes stops the rest of a press, so a plain priority list would stall.\nMelee: diseases once per target (again every 14 seconds, before they fall off), then Obliterate on Frost and Unholy runes, Blood Strike on Blood runes, Frost Strike with Runic Power, Howling Blast when Rime makes it free (or when Obliterate can't reach). Deathchill, Blood Tap and Unbreakable Armor go off on cooldown every press.\nLich Form: Mark of Frost once per target, then Howling Blast on every rune pair, Icy Touch with a leftover rune, Death Coil to spend Runic Power.\nThe Mode key casts Lich Form and moves to the AoE mode in one press; pressing it again leaves Lich Form. Leave it to heal.",
+				notes = "One Spell per Press is on: each press tries one spell, top ones most often, so mash the key. A Death Knight spell waiting on runes stops the rest of a press, so a plain priority list would stall.\nMelee: Obliterate on Frost and Unholy runes, Blood Strike on Blood runes, Frost Strike with Runic Power, Howling Blast (Glyph of Howling Blast keeps Frost Fever up), and Plague Strike now and then to keep Blood Plague up. Deathchill, Blood Tap and Unbreakable Armor go off on cooldown every press.\nLich Form: Mark of Frost once per target, then Howling Blast on every rune pair, Icy Touch with a leftover rune, Death Coil to spend Runic Power.\nThe Mode key casts Lich Form and moves to the AoE mode in one press; pressing it again leaves Lich Form. Leave it to heal.",
 			}
 		end,
 	},
