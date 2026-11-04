@@ -275,9 +275,8 @@ end
 -- Construction ---------------------------------------------------------------------------------------------
 
 local function newRotation()
-	RA.Dialogs.ShowNew(function(name, template)
-		local rotation = template and RA.Rotation.FromTemplate(template, name) or RA.Rotation.New(name)
-		RA.Rotation.Add(rotation)
+	RA.Dialogs.ShowNew(function(name)
+		local rotation = RA.Rotation.Add(RA.Rotation.New(name))
 		state.search = ""
 		frame.search:SetText("")
 		state.collapsed[table.concat(rotation.classes, "/")] = false
@@ -364,7 +363,7 @@ local function createSidebar(f)
 	footer:SetHeight(FOOTER_H)
 	S.Rule(footer, "TOP")
 	local new = S.Button(footer, "New Rotation", "secondary", 100, newRotation,
-		"Start a blank rotation for your classes, or start from an example.")
+		"Start a blank rotation for your classes.")
 	new:SetPoint("LEFT", PAD, 0)
 	f.import = S.Button(footer, "Import", "secondary", 70, function()
 		RA.Dialogs.ShowImport(function(rotation)
@@ -544,7 +543,7 @@ local function createEmpty(f)
 	body:SetPoint("TOP", title, "BOTTOM", 0, -10)
 	body:SetWidth(380)
 	body:SetJustifyH("CENTER")
-	body:SetText("A rotation is a priority list: each press casts the first spell that's ready. Start a blank one, or start from an example and tune it.")
+	body:SetText("A rotation is a priority list: each press casts the first spell that's ready. Make one, or import one someone shared.")
 	local new = S.Button(empty, "New Rotation", "primary", 120, newRotation)
 	new:SetPoint("TOP", body, "BOTTOM", 0, -16)
 	f.empty = empty

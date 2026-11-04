@@ -131,7 +131,7 @@ local function createDetail(parent, width, height)
 		if userInput then edit(function(a) a.when = self:GetText() end) end
 	end)
 	d.triggerLabel = label(d, "Trigger")
-	d.trigger = S.Input(d, "RotationAssistTrigger", inner, "None, or Like [buff:Freezing Fog]", 180, 3)
+	d.trigger = S.Input(d, "RotationAssistTrigger", inner, "None, or Like [buff:Clearcasting]", 180, 3)
 	d.trigger:SetScript("OnTextChanged", function(self, userInput)
 		self:UpdatePlaceholder()
 		if userInput then edit(function(a) a.trigger = self:GetText() end) end
@@ -148,7 +148,7 @@ local function createDetail(parent, width, height)
 		GameTooltip:AddLine("[cast:X]  [nocast:X>30]: you cast it on this target this fight; >30 means over 30 seconds ago", 0.8, 0.8, 0.8, true)
 		GameTooltip:AddLine("[power>=40]  [hp<35]  [targethp<20]", 0.8, 0.8, 0.8, true)
 		GameTooltip:AddLine(("[enemies>=3]: enemies you've hit or that hit you in the last %d seconds, counting your target"):format(RA.Enemies.WINDOW), 0.8, 0.8, 0.8, true)
-		GameTooltip:AddLine("[without:Blood Plague>=1]: how many of those enemies don't have your Blood Plague, for spreading it", 0.8, 0.8, 0.8, true)
+		GameTooltip:AddLine("[without:X>=1]: how many of those enemies don't have your X, for spreading a debuff", 0.8, 0.8, 0.8, true)
 		GameTooltip:AddLine("Commas mean and; [a][b] means a or b.", 0.8, 0.8, 0.8, true)
 		GameTooltip:Show()
 	end)
@@ -169,10 +169,10 @@ local function createDetail(parent, width, height)
 		if userInput then edit(function(a) a.reset = self:GetText() end) end
 	end)
 	d.once = W.Toggle(d, "Once per Reset",
-		"Casts each spell once, then stops until the sequence resets (on a new target, after combat). Without Smart Picks, good for diseases or a mark; with it, a trigger like [nodebuff:Blood Plague] refreshes them when they fall off.",
+		"Casts each spell once, then stops until the sequence resets (on a new target, after combat). Without Smart Picks, good for debuffs you keep up all fight; with it, a trigger like [nodebuff:X] recasts them when they fall off.",
 		function(on) edit(function(a) a.once = on or nil end) end)
 	d.offGcd = W.Toggle(d, "Off the Global Cooldown",
-		"Runs before the other lines on every press, alongside whatever casts: trinkets, racials, Empower Rune Weapon.",
+		"Runs before the other lines on every press, alongside whatever casts: trinkets, racials and cooldowns that don't trigger the global cooldown.",
 		function(on) edit(function(a) a.offGcd = on or nil end) end)
 	d.textLabel = label(d, "Lines")
 	d.text = W.TextArea(d, "RotationAssistActionText", inner, 110, function(text)

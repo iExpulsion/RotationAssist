@@ -87,7 +87,7 @@ local function parseTerm(term)
 		missing = trim(missing)
 		test = function() return COMPARE[countOp](RA.Enemies.Without(missing), limit) end
 	elseif kind == "without" then
-		problem = ("\"%s\" Needs a Count, Like without:Blood Plague>=1"):format(term)
+		problem = ("\"%s\" Needs a Count, Like without:Corruption>=1"):format(term)
 	elseif kind == "buff" or kind == "debuff" or kind == "anydebuff" or kind == "cast" then
 		local negate = no == "no"
 		local name, op, number = rest:match("^(.-)%s*([<>]=?)%s*(%d+%.?%d*)$")
