@@ -133,10 +133,8 @@ function Triggers.Parse(text)
 			for term in body:gmatch("[^,]+") do
 				term = trim(term)
 				if term ~= "" then
-					local lowered = term:gsub("^%a+", string.lower)
-					local test, problem = parseTerm(lowered)
+					local test, problem = parseTerm((term:gsub("^%a+", string.lower)))
 					if test then group[#group + 1] = test else parsed.problems[#parsed.problems + 1] = problem end
-					if lowered:find("^buff:") then group.proc = true end
 				end
 			end
 			parsed.groups[#parsed.groups + 1] = group
@@ -146,19 +144,18 @@ function Triggers.Parse(text)
 	return parsed
 end
 
--- Whether the trigger is met now (no trigger always is), and whether a group that holds checks a buff on you: a
--- proc, which may make the spell instant.
+-- Whether the trigger is met now. No trigger always is.
 function Triggers.Holds(text)
 	local parsed = Triggers.Parse(text)
-	local holds, proc = #parsed.groups == 0, false
+	local holds = #parsed.groups == 0
 	for _, group in ipairs(parsed.groups) do
 		local all = true
 		for _, test in ipairs(group) do
 			if all and not test() then all = false end
 		end
-		if all then holds, proc = true, proc or group.proc == true end
+		if all then holds = true end
 	end
-	return holds, proc
+	return holds
 end
 
 function Triggers.Problems(text)

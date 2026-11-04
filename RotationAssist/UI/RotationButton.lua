@@ -62,21 +62,21 @@ local FINISHERS = {
 }
 
 -- What IsUsableSpell misses: combo points for a finisher, and standing still for a spell with a cast time, unless
--- a proc buff its trigger checks makes it instant.
-local function castableNow(name, proc)
-	local castTime = select(7, GetSpellInfo(name)) or 0
+-- it's marked Cast While Moving.
+local function castableNow(cast)
+	local castTime = select(7, GetSpellInfo(cast.name)) or 0
 	local moving = GetUnitSpeed ~= nil and (GetUnitSpeed("player") or 0) > 0
-	local comboOk = not FINISHERS[name] or (GetComboPoints("player", "target") or 0) > 0
-	return comboOk and not (moving and castTime > 0 and not proc)
+	local comboOk = not FINISHERS[cast.name] or (GetComboPoints("player", "target") or 0) > 0
+	return comboOk and not (moving and castTime > 0 and not cast.moving)
 end
 
 -- Conditions hold, usable, the runes are up, off cooldown (or only on the global cooldown) and in range.
-local function looksReady(cast, proc)
+local function looksReady(cast)
 	local condOk = cast.cond == "" or SecureCmdOptionParse(cast.cond .. " x") == "x"
 	local start, duration = GetSpellCooldown(cast.name)
 	local ready = start == nil or start == 0 or (duration or 0) <= GCD
 	local range = IsSpellInRange(cast.name, "target")
-	return condOk and IsUsableSpell(cast.name) and RA.Runes.Enough(cast.name) and castableNow(cast.name, proc) and ready
+	return condOk and IsUsableSpell(cast.name) and RA.Runes.Enough(cast.name) and castableNow(cast) and ready
 		and range ~= 0
 end
 
@@ -89,9 +89,7 @@ function RB.Predict(casts)
 	local T = RA.Triggers
 	for _, cast in ipairs(casts) do
 		local spell = cast.kind == "spell" and not cast.offGcd
-		local met, proc = false, false
-		if spell and T.Has(cast.trigger) then met, proc = T.Holds(cast.trigger) end
-		if met and looksReady(cast, proc) then return cast, true end
+		if spell and T.Has(cast.trigger) and T.Holds(cast.trigger) and looksReady(cast) then return cast, true end
 	end
 	for _, cast in ipairs(casts) do
 		if not cast.offGcd and not cast.once then

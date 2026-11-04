@@ -174,6 +174,9 @@ local function createDetail(parent, width, height)
 	d.offGcd = W.Toggle(d, "Off the Global Cooldown",
 		"Runs before the other lines on every press, alongside whatever casts: trinkets, racials and cooldowns that don't trigger the global cooldown.",
 		function(on) edit(function(a) a.offGcd = on or nil end) end)
+	d.moving = W.Toggle(d, "Cast While Moving",
+		"Smart Picks passes over a spell with a cast time while you move. Turn this on for one you can cast on the move anyway, like Pyroblast with a [buff:Hot Streak] trigger.",
+		function(on) edit(function(a) a.moving = on or nil end) end)
 	d.textLabel = label(d, "Lines")
 	d.text = W.TextArea(d, "RotationAssistActionText", inner, 110, function(text)
 		edit(function(a)
@@ -210,6 +213,7 @@ local function layoutDetail(d, kind)
 		{ d.resetLabel, d.reset, show = kind == "sequence" },
 		{ d.once, show = kind == "sequence" },
 		{ d.offGcd, show = kind == "spell" or kind == "macro" },
+		{ d.moving, show = kind == "spell" },
 		{ d.textLabel, d.text, show = kind == "steps" or kind == "macro" },
 	}
 	local y = PAD + 16 + 4 + 12 + PAD
@@ -294,6 +298,7 @@ local function subText(action)
 	if action.kind == "sequence" and action.once then parts[#parts + 1] = "Once" end
 	if action.kind == "spell" and RA.Triggers.Has(action.trigger) then parts[#parts + 1] = "Trigger " .. RA.Spells.Trim(action.trigger) end
 	if action.offGcd then parts[#parts + 1] = "Off-GCD" end
+	if action.kind == "spell" and action.moving then parts[#parts + 1] = "While Moving" end
 	return #parts > 0 and table.concat(parts, "  ") or nil
 end
 
@@ -318,6 +323,7 @@ local function renderDetail(rotation, state, compiled)
 		setText(d.spells, RA.Spells.ListText(action.spells))
 		setText(d.reset, action.reset)
 		d.offGcd:SetChecked(action.offGcd)
+		d.moving:SetChecked(action.moving)
 		d.once:SetChecked(action.once)
 		d.text:SetValue(action.kind == "steps" and table.concat(action.steps or {}, "\n") or action.text)
 		d.textLabel:SetText(action.kind == "steps" and "Steps, One per Line (a Spell Name or a Macro Line)" or "Lines")

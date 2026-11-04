@@ -4,7 +4,7 @@ local RA = NS.RA
 -- Rotations: one or more modes, each an ordered list of actions the button tries top to bottom.
 --
 -- rotation = { name, classes, modes = { { label, actions } }, switch, options, notes }
--- action   = { kind = "spell", spell, when, offGcd, trigger }   (trigger: see Triggers.lua; steers the suggestion and Smart Picks)
+-- action   = { kind = "spell", spell, when, offGcd, moving, trigger }   (trigger: see Triggers.lua; steers the suggestion and Smart Picks)
 --          | { kind = "sequence", spells = { ... }, reset, when, once }   (once: stop after the last spell until reset)
 --          | { kind = "steps", steps = { "line", ... } }
 --          | { kind = "macro", text, offGcd }
