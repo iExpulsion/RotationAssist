@@ -28,10 +28,13 @@ function Runes.Enough(name)
 	if cost and GetRuneCooldown and GetRuneCooldown(1) ~= nil then
 		local ready = { [BLOOD] = 0, [UNHOLY] = 0, [FROST] = 0, [DEATH] = 0 }
 		-- the client raises "Invalid slot" past the last rune rather than returning nil
+		-- some clients leave the runeReady flag false on idle runes, so the cooldown decides
+		local now = GetTime()
 		for i = 1, RUNES do
-			local _, _, isReady = GetRuneCooldown(i)
+			local start, duration, isReady = GetRuneCooldown(i)
 			local kind = GetRuneType(i)
-			if isReady and ready[kind] then ready[kind] = ready[kind] + 1 end
+			local up = isReady or (start or 0) == 0 or (start + (duration or 0)) <= now
+			if up and ready[kind] then ready[kind] = ready[kind] + 1 end
 		end
 		local short = 0
 		for kind, count in pairs(cost) do short = short + math.max(0, count - ready[kind]) end
