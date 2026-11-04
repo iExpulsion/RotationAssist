@@ -57,6 +57,8 @@ Changes made in combat apply as soon as combat ends.
 - `/rota lock`, `/rota unlock`: lock or unlock the Rotation Button's position
 - `/rota macros`: make the RA Rotation and RA Mode macros
 - `/rota quiet`: turn Quiet Errors on or off
+- `/rota trace`: after each press, list the spells sent, cast or failed, and the errors, to see which line took
+  the press
 - `/rota minimap`: show or hide the minimap button
 - `/rota reset`: move the window and the Rotation Button back to the middle of the screen
 

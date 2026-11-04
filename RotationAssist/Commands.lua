@@ -4,7 +4,7 @@ local RA = NS.RA
 local function help()
 	RA:Print("v%s commands (/rota alone opens the window):", RA.version)
 	RA:Print("  /rota button (show or hide the Rotation Button) | lock | unlock")
-	RA:Print("  /rota macros | quiet | minimap | reset")
+	RA:Print("  /rota macros | quiet | trace | minimap | reset")
 end
 
 local handlers = {}
@@ -26,6 +26,10 @@ handlers.macros = function() RA:Print(RA.Keys.MakeMacros()) end
 handlers.quiet = function()
 	RA.Quiet.Set(not RA.db.quiet)
 	RA:Print(RA.db.quiet and "Quiet Errors on." or "Quiet Errors off.")
+end
+handlers.trace = function()
+	RA:Print(RA.Trace.Toggle() and "Trace on: each press lists the spells sent, cast or failed, and the errors. /rota trace stops it."
+		or "Trace off.")
 end
 handlers.minimap = function() RA.MinimapButton.Toggle() end
 handlers.reset = function()
