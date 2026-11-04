@@ -131,7 +131,7 @@ local function createDetail(parent, width, height)
 		if userInput then edit(function(a) a.when = self:GetText() end) end
 	end)
 	d.hintLabel = label(d, "Hint")
-	d.hint = S.Input(d, "RotationAssistHint", inner, "None, or Like [buff:Freezing Fog] or [nodebuff:Blood Plague<3]", 200)
+	d.hint = S.Input(d, "RotationAssistHint", inner, "None, or Like [buff:Freezing Fog]", 200)
 	d.hint:SetScript("OnTextChanged", function(self, userInput)
 		self:UpdatePlaceholder()
 		if userInput then edit(function(a) a.hint = self:GetText() end) end
@@ -139,14 +139,15 @@ local function createDetail(parent, width, height)
 	d.hint:HookScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 		GameTooltip:AddLine("Hint", 1, 1, 1)
-		GameTooltip:AddLine("Only for the Rotation Button's suggestion: the button can't see buffs or debuffs, so what a press casts stays the same. While the hint holds and the spell is ready, the button shows it first and glows; otherwise it isn't suggested.", 0.8, 0.8, 0.8, true)
+		GameTooltip:AddLine("While the hint holds and the spell is ready, the Rotation Button shows it first and glows. While it doesn't, the spell is passed over.", 0.8, 0.8, 0.8, true)
+		GameTooltip:AddLine("With Smart Picks on, presses cast what the button shows. Without it, presses still go down the list and the hint only changes the button.", 0.8, 0.8, 0.8, true)
 		GameTooltip:AddLine(" ")
-		GameTooltip:AddLine("[buff:Name]  [nobuff:Name]  on you", 0.8, 0.8, 0.8)
-		GameTooltip:AddLine("[debuff:Name]  [nodebuff:Name<3]  yours on the target, <3 is under 3 seconds left", 0.8, 0.8, 0.8)
-		GameTooltip:AddLine("[anydebuff:Name]  [noanydebuff:Name]  on the target from anyone", 0.8, 0.8, 0.8)
-		GameTooltip:AddLine("[nocast:Name]  [nocast:Name>30]  not cast on this target this fight, or over 30 seconds ago", 0.8, 0.8, 0.8)
-		GameTooltip:AddLine("[power>=40]  [hp<35]  [targethp<20]", 0.8, 0.8, 0.8)
-		GameTooltip:AddLine("Commas mean and; [a][b] means a or b.", 0.8, 0.8, 0.8)
+		GameTooltip:AddLine("[buff:X]  [nobuff:X]: on you", 0.8, 0.8, 0.8, true)
+		GameTooltip:AddLine("[debuff:X]  [nodebuff:X<3]: yours on the target; <3 means under 3 seconds left", 0.8, 0.8, 0.8, true)
+		GameTooltip:AddLine("[anydebuff:X]  [noanydebuff:X]: on the target from anyone", 0.8, 0.8, 0.8, true)
+		GameTooltip:AddLine("[cast:X]  [nocast:X>30]: you cast it on this target this fight; >30 means over 30 seconds ago", 0.8, 0.8, 0.8, true)
+		GameTooltip:AddLine("[power>=40]  [hp<35]  [targethp<20]", 0.8, 0.8, 0.8, true)
+		GameTooltip:AddLine("Commas mean and; [a][b] means a or b.", 0.8, 0.8, 0.8, true)
 		GameTooltip:Show()
 	end)
 	d.hint:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -166,7 +167,7 @@ local function createDetail(parent, width, height)
 		if userInput then edit(function(a) a.reset = self:GetText() end) end
 	end)
 	d.once = W.Toggle(d, "Once per Reset",
-		"Casts each spell once, then stops until the sequence resets (on a new target, after combat). Good for diseases or a mark the button can't see.",
+		"Casts each spell once, then stops until the sequence resets (on a new target, after combat). Without Smart Picks, good for diseases or a mark; with it, a hint like [nodebuff:Blood Plague] refreshes them when they fall off.",
 		function(on) edit(function(a) a.once = on or nil end) end)
 	d.offGcd = W.Toggle(d, "Off the Global Cooldown",
 		"Runs before the other lines on every press, alongside whatever casts: trinkets, racials, Empower Rune Weapon.",
@@ -230,7 +231,7 @@ function Editor.Create(parent, width, height)
 	f:SetSize(width, height)
 	frame = f
 
-	f.modes = W.Segmented(f, 220, function(index)
+	f.modes = S.Dropdown(f, width - 90 - 150 - 56 - 4 * GAP, function(index)
 		S.Dismiss()
 		RA.Window.state.mode = index
 		RA.Window.state.action = nil
@@ -329,10 +330,11 @@ end
 function Editor.Render(rotation, state)
 	local mode = currentMode(rotation, state)
 	local options = {}
-	for i, m in ipairs(rotation.modes) do options[i] = { value = i, text = m.label ~= "" and m.label or ("Mode " .. i) } end
-	frame.modes:SetWidth(math.min(110 * #options, frame:GetWidth() - 320))
+	for i, m in ipairs(rotation.modes) do
+		options[i] = { value = i, text = ("%d. %s"):format(i, m.label ~= "" and m.label or ("Mode " .. i)) }
+	end
 	frame.modes:SetOptions(options)
-	frame.modes:SetValue(state.mode)
+	frame.modes:SetText(options[state.mode].text)
 	frame.kind:SetText(RA.Rotation.KINDS[1].text)
 	for _, k in ipairs(RA.Rotation.KINDS) do
 		if k.value == frame.kind.value then frame.kind:SetText(k.text) end

@@ -21,7 +21,8 @@ your priority list that's ready.
 - **Hints:** give a spell a hint like `[buff:Freezing Fog]` or `[nodebuff:Blood Plague<3]`, and the Rotation
   Button glows and shows that spell while the hint holds. Hints can check your buffs, your debuffs on the target,
   power and health, debuffs from anyone (`[noanydebuff:Mark of Frost]`), and for spells that leave no aura to
-  see, whether you've cast them on this target this fight (`[nocast:Icy Touch]`).
+  see, whether you've cast them on this target this fight (`[nocast:Icy Touch]`). With Smart Picks on, a press
+  casts what the button shows; without it, hints only change the button.
 - **Smart Picks:** each press casts the spell the Rotation Button suggests, hints included, so a rotation can
   react to procs, debuffs, runes and cooldowns. It works by clearing your target for an instant before every
   line it didn't pick (a line conditioned on `[exists]` then can't cast) and retargeting right after, so target

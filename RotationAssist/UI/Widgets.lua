@@ -51,37 +51,6 @@ function Widgets.TextArea(parent, name, width, height, onChange, fontSize)
 	return box
 end
 
--- Buttons side by side that overlap by their 1px border; the selected one is drawn as "selected".
--- SetOptions({ { value, text, tooltip } }) and SetValue(value); clicking calls onSelect(value).
-function Widgets.Segmented(parent, width, onSelect)
-	local seg = CreateFrame("Frame", nil, parent)
-	seg:SetSize(width, S.CONTROL_H)
-	seg.buttons = {}
-	function seg:SetOptions(options)
-		local w = math.floor((self:GetWidth() + #options - 1) / #options)
-		for i, opt in ipairs(options) do
-			local b = self.buttons[i]
-			if not b then
-				b = S.Button(self, "", "secondary", w)
-				self.buttons[i] = b
-			end
-			b:SetWidth(w)
-			b:ClearAllPoints()
-			b:SetPoint("LEFT", (i - 1) * (w - 1), 0)
-			b.label:SetText(opt.text)
-			b.value = opt.value
-			b.tooltipText = opt.tooltip
-			b:SetScript("OnClick", function() onSelect(opt.value) end)
-			b:Show()
-		end
-		for i = #options + 1, #self.buttons do self.buttons[i]:Hide() end
-	end
-	function seg:SetValue(value)
-		for _, b in ipairs(self.buttons) do b:SetKind(b.value == value and "selected" or "secondary") end
-	end
-	return seg
-end
-
 -- A checkbox with a clickable label. onClick(on) gets the new state.
 function Widgets.Toggle(parent, label, tooltip, onClick)
 	local row = CreateFrame("Button", nil, parent)
