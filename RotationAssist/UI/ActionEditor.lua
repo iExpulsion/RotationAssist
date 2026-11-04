@@ -125,13 +125,13 @@ local function createDetail(parent, width, height)
 	d.status:SetWidth(inner)
 
 	d.whenLabel = label(d, "Conditions")
-	d.when = S.Input(d, "RotationAssistWhen", inner, "Always, or Like [harm] or [mod:shift]", 200)
+	d.when = S.Input(d, "RotationAssistWhen", inner, "Always, or Like [harm] or [mod:shift]", 150, 2)
 	d.when:SetScript("OnTextChanged", function(self, userInput)
 		self:UpdatePlaceholder()
 		if userInput then edit(function(a) a.when = self:GetText() end) end
 	end)
 	d.hintLabel = label(d, "Hint")
-	d.hint = S.Input(d, "RotationAssistHint", inner, "None, or Like [buff:Freezing Fog]", 200)
+	d.hint = S.Input(d, "RotationAssistHint", inner, "None, or Like [buff:Freezing Fog]", 180, 3)
 	d.hint:SetScript("OnTextChanged", function(self, userInput)
 		self:UpdatePlaceholder()
 		if userInput then edit(function(a) a.hint = self:GetText() end) end

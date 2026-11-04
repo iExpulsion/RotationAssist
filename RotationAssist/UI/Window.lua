@@ -9,7 +9,7 @@ RA.Window = Window
 local S = RA.Style
 local C = S.colors
 
-local W, H = 780, 560
+local W, H = 900, 640
 local PAD, GAP, CONTROL_H = S.PAD, S.GAP, S.CONTROL_H
 local TITLE_H, SIDEBAR_W, TABS_H = 36, 240, 32
 local HEADER_H = PAD + CONTROL_H + GAP + CONTROL_H + GAP
