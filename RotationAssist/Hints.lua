@@ -2,12 +2,14 @@ local _, NS = ...
 local RA = NS.RA
 
 -- Hints: conditions the secure button can't check (buffs, procs, debuffs, health, power), written like macro
--- conditions. They only change what the Rotation Button suggests; what a press casts stays the same.
+-- conditions. They steer the Rotation Button's suggestion, and with Smart Picks what a press casts.
 --
 --   [buff:Freezing Fog]            the player has the buff
 --   [nobuff:Horn of Winter]        the player doesn't have the buff
 --   [nodebuff:Blood Plague<3]      the target has none of the player's Blood Plague, or it ends within 3 seconds
 --   [debuff:Frost Fever>5]         the player's Frost Fever on the target has more than 5 seconds left
+--   [nocast:Mark of Frost]         the player hasn't cast it on this target this fight (for spells with no
+--                                  aura to see); [nocast:X>30] also holds when the last one was over 30s ago
 --   [power>=40] [hp<35] [targethp<20]
 --
 -- Terms in a group must all hold; any one group holding is enough ("[buff:A][buff:B]" is A or B).
@@ -26,14 +28,36 @@ local COMPARE = {
 }
 
 -- The aura on the unit (the player's own when it's a debuff) and its seconds left; permanent auras never run out.
+-- For cast terms it's whether the player cast it on the current target, and how many seconds ago.
+local casts = {}
 local function aura(kind, name)
-	local unit, filter = "player", "HELPFUL"
-	if kind == "debuff" then unit, filter = "target", "HARMFUL|PLAYER" end
-	local found, _, _, _, _, _, expires = UnitAura(unit, name, nil, filter)
-	local left
-	if found then left = (expires and expires > 0) and (expires - GetTime()) or math.huge end
-	return found ~= nil, left
+	local present, left
+	if kind == "cast" then
+		local at = casts[name] and casts[name][UnitGUID("target") or ""]
+		present, left = at ~= nil, at and (GetTime() - at)
+	else
+		local unit, filter = "player", "HELPFUL"
+		if kind == "debuff" then unit, filter = "target", "HARMFUL|PLAYER" end
+		local found, _, _, _, _, _, expires = UnitAura(unit, name, nil, filter)
+		present = found ~= nil
+		if found then left = (expires and expires > 0) and (expires - GetTime()) or math.huge end
+	end
+	return present, left
 end
+
+-- the target when the cast lands; Smart Picks has put it back by then
+local tracker = CreateFrame("Frame")
+tracker:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+tracker:RegisterEvent("PLAYER_REGEN_ENABLED")
+tracker:SetScript("OnEvent", function(_, event, unit, spell)
+	local guid = UnitGUID("target")
+	if event == "PLAYER_REGEN_ENABLED" then
+		casts = {}
+	elseif unit == "player" and spell and guid then
+		casts[spell] = casts[spell] or {}
+		casts[spell][guid] = GetTime()
+	end
+end)
 
 local function percent(unit)
 	local max = UnitHealthMax(unit) or 0
@@ -50,7 +74,7 @@ local VALUES = {
 local function parseTerm(term)
 	local test, problem
 	local no, kind, rest = term:match("^(n?o?)(%a+):%s*(.+)$")
-	if kind == "buff" or kind == "debuff" then
+	if kind == "buff" or kind == "debuff" or kind == "cast" then
 		local negate = no == "no"
 		local name, op, number = rest:match("^(.-)%s*([<>]=?)%s*(%d+%.?%d*)$")
 		name = trim(name or rest)
@@ -59,7 +83,7 @@ local function parseTerm(term)
 		else
 			local limit = op and tonumber(number)
 			test = function()
-				-- debuff terms need an enemy target, so nodebuff doesn't light up with nothing targeted
+				-- debuff and cast terms need an enemy target, so nodebuff doesn't light up with nothing targeted
 				local can = kind == "buff" or (UnitExists("target") and UnitCanAttack("player", "target"))
 				local present, left = aura(kind, name)
 				local holds = present
