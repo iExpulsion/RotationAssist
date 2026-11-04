@@ -8,7 +8,9 @@ local RA = NS.RA
 --   [nobuff:Horn of Winter]        the player doesn't have the buff
 --   [nodebuff:Blood Plague<3]      the target has none of the player's Blood Plague, or it ends within 3 seconds
 --   [debuff:Frost Fever>5]         the player's Frost Fever on the target has more than 5 seconds left
---   [nocast:Mark of Frost]         the player hasn't cast it on this target this fight (for spells with no
+--   [noanydebuff:Mark of Frost]    the target has no Mark of Frost from anyone (the server credits the mark to
+--                                  the target itself, so plain nodebuff never sees it)
+--   [nocast:Icy Touch]             the player hasn't cast it on this target this fight (for spells with no
 --                                  aura to see); [nocast:X>30] also holds when the last one was over 30s ago
 --   [power>=40] [hp<35] [targethp<20]
 --
@@ -38,6 +40,7 @@ local function aura(kind, name)
 	else
 		local unit, filter = "player", "HELPFUL"
 		if kind == "debuff" then unit, filter = "target", "HARMFUL|PLAYER" end
+		if kind == "anydebuff" then unit, filter = "target", "HARMFUL" end
 		local found, _, _, _, _, _, expires = UnitAura(unit, name, nil, filter)
 		present = found ~= nil
 		if found then left = (expires and expires > 0) and (expires - GetTime()) or math.huge end
@@ -74,7 +77,7 @@ local VALUES = {
 local function parseTerm(term)
 	local test, problem
 	local no, kind, rest = term:match("^(n?o?)(%a+):%s*(.+)$")
-	if kind == "buff" or kind == "debuff" or kind == "cast" then
+	if kind == "buff" or kind == "debuff" or kind == "anydebuff" or kind == "cast" then
 		local negate = no == "no"
 		local name, op, number = rest:match("^(.-)%s*([<>]=?)%s*(%d+%.?%d*)$")
 		name = trim(name or rest)

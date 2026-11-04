@@ -151,8 +151,8 @@ Rotation.TEMPLATES = {
 					} },
 					{ label = "Lich Form AoE", actions = {
 						spell("Deathchill", "[combat]", true),
-						-- it leaves no aura the addon can see, so the hint goes by the player's own casts
-						spell("Mark of Frost", nil, nil, "[nocast:Mark of Frost]"),
+						-- the mark's debuff is credited to the target, and Frost damage uses up its stacks, so recast it when it's gone
+						spell("Mark of Frost", nil, nil, "[noanydebuff:Mark of Frost]"),
 						spell("Howling Blast"),
 						spell("Icy Touch"),
 						spell("Death Coil"),
@@ -161,7 +161,7 @@ Rotation.TEMPLATES = {
 				},
 				switch = { kind = "toggle", spell = "Lich Form" },
 				options = { target = true, attack = true, smart = true },
-				notes = "Smart Picks is on: each press casts the spell the Rotation Button shows. If presses stall on a spell waiting for runes, turn on One Spell per Press in the Modes tab instead.\nMelee: Obliterate on Frost and Unholy runes, Blood Strike on Blood runes, Frost Strike with Runic Power. Howling Blast when Rime is up or Frost Fever is about to fall off, Plague Strike when Blood Plague is (the button glows for these). Deathchill, Blood Tap and Unbreakable Armor go off on cooldown every press.\nLich Form: Mark of Frost once per target each fight, then Howling Blast on every rune pair, Icy Touch with a leftover rune, Death Coil to spend Runic Power.\nThe Mode key casts Lich Form and moves to the AoE mode in one press; pressing it again leaves Lich Form. Leave it to heal.",
+				notes = "Smart Picks is on: each press casts the spell the Rotation Button shows. If presses stall on a spell waiting for runes, turn on One Spell per Press in the Modes tab instead.\nMelee: Obliterate on Frost and Unholy runes, Blood Strike on Blood runes, Frost Strike with Runic Power. Howling Blast when Rime is up or Frost Fever is about to fall off, Plague Strike when Blood Plague is (the button glows for these). Deathchill, Blood Tap and Unbreakable Armor go off on cooldown every press.\nLich Form: Mark of Frost whenever the target doesn't have it (Frost damage uses up its stacks), then Howling Blast on every rune pair, Icy Touch with a leftover rune, Death Coil to spend Runic Power.\nThe Mode key casts Lich Form and moves to the AoE mode in one press; pressing it again leaves Lich Form. Leave it to heal.",
 			}
 		end,
 	},
