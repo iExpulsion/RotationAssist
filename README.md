@@ -61,7 +61,7 @@ Every cast still needs a key press.
    example.
 2. On the **Actions** tab, drag spells in from your spellbook or type their names, and order them from most to
    least important. Mark trinkets and other off-GCD actions as **Off the Global Cooldown**.
-3. On the **Keys** tab, set the **Rotation Key** (and a **Mode Key** if you use modes), or make the action bar
+3. In **Settings** (top right of the window), set the **Rotation Key** (and a **Mode Key** if you use modes), or make the action bar
    macros.
 4. Click **Use Rotation** to link it to your active spec.
 

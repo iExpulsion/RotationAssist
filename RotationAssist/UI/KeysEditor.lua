@@ -1,8 +1,8 @@
 local _, NS = ...
 local RA = NS.RA
 
--- The Keys tab: the Rotation and Mode keys, action bar macros, the on-screen Rotation Button and Quiet Errors.
--- These are the same for every rotation; the keys are per character.
+-- The Settings view: the Rotation and Mode keys, action bar macros, the on-screen Rotation Button and Quiet
+-- Errors. These are the same for every rotation; the keys are per character.
 local Editor = {}
 RA.KeysEditor = Editor
 
@@ -115,7 +115,7 @@ function Editor.Render()
 	elseif InCombatLockdown() then
 		summary = S.Hex(C.warn, "Key and Button Changes Apply After Combat")
 	else
-		summary = "Keys and the Rotation Button Are the Same for Every Rotation"
+		summary = "The Same for Every Rotation"
 	end
 	return summary
 end

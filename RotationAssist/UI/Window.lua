@@ -19,15 +19,15 @@ Window.BODY_H = H - TITLE_H - HEADER_H - TABS_H - PAD - FOOTER_H - PAD
 local TABS = {
 	{ key = "actions", label = "Actions" },
 	{ key = "modes", label = "Modes" },
-	{ key = "keys", label = "Keys" },
 	{ key = "preview", label = "Preview" },
 	{ key = "notes", label = "Notes" },
 }
-local EDITORS = { actions = "ActionEditor", modes = "ModeEditor", keys = "KeysEditor", preview = "PreviewEditor" }
+local EDITORS = { actions = "ActionEditor", modes = "ModeEditor", preview = "PreviewEditor" }
 local SPECS_KEY = "\1specs"
 
 local frame
-local state = { selected = nil, tab = "actions", mode = 1, action = nil, collapsed = {}, search = "" }
+-- settings: the Settings view (keys, the Rotation Button, errors) shows in place of the selected rotation
+local state = { selected = nil, tab = "actions", mode = 1, action = nil, collapsed = {}, search = "", settings = false }
 Window.state = state
 
 local function setShown(f, shown)
@@ -41,7 +41,13 @@ end
 function Window.Select(name)
 	S.Dismiss()
 	state.selected = name
-	state.mode, state.action, state.message = 1, nil, nil
+	state.mode, state.action, state.message, state.settings = 1, nil, nil, false
+	Window.Render()
+end
+
+function Window.ShowSettings(on)
+	S.Dismiss()
+	state.settings, state.message = on, nil
 	Window.Render()
 end
 
@@ -113,7 +119,7 @@ local function renderSidebar()
 					text = S.Hex(active and C.good or C.muted, row.group) .. "   " .. rotation.name,
 					status = active and S.Hex(C.good, "Active") or nil,
 					indent = 12,
-					selected = rotation.name == state.selected,
+					selected = rotation.name == state.selected and not state.settings,
 					onClick = function() Window.Select(rotation.name) end,
 				})
 			end
@@ -147,7 +153,7 @@ local function renderSidebar()
 				list:Add({
 					text = rotation.name,
 					indent = nested and 24 or 12,
-					selected = rotation.name == state.selected,
+					selected = rotation.name == state.selected and not state.settings,
 					onClick = function() Window.Select(rotation.name) end,
 				})
 			end
@@ -236,10 +242,18 @@ function Window.Render()
 		renderSidebar()
 		renderStatus()
 		local rotation = Window.Selected()
-		if rotation then frame.export:Enable() else frame.export:Disable() end
-		setShown(frame.main, rotation ~= nil)
-		setShown(frame.empty, rotation == nil)
-		if rotation then renderRotation(rotation) end
+		local settings = state.settings
+		if rotation and not settings then frame.export:Enable() else frame.export:Disable() end
+		frame.settingsButton:SetKind(settings and "selected" or "ghost")
+		setShown(frame.settings, settings)
+		setShown(frame.main, rotation ~= nil and not settings)
+		setShown(frame.empty, rotation == nil and not settings)
+		if settings then
+			local summary = RA.KeysEditor.Render()
+			frame.settings.summary:SetText(state.message or summary or "")
+		elseif rotation then
+			renderRotation(rotation)
+		end
 	end
 end
 
@@ -308,8 +322,11 @@ local function createTitleBar(f)
 	local inset = (TITLE_H - CONTROL_H) / 2
 	local close = S.Button(bar, "Close", "ghost", 56, function() f:Hide() end)
 	close:SetPoint("RIGHT", -inset, 0)
+	f.settingsButton = S.Button(bar, "Settings", "ghost", 70, function() Window.ShowSettings(not state.settings) end,
+		"Keys, the Rotation Button and errors. These are the same for every rotation.")
+	f.settingsButton:SetPoint("RIGHT", close, "LEFT", -GAP, 0)
 	f.statusText = S.Text(bar, "small", C.muted)
-	f.statusText:SetPoint("RIGHT", close, "LEFT", -GAP, 0)
+	f.statusText:SetPoint("RIGHT", f.settingsButton, "LEFT", -2 * GAP, 0)
 	f.statusDot = S.Solid(bar, "ARTWORK", C.muted)
 	f.statusDot:SetSize(8, 8)
 	f.statusDot:SetPoint("RIGHT", f.statusText, "LEFT", -GAP, 0)
@@ -534,6 +551,28 @@ local function createEmpty(f)
 	f.empty = empty
 end
 
+local function createSettings(f)
+	local pane = CreateFrame("Frame", nil, f)
+	pane:SetPoint("TOPLEFT", SIDEBAR_W, -TITLE_H)
+	pane:SetPoint("BOTTOMRIGHT")
+	local title = S.Text(pane, "large")
+	title:SetPoint("TOPLEFT", PAD, -PAD)
+	title:SetText("Settings")
+	local top = PAD + CONTROL_H + GAP
+	pane.keys = RA.KeysEditor.Create(pane, Window.BODY_W, H - TITLE_H - top - FOOTER_H - PAD)
+	pane.keys:SetPoint("TOPLEFT", PAD, -top)
+	local footer = CreateFrame("Frame", nil, pane)
+	footer:SetPoint("BOTTOMLEFT")
+	footer:SetPoint("BOTTOMRIGHT")
+	footer:SetHeight(FOOTER_H)
+	S.Rule(footer, "TOP")
+	pane.summary = S.Text(footer, "small", C.muted)
+	pane.summary:SetPoint("LEFT", PAD, 0)
+	pane.summary:SetPoint("RIGHT", -PAD, 0)
+	pane:Hide()
+	f.settings = pane
+end
+
 local function create()
 	S.RefreshFonts()
 	local f = CreateFrame("Frame", "RotationAssistFrame", UIParent)
@@ -554,6 +593,7 @@ local function create()
 	createSidebar(f)
 	createMain(f)
 	createEmpty(f)
+	createSettings(f)
 
 	f:SetScript("OnShow", function()
 		PlaySound("igCharacterInfoOpen")
