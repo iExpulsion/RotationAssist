@@ -9,7 +9,6 @@ RA.Compiler = Compiler
 
 Compiler.MAX_MACRO, Compiler.MAX_LINE = 1023, 255
 Compiler.STEP_BUTTON = "RotationAssistStep"
-Compiler.LINE_BUTTON = "RotationAssistLine"
 
 local trim = RA.Spells.Trim
 
@@ -46,14 +45,13 @@ local function stepLine(line)
 end
 
 -- One mode to { text, lines, status = { [actionIndex] = "ok" | "skipped" | "partial" }, skipped = { names },
--- casts = { { index, kind, name, cond, offGcd } }, steps = { { lines } }, separate = { line }, warnings = { text } }.
--- Steps blocks get step buttons numbered from firstStep; with Run Each Line Separately, every line that isn't
--- off the global cooldown runs from its own line button, numbered from firstLine.
-function Compiler.CompileMode(rotation, mode, env, firstStep, firstLine)
+-- casts = { { index, kind, name, cond, offGcd } }, steps = { { lines } }, warnings = { text } }. Steps blocks get
+-- step buttons numbered from firstStep.
+function Compiler.CompileMode(rotation, mode, env, firstStep)
 	env = env or Compiler.env
 	local options = rotation.options or {}
 	local guard = options.channels and "nochanneling" or nil
-	local result = { lines = {}, status = {}, skipped = {}, casts = {}, steps = {}, separate = {}, warnings = {} }
+	local result = { lines = {}, status = {}, skipped = {}, casts = {}, steps = {}, warnings = {} }
 	local early, late = {}, {}
 
 	local function emit(action, line)
@@ -128,14 +126,7 @@ function Compiler.CompileMode(rotation, mode, env, firstStep, firstLine)
 	if options.attack then lines[#lines + 1] = "/startattack [harm,nodead]" end
 	if options.pet then lines[#lines + 1] = "/petattack [harm,nodead]" end
 	for _, line in ipairs(early) do lines[#lines + 1] = line end
-	for _, line in ipairs(late) do
-		if options.separate and line:sub(1, 7) ~= "/click " then
-			lines[#lines + 1] = "/click " .. Compiler.LINE_BUTTON .. ((firstLine or 1) + #result.separate)
-			result.separate[#result.separate + 1] = line
-		else
-			lines[#lines + 1] = line
-		end
-	end
+	for _, line in ipairs(late) do lines[#lines + 1] = line end
 	result.text = table.concat(lines, "\n")
 
 	if #early + #late == 0 then result.warnings[#result.warnings + 1] = "Nothing to Cast in This Mode" end
@@ -163,16 +154,15 @@ function Compiler.RuleModes(rule, count)
 	return named, bad
 end
 
--- Every mode, plus how modes switch: { modes = { result }, steps = { { lines } }, separate = { line },
--- toggle = { enter = { [mode] = macro } } or nil, rule = text or nil, warnings }.
+-- Every mode, plus how modes switch: { modes = { result }, steps = { { lines } }, toggle = { enter = { [mode] =
+-- macro } } or nil, rule = text or nil, warnings }.
 function Compiler.Compile(rotation, env)
 	env = env or Compiler.env
-	local out = { modes = {}, steps = {}, separate = {}, warnings = {} }
+	local out = { modes = {}, steps = {}, warnings = {} }
 	for i, mode in ipairs(rotation.modes or {}) do
-		local result = Compiler.CompileMode(rotation, mode, env, #out.steps + 1, #out.separate + 1)
+		local result = Compiler.CompileMode(rotation, mode, env, #out.steps + 1)
 		out.modes[i] = result
 		for _, step in ipairs(result.steps) do out.steps[#out.steps + 1] = step end
-		for _, line in ipairs(result.separate) do out.separate[#out.separate + 1] = line end
 	end
 	local count = #out.modes
 	local switch = rotation.switch or { kind = "none" }

@@ -29,11 +29,6 @@ local function previewText(rotation, compiled)
 		for i, line in ipairs(step.lines) do parts[#parts + 1] = ("%d: %s"):format(i, line) end
 		parts[#parts + 1] = ""
 	end
-	if #compiled.separate > 0 then
-		parts[#parts + 1] = S.Hex(C.heading, "Separate Lines") .. "  " .. S.Hex(C.muted, "each clicked in order, on its own")
-		for n, line in ipairs(compiled.separate) do parts[#parts + 1] = ("%d: %s"):format(n, line) end
-		parts[#parts + 1] = ""
-	end
 	if compiled.toggle then
 		parts[#parts + 1] = S.Hex(C.heading, "Mode Key")
 		for i = 1, #compiled.modes do

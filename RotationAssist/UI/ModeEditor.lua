@@ -30,7 +30,6 @@ local OPTIONS = {
 	{ key = "attack", label = "Start Auto-Attack", tip = "Each press starts melee or ranged auto-attack on a living enemy." },
 	{ key = "pet", label = "Send the Pet to Attack", tip = "Each press sends your pet at your target." },
 	{ key = "channels", label = "Don't Interrupt Channels", tip = "Presses do nothing while you channel a spell like Blizzard, so mashing can't cut it short." },
-	{ key = "separate", label = "Run Each Line Separately", tip = "Each spell runs from its own button, clicked in order. A spell on the global cooldown that isn't ready (like a Death Knight spell waiting on runes) stops the rest of a macro; this way it only stops its own line." },
 }
 
 local function edit(fn)

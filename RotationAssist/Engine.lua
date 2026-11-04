@@ -12,7 +12,7 @@ Engine.BUTTON, Engine.TOGGLE = "RotationAssistButton", "RotationAssistToggle"
 Engine.pending = false
 
 local exec, toggle
-local stepButtons, lineButtons = {}, {}
+local stepButtons = {}
 local shownModes, shownSteps = 0, {}
 
 -- Runs in the restricted environment when the mode state driver changes.
@@ -79,20 +79,6 @@ local function stepButton(n)
 end
 
 -- The rotation and mode buttons, made on first use (at login, by whichever file asks first).
--- Run Each Line Separately: a plain macro button per line, clicked in order by the rotation button. Each click runs
--- its own macro, so a line that stops its macro (a rune spell that isn't ready) leaves the next line to run.
-local function lineButton(n)
-	local b = lineButtons[n]
-	if not b then
-		b = CreateFrame("Button", RA.Compiler.LINE_BUTTON .. n, UIParent, "SecureActionButtonTemplate")
-		b:RegisterForClicks("AnyUp")
-		b:SetAttribute("type", "macro")
-		b:Hide()
-		lineButtons[n] = b
-	end
-	return b
-end
-
 function Engine.Buttons()
 	if not exec then create() end
 	return exec, toggle
@@ -150,8 +136,6 @@ local function apply()
 		b:SetAttribute("macrotext", "")
 		shownSteps[n] = #lines
 	end
-	local separate = compiled and compiled.separate or {}
-	for n = 1, math.max(#lineButtons, #separate) do lineButton(n):SetAttribute("macrotext", separate[n] or "") end
 	if compiled and compiled.rule then RegisterStateDriver(exec, "sramode", compiled.rule) end
 
 	Engine.compiled, Engine.rotation = compiled, rotation
