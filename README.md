@@ -25,8 +25,9 @@ your priority list that's ready.
   enemies you've hit or that hit you in the last few seconds, so one mode can switch to AoE spells on a pack
   (mobs nothing has touched yet don't count). With Smart Picks on, a press
   casts what the button shows; without it, hints only change the button.
-- **Smart Picks:** each press casts the spell the Rotation Button suggests, hints included, so a rotation can
-  react to procs, debuffs, runes and cooldowns. It works by clearing your target for an instant before every
+- **Smart Picks:** each press casts the spell the Rotation Button shows: the first one that's really ready
+  (cooldowns, runes, power, range), with any ready spell whose hint holds going first. So a rotation can react to
+  procs, debuffs, runes and cooldowns. It works by clearing your target for an instant before every
   line it didn't pick (a line conditioned on `[exists]` then can't cast) and retargeting right after, so target
   frames flicker while you mash, and it needs a target to cast.
 - **Import and Export:** share a rotation, with all its modes, actions, hints and notes, as one string. Export

@@ -33,7 +33,7 @@ local OPTIONS = {
 	{ key = "pet", label = "Send the Pet to Attack", note = "At your target.", tip = "Each press sends your pet at your target." },
 	{ key = "channels", label = "Don't Interrupt Channels", note = "Mashing can't cut a spell like Blizzard short.", tip = "Presses do nothing while you channel a spell like Blizzard, so mashing can't cut it short." },
 	{ key = "cycle", label = "One Spell per Press", note = "One GCD spell a press, top ones most often.", tip = "Each press tries only the next spell on the global cooldown, in GSE's priority order (1, 1 2, 1 2 3...), so the top ones come up most. Off-GCD lines still fire every press. For Death Knights without Smart Picks: a spell waiting on runes stops the rest of a press, so a plain list never gets past it." },
-	{ key = "smart", label = "Smart Picks", note = "Casts what the Rotation Button shows, hints included.", tip = "Each press casts the spell the Rotation Button suggests, hints included: it can see buffs, procs, debuffs, runes and cooldowns. It works by clearing your target for an instant before every other line, so target frames flicker while you mash. It needs a target to cast. Replaces One Spell per Press." },
+	{ key = "smart", label = "Smart Picks", note = "Skips what isn't ready; a holding hint goes first.", tip = "Each press casts the spell the Rotation Button shows: the first one that's really ready (cooldowns, runes, power, range), except that a ready spell whose hint holds goes first. It works by clearing your target for an instant before every other line, so target frames flicker while you mash. It needs a target to cast. Replaces One Spell per Press." },
 }
 
 local function edit(fn)
