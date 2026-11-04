@@ -167,6 +167,18 @@ Rotation.TEMPLATES = {
 	},
 }
 
+-- The same rotation with Run Each Line Separately on, so one Death Knight spell waiting on runes can't stop the rest.
+Rotation.TEMPLATES[2] = {
+	key = "frostLichSeparate",
+	label = "Frost Death Knight with Lich Form (Separate Lines)",
+	classes = { "DEATHKNIGHT" },
+	build = function()
+		local parts = Rotation.TEMPLATES[1].build()
+		parts.options.separate = true
+		return parts
+	end,
+}
+
 function Rotation.FromTemplate(key, name)
 	local rotation = Rotation.New(name)
 	for _, t in ipairs(Rotation.TEMPLATES) do
