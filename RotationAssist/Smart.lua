@@ -8,12 +8,30 @@ local RA = NS.RA
 local Smart = {}
 RA.Smart = Smart
 
-function RAPick()
+local function pick()
 	local compiled = RA.Engine.compiled
 	local mode = compiled and compiled.modes[RA.Engine.ModeIndex()]
 	local cast = mode and RA.RotationButton.Predict(mode.casts)
-	Smart.pick = cast and cast.index
+	return cast and cast.index
 end
+
+-- An error here would run the error handler inside the macro, and the game blocks the rest of the press ("Interface
+-- action failed because of an AddOn"), so a failed pick falls back to the plain list instead.
+function RAPick()
+	local ok, index = pcall(pick)
+	Smart.pick = ok and index or nil
+	if not ok then Smart.failed = index end
+end
+
+-- the error still gets reported, on the next frame, once the macro is done
+local reporter = CreateFrame("Frame")
+reporter:SetScript("OnUpdate", function()
+	local failed = Smart.failed
+	if failed then
+		Smart.failed = nil
+		geterrorhandler()(failed)
+	end
+end)
 
 -- With nothing looking ready, no line is gated and the press works like a plain priority list.
 function RAGate(index)
