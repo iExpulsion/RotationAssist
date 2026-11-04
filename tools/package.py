@@ -3,7 +3,8 @@
     python tools/package.py [output folder]
 
 Writes <output>/RotationAssist-<version>.zip with a top-level RotationAssist/ folder (extract it into
-Interface/AddOns): the .toc, the Lua files the .toc loads, the README and, when there is one, the LICENSE.
+Interface/AddOns): the .toc, the Lua files the .toc loads, the README, when there is one the LICENSE, and the
+bundled libraries' license files.
 """
 import os, re, sys, zipfile
 
@@ -20,20 +21,28 @@ def toc_info(addon):
     return meta, loaded
 
 
-def lua_files(addon):
+def files_matching(addon, test):
     found = []
     for folder, _, names in os.walk(addon):
         for n in names:
-            if n.endswith(".lua"):
+            if test(n):
                 found.append(os.path.relpath(os.path.join(folder, n), addon).replace("\\", "/"))
     return found
+
+
+def lua_files(addon):
+    return files_matching(addon, lambda n: n.endswith(".lua"))
+
+
+def license_files(addon):
+    return files_matching(addon, lambda n: n.upper().startswith("LICENSE"))
 
 
 def main():
     addon = os.path.join(ROOT, NAME)
     meta, loaded = toc_info(addon)
     version = meta.get("Version", "0").strip()
-    files = [NAME + ".toc"] + loaded
+    files = [NAME + ".toc"] + loaded + license_files(addon)
     extra = {"README.md": os.path.join(ROOT, "README.md")}
     if os.path.isfile(os.path.join(ROOT, "LICENSE")):
         extra["LICENSE"] = os.path.join(ROOT, "LICENSE")

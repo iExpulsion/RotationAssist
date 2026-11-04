@@ -6,6 +6,8 @@
 ## SavedVariables: RotationAssistDB
 ## SavedVariablesPerCharacter: RotationAssistCharDB
 
+Libs\LibStub\LibStub.lua
+Libs\LibDeflate\LibDeflate.lua
 Core.lua
 Spells.lua
 UI\Style.lua

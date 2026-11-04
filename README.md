@@ -85,4 +85,5 @@ Changes made in combat apply as soon as combat ends.
 
 ## License
 
-MIT
+MIT. Bundles [LibDeflate](https://github.com/SafeteeWoW/LibDeflate) (zlib License) to compress rotation
+strings, and LibStub (public domain).

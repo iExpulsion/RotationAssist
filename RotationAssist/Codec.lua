@@ -1,20 +1,21 @@
 local _, NS = ...
 local RA = NS.RA
 
--- Rotation strings for sharing: !RA1!key=value;...! with every mode and action. Values are URL-style escaped,
--- numbers are base 36, and a spell ID is written #id so it can't be read as a spell name.
+-- Rotation strings for sharing: !RA2!<data>! where data is the fields below, compressed with LibDeflate and
+-- printed with its EncodeForPrint letters (no whitespace, so chat line wrapping can be stripped on import).
 --
--- n= name, c= classes, o= options that are on, w= switch (t:spell or r:rule), x= notes, then m= a mode's label
--- followed by that mode's a= actions in order:
+-- Fields are key=value;... with URL-style escapes, base-36 numbers, and a spell ID written #id so it can't be
+-- read as a spell name: n= name, c= classes, o= options that are on, w= switch (t:spell or r:rule), x= notes,
+-- then m= a mode's label followed by that mode's a= actions in order:
 --   s:spell:when:trigger:flags   q:spell.spell:reset:when:flags   p:line.line   k:text:flags
 -- Flags: g off the global cooldown, o once per reset.
 local Codec = {}
 RA.Codec = Codec
 
-local FORMAT = 1
+local FORMAT = 2
 local DIGITS = "0123456789abcdefghijklmnopqrstuvwxyz"
--- Whitespace is escaped too, because Decode drops raw whitespace that chat line wrapping adds.
-local RESERVED = "[%%;,:!/=|#.%s]"
+local RESERVED = "[%%;,:=#.]"
+local Deflate = LibStub:GetLibrary("LibDeflate")
 
 local function esc(s)
 	return (tostring(s or ""):gsub(RESERVED, function(c) return ("%%%02X"):format(c:byte()) end))
@@ -109,7 +110,32 @@ function Codec.Encode(rotation)
 			if write then f[#f + 1] = "a=" .. joinParts(write(action)) end
 		end
 	end
-	return ("!RA%d!%s!"):format(FORMAT, table.concat(f, ";"))
+	return Codec.Wrap(table.concat(f, ";"))
+end
+
+-- Fields text to a shareable string.
+function Codec.Wrap(body)
+	return ("!RA%d!%s!"):format(FORMAT, Deflate:EncodeForPrint(Deflate:CompressDeflate(body, { level = 9 })))
+end
+
+-- A shareable string back to its fields text, or nil and why not.
+local function unwrap(text)
+	local fmt, packed = text:match("^!RA(%d+)!(.*)!$")
+	local body, err
+	if not fmt then
+		err = "Not a Rotation Assist String"
+	elseif tonumber(fmt) > FORMAT then
+		err = "Made by a Newer Rotation Assist: Update to Import It"
+	elseif tonumber(fmt) < FORMAT then
+		err = "Made by an Older Test Version: Export It Again"
+	else
+		local ok, data = pcall(Deflate.DecodeForPrint, Deflate, packed)
+		local inflated, result = false, nil
+		if ok and data then inflated, result = pcall(Deflate.DecompressDeflate, Deflate, data) end
+		body = inflated and result or nil
+		if not body then err = "This String Is Damaged" end
+	end
+	return body, err
 end
 
 local function readFlags(action, s)
@@ -159,15 +185,9 @@ end
 -- Returns a new rotation, or nil and a status line saying what's wrong. Unknown fields and action kinds are
 -- passed over.
 function Codec.Decode(text)
-	text = (text or ""):gsub("%s", "")
-	local fmt, body = text:match("^!RA(%d+)!(.*)!$")
+	local body, err = unwrap((text or ""):gsub("%s", ""))
 	local rotation = { name = "", classes = {}, modes = {}, switch = { kind = "none" }, options = {}, notes = "" }
-	local err
-	if not fmt then
-		err = "Not a Rotation Assist String"
-	elseif tonumber(fmt) > FORMAT then
-		err = "Made by a Newer Rotation Assist: Update to Import It"
-	else
+	if body then
 		for _, field in ipairs(split(body, ";")) do
 			local key, v = field:match("^(%w+)=(.*)$")
 			local mode = rotation.modes[#rotation.modes]
