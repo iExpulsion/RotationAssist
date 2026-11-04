@@ -134,9 +134,6 @@ Rotation.TEMPLATES = {
 			local function spell(name, when, offGcd, hint)
 				return { kind = "spell", spell = name, when = when, offGcd = offGcd, hint = hint }
 			end
-			local function once(spells, reset)
-				return { kind = "sequence", spells = spells, reset = reset or "target/combat", once = true }
-			end
 			return {
 				modes = {
 					{ label = "Melee", actions = {
@@ -154,7 +151,7 @@ Rotation.TEMPLATES = {
 					} },
 					{ label = "Lich Form AoE", actions = {
 						spell("Deathchill", "[combat]", true),
-						once({ "Mark of Frost" }),
+						spell("Mark of Frost", nil, nil, "[nodebuff:Mark of Frost]"),
 						spell("Howling Blast"),
 						spell("Icy Touch"),
 						spell("Death Coil"),
@@ -162,8 +159,8 @@ Rotation.TEMPLATES = {
 					} },
 				},
 				switch = { kind = "toggle", spell = "Lich Form" },
-				options = { target = true, attack = true, cycle = true },
-				notes = "One Spell per Press is on: each press tries one spell, top ones most often, so mash the key. A Death Knight spell waiting on runes stops the rest of a press, so a plain priority list would stall.\nMelee: Obliterate on Frost and Unholy runes, Blood Strike on Blood runes, Frost Strike with Runic Power, Howling Blast (Glyph of Howling Blast keeps Frost Fever up), and Plague Strike now and then to keep Blood Plague up. Deathchill, Blood Tap and Unbreakable Armor go off on cooldown every press.\nHints: the Rotation Button glows on Howling Blast when Rime is up or Frost Fever is about to fall off, and on Plague Strike when Blood Plague is. They only change the suggestion, not what a press casts.\nLich Form: Mark of Frost once per target, then Howling Blast on every rune pair, Icy Touch with a leftover rune, Death Coil to spend Runic Power.\nThe Mode key casts Lich Form and moves to the AoE mode in one press; pressing it again leaves Lich Form. Leave it to heal.",
+				options = { target = true, attack = true, smart = true },
+				notes = "Smart Picks is on: each press casts the spell the Rotation Button shows. If presses stall on a spell waiting for runes, turn on One Spell per Press in the Modes tab instead.\nMelee: Obliterate on Frost and Unholy runes, Blood Strike on Blood runes, Frost Strike with Runic Power. Howling Blast when Rime is up or Frost Fever is about to fall off, Plague Strike when Blood Plague is (the button glows for these). Deathchill, Blood Tap and Unbreakable Armor go off on cooldown every press.\nLich Form: Mark of Frost when the target doesn't have it, then Howling Blast on every rune pair, Icy Touch with a leftover rune, Death Coil to spend Runic Power.\nThe Mode key casts Lich Form and moves to the AoE mode in one press; pressing it again leaves Lich Form. Leave it to heal.",
 			}
 		end,
 	},

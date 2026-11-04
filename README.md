@@ -20,7 +20,11 @@ your priority list that's ready.
   click it like the key, and resize or move it.
 - **Hints:** give a spell a hint like `[buff:Freezing Fog]` or `[nodebuff:Blood Plague<3]`, and the Rotation
   Button glows and shows that spell while the hint holds. Hints can check your buffs, your debuffs on the target,
-  power and health. They only change what the button suggests, not what a press casts.
+  power and health.
+- **Smart Picks:** each press casts the spell the Rotation Button suggests, hints included, so a rotation can
+  react to procs, debuffs, runes and cooldowns. It works by clearing your target for an instant before every
+  line it didn't pick (a line conditioned on `[exists]` then can't cast) and retargeting right after, so target
+  frames flicker while you mash, and it needs a target to cast.
 - **Quiet Errors:** hides the "Not ready yet" errors that a priority list causes on purpose.
 - **Per Spec:** link a rotation to a talent spec, and it switches with your spec.
 - **Preview:** see exactly which macro each mode runs on your character, and which spells were left out
@@ -33,11 +37,11 @@ Instead, the button runs a macro built before the fight. The macro skips any spe
 cooldown, one you lack the runes, rage or mana for, a reactive ability that isn't lit (Execute, Overpower, Kill
 Shot), or one out of range. It casts the first one left.
 
-So the button can't react to procs, buffs, debuffs or target health on its own. It can't prefer Howling Blast
-when Rime procs, or refresh diseases when they're about to fall off. If something a macro condition can see
-changes (a form, a stance, a modifier key, your target), a condition rule can switch modes. For a buff, use the
-Mode key. Hints can show you a proc or a disease about to fall off, but the press still casts what the macro
-says. Every cast still needs a key press.
+So a plain list can't react to procs, buffs, debuffs or target health. It can't prefer Howling Blast when Rime
+procs, or refresh diseases when they're about to fall off. If something a macro condition can see changes (a
+form, a stance, a modifier key, your target), a condition rule can switch modes. For a buff, use the Mode key.
+Smart Picks gets around this with the target trick above; without it, hints only change what the button shows.
+Every cast still needs a key press.
 
 ## Installation
 

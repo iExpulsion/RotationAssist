@@ -51,12 +51,22 @@ function Compiler.CompileMode(rotation, mode, env, firstStep)
 	env = env or Compiler.env
 	local options = rotation.options or {}
 	local guard = options.channels and "nochanneling" or nil
-	local result = { lines = {}, status = {}, skipped = {}, casts = {}, steps = {}, warnings = {} }
-	local early, late = {}, {}
+	local smart = options.smart
+	local result = { lines = {}, status = {}, skipped = {}, casts = {}, steps = {}, warnings = {}, smart = smart }
+	local early, late, gates = {}, {}, {}
 
-	local function emit(action, line)
+	-- Smart Picks gates each GCD line on [exists]: at press time the addon clears the target for every line but
+	-- the one it picked, so only that one can cast
+	local function condition(action, when)
+		local cond = Compiler.Merge(when, guard)
+		if smart and not action.offGcd then cond = Compiler.Merge(cond, "exists") end
+		return cond
+	end
+
+	local function emit(action, line, index)
 		local into = action.offGcd and early or late
 		into[#into + 1] = line
+		if not action.offGcd then gates[#late] = index end
 	end
 
 	for index, action in ipairs(mode.actions or {}) do
@@ -65,7 +75,7 @@ function Compiler.CompileMode(rotation, mode, env, firstStep)
 			local name = env.name(action.spell)
 			if name and env.known(name) then
 				local cond = Compiler.Merge(action.when, guard)
-				emit(action, command("/cast", cond, name))
+				emit(action, command("/cast", condition(action, action.when), name), index)
 				result.casts[#result.casts + 1] = { index = index, kind = "spell", name = name, cond = cond, offGcd = action.offGcd, hint = trim(action.hint) }
 			else
 				status = "skipped"
@@ -87,7 +97,7 @@ function Compiler.CompileMode(rotation, mode, env, firstStep)
 				if action.once then names[#names + 1] = "null" end
 				local reset = trim(action.reset)
 				local cond = Compiler.Merge(action.when, guard)
-				emit(action, command("/castsequence", cond, (reset ~= "" and ("reset=" .. reset .. " ") or "") .. table.concat(names, ", ")))
+				emit(action, command("/castsequence", condition(action, action.when), (reset ~= "" and ("reset=" .. reset .. " ") or "") .. table.concat(names, ", ")), index)
 				result.casts[#result.casts + 1] = { index = index, kind = "sequence", name = names[1], cond = cond, once = action.once }
 				status = missing > 0 and "partial" or "ok"
 			else
@@ -102,7 +112,7 @@ function Compiler.CompileMode(rotation, mode, env, firstStep)
 			if #lines > 0 then
 				local number = firstStep + #result.steps
 				result.steps[#result.steps + 1] = { lines = lines }
-				emit(action, "/click " .. Compiler.STEP_BUTTON .. number)
+				emit(action, command("/click", condition(action, ""), Compiler.STEP_BUTTON .. number), index)
 				result.casts[#result.casts + 1] = { index = index, kind = "steps" }
 			else
 				status = "skipped"
@@ -122,11 +132,30 @@ function Compiler.CompileMode(rotation, mode, env, firstStep)
 	end
 
 	local lines = result.lines
+	local attackLines = {}
+	if options.attack then attackLines[#attackLines + 1] = "/startattack [harm,nodead]" end
+	if options.pet then attackLines[#attackLines + 1] = "/petattack [harm,nodead]" end
 	if options.target then lines[#lines + 1] = "/targetenemy [noharm][dead]" end
-	if options.attack then lines[#lines + 1] = "/startattack [harm,nodead]" end
-	if options.pet then lines[#lines + 1] = "/petattack [harm,nodead]" end
+	-- with Smart Picks, clearing the target stops auto-attack, so attacking comes last
+	if not smart then
+		for _, line in ipairs(attackLines) do lines[#lines + 1] = line end
+	end
 	for _, line in ipairs(early) do lines[#lines + 1] = line end
-	if options.cycle and #late > 0 then
+	if smart and #late > 0 then
+		-- with no target, /targetlasttarget would grab an old one, so the gated lines need a target to start with
+		lines[#lines + 1] = "/stopmacro [noexists]"
+		lines[#lines + 1] = "/run RAPick()"
+		for i, line in ipairs(late) do
+			if gates[i] then
+				lines[#lines + 1] = ("/run RAGate(%d)"):format(gates[i])
+				lines[#lines + 1] = line
+				lines[#lines + 1] = "/targetlasttarget [noexists]"
+			else
+				lines[#lines + 1] = line
+			end
+		end
+		for _, line in ipairs(attackLines) do lines[#lines + 1] = line end
+	elseif options.cycle and #late > 0 then
 		-- One Spell per Press: the GCD lines go on a step button in GSE's priority order (1, 1 2, 1 2 3, ...), since
 		-- a press stops at the first GCD spell that isn't ready
 		local order = {}
