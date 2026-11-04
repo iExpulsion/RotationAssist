@@ -55,13 +55,13 @@ local function tooltip(self)
 	GameTooltip:Show()
 end
 
--- Conditions hold, usable, off cooldown (or only on the global cooldown) and in range.
+-- Conditions hold, usable, the runes are up, off cooldown (or only on the global cooldown) and in range.
 local function looksReady(cast)
 	local condOk = cast.cond == "" or SecureCmdOptionParse(cast.cond .. " x") == "x"
 	local start, duration = GetSpellCooldown(cast.name)
 	local ready = start == nil or start == 0 or (duration or 0) <= GCD
 	local range = IsSpellInRange(cast.name, "target")
-	return condOk and IsUsableSpell(cast.name) and ready and range ~= 0
+	return condOk and IsUsableSpell(cast.name) and RA.Runes.Enough(cast.name) and ready and range ~= 0
 end
 
 -- The spell to suggest next, and whether a hint picked it. A ready spell whose hint holds comes first, wherever it

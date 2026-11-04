@@ -16,6 +16,7 @@ Keys.lua
 Quiet.lua
 Trace.lua
 Enemies.lua
+Runes.lua
 Hints.lua
 Smart.lua
 Codec.lua
