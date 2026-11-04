@@ -55,13 +55,28 @@ local function tooltip(self)
 	GameTooltip:Show()
 end
 
+-- IsUsableSpell says yes to these with no combo points.
+local FINISHERS = {
+	Eviscerate = true, ["Slice and Dice"] = true, Rupture = true, ["Kidney Shot"] = true, ["Expose Armor"] = true,
+	Envenom = true, ["Deadly Throw"] = true, Rip = true, ["Ferocious Bite"] = true, Maim = true, ["Savage Roar"] = true,
+}
+
+-- What IsUsableSpell misses: combo points for a finisher, and standing still for a spell with a cast time.
+local function castableNow(name)
+	local castTime = select(7, GetSpellInfo(name)) or 0
+	local moving = GetUnitSpeed ~= nil and (GetUnitSpeed("player") or 0) > 0
+	local comboOk = not FINISHERS[name] or (GetComboPoints("player", "target") or 0) > 0
+	return comboOk and not (moving and castTime > 0)
+end
+
 -- Conditions hold, usable, the runes are up, off cooldown (or only on the global cooldown) and in range.
 local function looksReady(cast)
 	local condOk = cast.cond == "" or SecureCmdOptionParse(cast.cond .. " x") == "x"
 	local start, duration = GetSpellCooldown(cast.name)
 	local ready = start == nil or start == 0 or (duration or 0) <= GCD
 	local range = IsSpellInRange(cast.name, "target")
-	return condOk and IsUsableSpell(cast.name) and RA.Runes.Enough(cast.name) and ready and range ~= 0
+	return condOk and IsUsableSpell(cast.name) and RA.Runes.Enough(cast.name) and castableNow(cast.name) and ready
+		and range ~= 0
 end
 
 -- The spell to suggest next, and whether a trigger picked it. A ready spell whose trigger is met comes first,

@@ -13,7 +13,7 @@ local RA = NS.RA
 --                                  the target itself, so plain nodebuff never sees it)
 --   [nocast:Icy Touch]             the player hasn't cast it on this target this fight (for spells with no
 --                                  aura to see); [nocast:X>30] also holds when the last one was over 30s ago
---   [power>=40] [hp<35] [targethp<20]
+--   [power>=40] [hp<35] [targethp<20] [combo>=5]
 --   [enemies>=3]                   enemies in the fight (see Enemies.lua)
 --   [without:Blood Plague>=1]      enemies in the fight that don't carry your Blood Plague
 --
@@ -75,6 +75,7 @@ local VALUES = {
 	hp = function() return percent("player") end,
 	targethp = function() return UnitExists("target") and percent("target") or 0 end,
 	enemies = function() return RA.Enemies.Count() end,
+	combo = function() return GetComboPoints("player", "target") or 0 end,
 }
 
 -- One term to a test function, or nil and why it isn't understood.

@@ -21,17 +21,18 @@ your priority list that's ready.
 - **Triggers:** give a spell a trigger like `[buff:Clearcasting]` or `[nodebuff:Corruption<3]`. While it's met
   and the spell is ready, the spell goes first and the Rotation Button glows; while it isn't, the spell is passed
   over. Triggers can check your buffs, your debuffs on the target,
-  power and health, debuffs from anyone (`[noanydebuff:Faerie Fire]`), and for spells that leave no aura to
+  power, health and combo points (`[combo>=5]`), debuffs from anyone (`[noanydebuff:Faerie Fire]`), and for spells that leave no aura to
   see, whether you've cast them on this target this fight (`[nocast:X]`). `[enemies>=3]` counts the
   enemies you've hit or that hit you in the last few seconds, so one mode can switch to AoE spells on a pack
   (mobs nothing has touched yet don't count), and `[without:Corruption>=1]` counts the ones missing your
   Corruption, so a spell that spreads it only goes while there's something to spread to. With Smart Picks on, a press
   casts what the button shows; without it, triggers only change the button.
 - **Smart Picks:** each press casts the spell the Rotation Button shows: the first one that's really ready
-  (cooldowns, runes, power, range), with any ready spell whose trigger is met going first. So a rotation can react to
-  procs, debuffs, runes and cooldowns. It works by clearing your target for an instant before every
-  line it didn't pick (a line conditioned on `[exists]` then can't cast) and retargeting right after, so target
-  frames flicker while you mash, and it needs a target to cast.
+  (cooldowns, runes, power, combo points for finishers, range, and no cast times while you move), with any ready
+  spell whose trigger is met going first. So a rotation can react to procs, debuffs, runes and cooldowns. It works
+  by clearing your target for an instant before every line it didn't pick (a line conditioned on `[exists]` then
+  can't cast) and retargeting right after, so target frames flicker while you mash, and it needs a target to cast.
+  That makes it a poor fit for healing or buffing friends; use One Spell per Press or a plain list there.
 - **Import and Export:** share a rotation, with all its modes, actions, triggers and notes, as one string. Export
   is next to Duplicate at the top of a rotation, and Import is at the bottom of the rotation list.
 - **Quiet Errors:** hides the "Not ready yet" errors that a priority list causes on purpose.
