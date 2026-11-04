@@ -16,6 +16,8 @@ local RA = NS.RA
 --   [power>=40] [hp<35] [targethp<20] [combo>=5]
 --   [enemies>=3]                   enemies in the fight (see Enemies.lua)
 --   [without:Blood Plague>=1]      enemies in the fight that don't carry your Blood Plague
+--   [stacks:Maelstrom Weapon>=5]   stacks of a buff on the player (0 when it's missing)
+--   [debuffstacks:Sunder Armor<5]  stacks of the player's debuff on the target; anydebuffstacks counts anyone's
 --
 -- Terms in a group must all hold; any one group holding is enough ("[buff:A][buff:B]" is A or B).
 local Triggers = {}
@@ -49,6 +51,19 @@ local function aura(kind, name)
 		if found then left = (expires and expires > 0) and (expires - GetTime()) or math.huge end
 	end
 	return present, left
+end
+
+local STACKS = {
+	stacks = { "player", "HELPFUL" },
+	debuffstacks = { "target", "HARMFUL|PLAYER" },
+	anydebuffstacks = { "target", "HARMFUL" },
+}
+
+-- Stacks of the aura, 0 when it's missing. A single-stack aura reports 0, so it counts as 1.
+local function stacks(kind, name)
+	local unit, filter = STACKS[kind][1], STACKS[kind][2]
+	local found, _, _, count = UnitAura(unit, name, nil, filter)
+	return found and math.max(count or 0, 1) or 0
 end
 
 -- the target when the cast lands; Smart Picks has put it back by then
@@ -89,6 +104,15 @@ local function parseTerm(term)
 		test = function() return COMPARE[countOp](RA.Enemies.Without(missing), limit) end
 	elseif kind == "without" then
 		problem = ("\"%s\" Needs a Count, Like without:Corruption>=1"):format(term)
+	elseif no == "" and STACKS[kind] and missing and COMPARE[countOp] then
+		local limit = tonumber(count)
+		missing = trim(missing)
+		test = function()
+			local can = kind == "stacks" or (UnitExists("target") and UnitCanAttack("player", "target"))
+			return can and COMPARE[countOp](stacks(kind, missing), limit) == true
+		end
+	elseif STACKS[kind] then
+		problem = ("\"%s\" Needs a Count, Like stacks:Maelstrom Weapon>=5"):format(term)
 	elseif kind == "buff" or kind == "debuff" or kind == "anydebuff" or kind == "cast" then
 		local negate = no == "no"
 		local name, op, number = rest:match("^(.-)%s*([<>]=?)%s*(%d+%.?%d*)$")

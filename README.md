@@ -21,7 +21,8 @@ your priority list that's ready.
 - **Triggers:** give a spell a trigger like `[buff:Clearcasting]` or `[nodebuff:Corruption<3]`. While it's met
   and the spell is ready, the spell goes first and the Rotation Button glows; while it isn't, the spell is passed
   over. Triggers can check your buffs, your debuffs on the target,
-  power, health and combo points (`[combo>=5]`), debuffs from anyone (`[noanydebuff:Faerie Fire]`), and for spells that leave no aura to
+  power, health and combo points (`[combo>=5]`), stacks (`[stacks:Maelstrom Weapon>=5]`,
+  `[debuffstacks:Sunder Armor<5]`), debuffs from anyone (`[noanydebuff:Faerie Fire]`), and for spells that leave no aura to
   see, whether you've cast them on this target this fight (`[nocast:X]`). `[enemies>=3]` counts the
   enemies you've hit or that hit you in the last few seconds, so one mode can switch to AoE spells on a pack
   (mobs nothing has touched yet don't count), and `[without:Corruption>=1]` counts the ones missing your
@@ -122,6 +123,8 @@ skipped. A spell with no trigger is always a candidate. Some more you can use:
 - `[nodebuff:X<3]`: your debuff is missing or has under 3 seconds left, to refresh before it falls off
 - `[nobuff:X]`: a self-buff is missing
 - `[power>=60]`, `[hp<35]`, `[targethp<20]`, `[combo>=5]`: power, your health, the target's health, combo points
+- `[stacks:X>=5]`, `[debuffstacks:X<5]`: stacks of a buff on you, or of your debuff on the target
+  (`anydebuffstacks` counts anyone's)
 - `[enemies>=3]`: three or more enemies in the fight, for AoE spells
 - `[a, b]` means a and b; `[a][b]` means a or b
 
