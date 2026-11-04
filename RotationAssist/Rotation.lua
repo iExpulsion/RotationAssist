@@ -134,8 +134,8 @@ Rotation.TEMPLATES = {
 			local function spell(name, when, offGcd)
 				return { kind = "spell", spell = name, when = when, offGcd = offGcd }
 			end
-			local function once(spells)
-				return { kind = "sequence", spells = spells, reset = "target/combat", once = true }
+			local function once(spells, reset)
+				return { kind = "sequence", spells = spells, reset = reset or "target/combat", once = true }
 			end
 			return {
 				modes = {
@@ -147,7 +147,8 @@ Rotation.TEMPLATES = {
 						spell("Blood Strike"),
 						spell("Frost Strike"),
 						spell("Howling Blast"),
-						once({ "Icy Touch", "Plague Strike" }),
+						-- the timer restarts the sequence before diseases fall off on long fights
+						once({ "Icy Touch", "Plague Strike" }, "target/combat/14"),
 						spell("Horn of Winter"),
 					} },
 					{ label = "Lich Form AoE", actions = {
