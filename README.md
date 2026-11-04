@@ -151,7 +151,8 @@ When you're happy with it, click **Export** to share it as a string.
 - Fewer, well-ordered spells beat a long list. Leave out anything you'd only cast by hand.
 - A spell you can't cast yet (not learned, wrong spec) is left out of the macro. The Preview tab lists those.
 - Smart Picks passes over spells with a cast time while you move, and finishers until you have combo points.
-  A proc that makes a spell instant isn't seen, so it waits until you stop.
+  A spell whose trigger checks a buff on you, like Pyroblast with `[buff:Hot Streak]`, still goes while you move,
+  since that proc makes it instant. Don't put a buff check on a spell that still needs a cast with the buff up.
 - Don't use Smart Picks for healing: it needs an enemy targeted.
 
 ## Commands
