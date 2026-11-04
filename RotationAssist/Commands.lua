@@ -28,8 +28,12 @@ handlers.quiet = function()
 	RA:Print(RA.db.quiet and "Quiet Errors on." or "Quiet Errors off.")
 end
 handlers.trace = function()
-	RA:Print(RA.Trace.Toggle() and "Trace on: each press lists the spells sent, cast or failed, and the errors. /rota trace stops it."
-		or "Trace off.")
+	if RA.Trace then
+		RA:Print(RA.Trace.Toggle() and "Trace on: each press lists the spells sent, cast or failed, and the errors. /rota trace stops it."
+			or "Trace off.")
+	else
+		RA:Print("Trace needs a full game restart after an update; /reload doesn't load new files.")
+	end
 end
 handlers.minimap = function() RA.MinimapButton.Toggle() end
 handlers.reset = function()
