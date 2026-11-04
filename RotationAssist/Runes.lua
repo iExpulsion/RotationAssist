@@ -27,7 +27,6 @@ function Runes.Enough(name)
 	local enough = true
 	if cost and GetRuneCooldown and GetRuneCooldown(1) ~= nil then
 		local ready = { [BLOOD] = 0, [UNHOLY] = 0, [FROST] = 0, [DEATH] = 0 }
-		-- Some servers add runes past the usual six, so read until the client has no more
 		local i = 1
 		while i <= MAX_RUNES and GetRuneCooldown(i) ~= nil do
 			local _, _, isReady = GetRuneCooldown(i)
