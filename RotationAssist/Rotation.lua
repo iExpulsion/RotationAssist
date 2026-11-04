@@ -143,8 +143,8 @@ Rotation.TEMPLATES = {
 						spell("Obliterate"),
 						spell("Blood Strike"),
 						spell("Frost Strike"),
-						-- with Glyph of Howling Blast this also keeps Frost Fever up
-						spell("Howling Blast", nil, nil, "[buff:Freezing Fog][nodebuff:Frost Fever<3]"),
+						-- with Glyph of Howling Blast this also keeps Frost Fever up; on a pack it goes first
+						spell("Howling Blast", nil, nil, "[buff:Freezing Fog][nodebuff:Frost Fever<3][enemies>=3]"),
 						-- low, so it's tried now and then and keeps Blood Plague up without taking many runes
 						spell("Plague Strike", nil, nil, "[nodebuff:Blood Plague<3]"),
 						spell("Horn of Winter"),
@@ -162,7 +162,7 @@ Rotation.TEMPLATES = {
 				-- Lich Form is the fourth form after the three presences
 				switch = { kind = "rule", rule = "[form:4] 2; 1" },
 				options = { target = true, attack = true, smart = true },
-				notes = "Smart Picks is on: each press casts the spell the Rotation Button shows. If presses stall on a spell waiting for runes, turn on One Spell per Press in the Modes tab instead.\nMelee: Obliterate on Frost and Unholy runes, Blood Strike on Blood runes, Frost Strike with Runic Power. Howling Blast when Rime is up or Frost Fever is about to fall off, Plague Strike when Blood Plague is (the button glows for these). Deathchill, Blood Tap and Unbreakable Armor go off on cooldown every press.\nLich Form: Mark of Frost whenever the target doesn't have it (Frost damage uses up its stacks), then Howling Blast on every rune pair, Icy Touch with a leftover rune, Death Coil to spend Runic Power.\nModes follow Lich Form by themselves ([form:4] 2; 1): cast Lich Form and the button moves to the AoE mode, leave it and it's back to melee. If your Lich Form isn't the fourth button on the stance bar, change the number in the Modes tab.",
+				notes = "Smart Picks is on: each press casts the spell the Rotation Button shows. If presses stall on a spell waiting for runes, turn on One Spell per Press in the Modes tab instead.\nMelee: Obliterate on Frost and Unholy runes, Blood Strike on Blood runes, Frost Strike with Runic Power. Howling Blast when Rime is up, Frost Fever is about to fall off or 3 or more enemies are in the fight, Plague Strike when Blood Plague is (the button glows for these). Deathchill, Blood Tap and Unbreakable Armor go off on cooldown every press.\nLich Form: Mark of Frost whenever the target doesn't have it (Frost damage uses up its stacks), then Howling Blast on every rune pair, Icy Touch with a leftover rune, Death Coil to spend Runic Power.\nModes follow Lich Form by themselves ([form:4] 2; 1): cast Lich Form and the button moves to the AoE mode, leave it and it's back to melee. If your Lich Form isn't the fourth button on the stance bar, change the number in the Modes tab.",
 			}
 		end,
 	},
