@@ -9,7 +9,8 @@ RA.Enemies = Enemies
 
 Enemies.WINDOW = 4
 local MINE = COMBATLOG_OBJECT_AFFILIATION_MINE or 0x1
-local HOSTILE = COMBATLOG_OBJECT_REACTION_HOSTILE or 0x40
+-- neutral too: training dummies and plenty of mobs are yellow, not red
+local HOSTILE = (COMBATLOG_OBJECT_REACTION_HOSTILE or 0x40) + (COMBATLOG_OBJECT_REACTION_NEUTRAL or 0x20)
 local AURAS = { SPELL_AURA_APPLIED = true, SPELL_AURA_REFRESH = true, SPELL_AURA_APPLIED_DOSE = true }
 local DEATHS = { UNIT_DIED = true, UNIT_DESTROYED = true, PARTY_KILL = true }
 
