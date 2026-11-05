@@ -31,11 +31,14 @@ local function mustClear(cast, pickIndex)
 	return clear
 end
 
+-- Which lines' gates clear the target, reused from press to press.
+local clears, NONE = {}, {}
+
 -- The pick, and which lines' gates clear the target, all decided before the first gate runs.
 local function pick()
 	local casts = currentCasts()
 	local cast = RA.RotationButton.Predict(casts)
-	local clears = {}
+	for k in pairs(clears) do clears[k] = nil end
 	if cast then
 		for _, other in ipairs(casts) do
 			if other.index ~= cast.index and not other.offGcd then clears[other.index] = mustClear(other, cast.index) end
@@ -47,9 +50,9 @@ end
 -- An error here would run the error handler inside the macro, and the game blocks the rest of the press ("Interface
 -- action failed because of an AddOn"), so a failed pick falls back to the plain list instead.
 function RAPick()
-	local ok, index, clears = pcall(pick)
+	local ok, index, picked = pcall(pick)
 	Smart.pick = ok and index or nil
-	Smart.clears = ok and clears or {}
+	Smart.clears = ok and picked or NONE
 	if not ok then Smart.failed = index end
 end
 

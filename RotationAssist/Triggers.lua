@@ -71,10 +71,11 @@ local tracker = CreateFrame("Frame")
 tracker:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
 tracker:RegisterEvent("PLAYER_REGEN_ENABLED")
 tracker:SetScript("OnEvent", function(_, event, unit, spell)
-	local guid = UnitGUID("target")
+	-- this fires for every unit's casts, so the target is only looked up for the player's
+	local guid = event ~= "PLAYER_REGEN_ENABLED" and unit == "player" and spell and UnitGUID("target")
 	if event == "PLAYER_REGEN_ENABLED" then
 		casts = {}
-	elseif unit == "player" and spell and guid then
+	elseif guid then
 		casts[spell] = casts[spell] or {}
 		casts[spell][guid] = GetTime()
 	end
@@ -143,28 +144,31 @@ local function parseTerm(term)
 	return test, problem
 end
 
--- Text to { groups = { { test, ... } }, problems = { text } }; text without brackets is one group.
+-- Trimmed text to { groups = { { test, ... } }, problems = { text } }; text without brackets is one group.
+local function build(text)
+	local parsed = { groups = {}, problems = {} }
+	local bodies = {}
+	for body in text:gmatch("%[(.-)%]") do bodies[#bodies + 1] = body end
+	if #bodies == 0 and text ~= "" then bodies[1] = text end
+	for _, body in ipairs(bodies) do
+		local group = {}
+		for term in body:gmatch("[^,]+") do
+			term = trim(term)
+			if term ~= "" then
+				local test, problem = parseTerm((term:gsub("^%a+", string.lower)))
+				if test then group[#group + 1] = test else parsed.problems[#parsed.problems + 1] = problem end
+			end
+		end
+		parsed.groups[#parsed.groups + 1] = group
+	end
+	return parsed
+end
+
+-- A trigger as parsed, kept for the next time: the rotation checks the same triggers many times a second.
 function Triggers.Parse(text)
 	text = trim(text)
-	local parsed = cache[text]
-	if not parsed then
-		parsed = { groups = {}, problems = {} }
-		local bodies = {}
-		for body in text:gmatch("%[(.-)%]") do bodies[#bodies + 1] = body end
-		if #bodies == 0 and text ~= "" then bodies[1] = text end
-		for _, body in ipairs(bodies) do
-			local group = {}
-			for term in body:gmatch("[^,]+") do
-				term = trim(term)
-				if term ~= "" then
-					local test, problem = parseTerm((term:gsub("^%a+", string.lower)))
-					if test then group[#group + 1] = test else parsed.problems[#parsed.problems + 1] = problem end
-				end
-			end
-			parsed.groups[#parsed.groups + 1] = group
-		end
-		cache[text] = parsed
-	end
+	local parsed = cache[text] or build(text)
+	cache[text] = parsed
 	return parsed
 end
 
@@ -182,8 +186,10 @@ function Triggers.Holds(text)
 	return holds
 end
 
+-- The editor checks every partial text typed, so those aren't kept.
 function Triggers.Problems(text)
-	return Triggers.Parse(text).problems
+	local trimmed = trim(text)
+	return (cache[trimmed] or build(trimmed)).problems
 end
 
 function Triggers.Has(text)

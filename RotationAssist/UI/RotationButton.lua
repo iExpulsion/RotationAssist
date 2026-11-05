@@ -86,8 +86,14 @@ local function castableNow(cast)
 	return comboOk and not (moving and castTime > 0 and not cast.moving)
 end
 
+-- The parse text is kept on the cast, which lives until the rotation is compiled again.
 local function condOk(cast)
-	return (cast.cond or "") == "" or SecureCmdOptionParse(cast.cond .. " x") == "x"
+	local ok = (cast.cond or "") == ""
+	if not ok then
+		cast.condText = cast.condText or (cast.cond .. " x")
+		ok = SecureCmdOptionParse(cast.condText) == "x"
+	end
+	return ok
 end
 
 local function offCooldown(cast)
@@ -155,12 +161,28 @@ local function update()
 	elseif upcoming then
 		icon = RA.Rotation.ActionIcon(RA.Engine.rotation.modes[RA.Engine.ModeIndex()].actions[upcoming.index])
 	end
-	exec.icon:SetTexture(icon)
-	exec.icon:SetDesaturated(upcoming == nil)
+	-- this runs ten times a second, so each part is only set when it changes
+	local idle = upcoming == nil
+	if icon ~= exec.shownIcon or idle ~= exec.shownIdle then
+		exec.shownIcon, exec.shownIdle = icon, idle
+		exec.icon:SetTexture(icon)
+		exec.icon:SetDesaturated(idle)
+	end
 	if RB.Running() then exec.running:Show() else exec.running:Hide() end
-	exec.mode:SetText(modeLabel())
-	exec.key:SetText(RA.Keys.Get("main") and RA.Keys.Text("main") or "")
-	toggle.key:SetText(RA.Keys.Get("toggle") and RA.Keys.Text("toggle") or "")
+	local label = modeLabel()
+	if label ~= exec.shownMode then
+		exec.shownMode = label
+		exec.mode:SetText(label)
+	end
+	local mainKey, toggleKey = RA.Keys.Get("main"), RA.Keys.Get("toggle")
+	if mainKey ~= exec.shownKey or not exec.keyShown then
+		exec.shownKey, exec.keyShown = mainKey, true
+		exec.key:SetText(mainKey and RA.Keys.Text("main") or "")
+	end
+	if toggleKey ~= toggle.shownKey or not toggle.keyShown then
+		toggle.shownKey, toggle.keyShown = toggleKey, true
+		toggle.key:SetText(toggleKey and RA.Keys.Text("toggle") or "")
+	end
 end
 
 local function create()

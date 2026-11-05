@@ -34,12 +34,15 @@ function RA:AddRuneCosts(costs)
 	end
 end
 
+-- Ready runes by kind, reused: the button asks several times a second.
+local ready = {}
+
 -- Whether the ready runes cover the spell's cost.
 function Runes.Enough(name)
 	local cost = Runes.COSTS[name]
 	local enough = true
 	if cost and GetRuneCooldown and GetRuneCooldown(1) ~= nil then
-		local ready = { [BLOOD] = 0, [UNHOLY] = 0, [FROST] = 0, [DEATH] = 0 }
+		ready[BLOOD], ready[UNHOLY], ready[FROST], ready[DEATH] = 0, 0, 0, 0
 		-- the client raises "Invalid slot" past the last rune rather than returning nil
 		-- some clients leave the runeReady flag false on idle runes, so the cooldown decides
 		local now = GetTime()

@@ -58,35 +58,43 @@ frame:SetScript("OnEvent", function(_, event, _, sub, srcGUID, _, srcFlags, dstG
 	end
 end)
 
--- The enemies in the fight as { guid = true }, dropping the stale ones, with the target added before its first hit.
-local function inFight()
-	local now, list = GetTime(), {}
+-- Drops the stale enemies, then gives the target's GUID and whether it counts before its first hit. The fight is
+-- the fresh seen entries plus that target; triggers ask several times a second, so it's counted in place rather
+-- than copied into a list.
+local function prune()
+	local now = GetTime()
 	for guid, at in pairs(seen) do
-		if now - at <= Enemies.WINDOW then list[guid] = true else forget(guid) end
+		if now - at > Enemies.WINDOW then forget(guid) end
 	end
 	local target = UnitGUID("target")
-	if target and UnitCanAttack("player", "target") and not UnitIsDead("target") then list[target] = true end
-	return list, target
+	local extra = target ~= nil and not seen[target] and UnitCanAttack("player", "target") and not UnitIsDead("target")
+	return target, extra
 end
 
 function Enemies.Count()
-	local count = 0
-	for _ in pairs((inFight())) do count = count + 1 end
+	local _, extra = prune()
+	local count = extra and 1 or 0
+	for _ in pairs(seen) do count = count + 1 end
 	return count
 end
 
--- How many enemies in the fight don't carry your aura. The target is read directly; the rest come from the log.
+-- Whether an enemy lacks your aura: the target is read directly, the rest come from the log.
+local function missing(guid, target, name)
+	local carries
+	if guid == target then
+		carries = UnitAura("target", name, nil, "HARMFUL|PLAYER") ~= nil
+	else
+		carries = auras[guid] ~= nil and auras[guid][name] == true
+	end
+	return not carries
+end
+
+-- How many enemies in the fight don't carry your aura.
 function Enemies.Without(name)
-	local list, target = inFight()
-	local count = 0
-	for guid in pairs(list) do
-		local carries
-		if guid == target then
-			carries = UnitAura("target", name, nil, "HARMFUL|PLAYER") ~= nil
-		else
-			carries = auras[guid] ~= nil and auras[guid][name] == true
-		end
-		if not carries then count = count + 1 end
+	local target, extra = prune()
+	local count = (extra and missing(target, target, name)) and 1 or 0
+	for guid in pairs(seen) do
+		if missing(guid, target, name) then count = count + 1 end
 	end
 	return count
 end
