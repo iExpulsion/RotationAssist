@@ -3,8 +3,8 @@ local RA = NS.RA
 
 -- Smart Picks: the macro's /run lines call these at press time. RAPick asks the Rotation Button's prediction
 -- (triggers included) which action to cast; RAGate clears the target before another GCD line that could get in
--- its way, so that line's [exists] condition fails, and the line after it retargets. ClearTarget is allowed in
--- combat on 3.3.5; ClearFocus isn't.
+-- its way, so that line's [exists] condition fails, and the line after it retargets. In combat the client logs
+-- each ClearTarget from here as blocked (and prints "Interface action failed" once) but still clears the target.
 local Smart = {}
 RA.Smart = Smart
 
@@ -63,8 +63,7 @@ reporter:SetScript("OnUpdate", function()
 	end
 end)
 
--- Kept to a lookup and the clear, the shape verified in game; a gate that did the deciding itself saw every
--- ClearTarget blocked in combat. With nothing looking ready, no line is gated and the press works like a plain list.
+-- With nothing looking ready, no line is gated and the press works like a plain priority list.
 function RAGate(index)
 	if Smart.clears and Smart.clears[index] then ClearTarget() end
 end

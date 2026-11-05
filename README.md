@@ -38,7 +38,8 @@ in game and a button that shows what the next press casts.
   by clearing your target for an instant before a line that could cast instead of the pick (a line conditioned on
   `[exists]` then can't cast) and retargeting right after. Lines that can't cast anyway, and lines after the pick,
   keep the target, so most presses don't touch it, but target frames can flicker on the rest. It needs a target
-  to cast.
+  to cast. The first clear in a fight prints "Interface action failed because of an AddOn" in chat once per
+  session; the target still clears, so it's safe to ignore.
   That makes it a poor fit for healing or buffing friends; use One Spell per Press or a plain list there.
 - **Import and Export:** share a rotation, with all its modes, actions, triggers and notes, as one string. Export
   is next to Duplicate at the top of a rotation, and Import is at the bottom of the rotation list.
