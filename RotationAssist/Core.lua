@@ -4,42 +4,31 @@ local RA = { version = GetAddOnMetadata and GetAddOnMetadata(ADDON, "Version") o
 NS.RA = RA
 _G.RotationAssist = RA
 
-RA.CLASS_KEYS = {
-	[1] = "WARRIOR", [2] = "PALADIN", [3] = "HUNTER", [4] = "ROGUE", [5] = "PRIEST",
-	[6] = "DEATHKNIGHT", [7] = "SHAMAN", [8] = "MAGE", [9] = "WARLOCK", [11] = "DRUID",
-}
-RA.CLASS_IDS = {}
-for id, key in pairs(RA.CLASS_KEYS) do RA.CLASS_IDS[key] = id end
+-- Server modules hook in through the Set* and Add* functions below (and AddRuneCosts and AddFinishers); see
+-- docs/MODULES.md.
+local classProvider, specNameProvider
+local pairNames = {}
 
--- Names for two-class pairs.
-local COMBOS = {
-	Champion = { "WARRIOR", "PALADIN" }, Soldier = { "WARRIOR", "HUNTER" }, Blademaster = { "WARRIOR", "ROGUE" },
-	Crusader = { "WARRIOR", "PRIEST" }, Butcher = { "WARRIOR", "DEATHKNIGHT" }, Ravager = { "WARRIOR", "SHAMAN" },
-	Battlemage = { "WARRIOR", "MAGE" }, Vanquisher = { "WARRIOR", "WARLOCK" }, Barbarian = { "WARRIOR", "DRUID" },
-	Avenger = { "PALADIN", "HUNTER" }, Agent = { "PALADIN", "ROGUE" }, Martyr = { "PALADIN", "PRIEST" },
-	Enforcer = { "PALADIN", "DEATHKNIGHT" }, Sentinel = { "PALADIN", "SHAMAN" }, Inquisitor = { "PALADIN", "MAGE" },
-	Warden = { "PALADIN", "WARLOCK" }, Guardian = { "PALADIN", "DRUID" },
-	Scout = { "HUNTER", "ROGUE" }, Seer = { "HUNTER", "PRIEST" }, Slayer = { "HUNTER", "DEATHKNIGHT" },
-	Tempest = { "HUNTER", "SHAMAN" }, Arcanist = { "HUNTER", "MAGE" }, Trickster = { "HUNTER", "WARLOCK" },
-	Ranger = { "HUNTER", "DRUID" },
-	Herald = { "ROGUE", "PRIEST" }, Assassin = { "ROGUE", "DEATHKNIGHT" }, Ninja = { "ROGUE", "SHAMAN" },
-	Spellblade = { "ROGUE", "MAGE" }, Voidstalker = { "ROGUE", "WARLOCK" }, Spy = { "ROGUE", "DRUID" },
-	Wraith = { "PRIEST", "DEATHKNIGHT" }, Oracle = { "PRIEST", "SHAMAN" }, Mystic = { "PRIEST", "MAGE" },
-	Siren = { "PRIEST", "WARLOCK" }, Empath = { "PRIEST", "DRUID" },
-	Summoner = { "DEATHKNIGHT", "SHAMAN" }, Lich = { "DEATHKNIGHT", "MAGE" }, Necromancer = { "DEATHKNIGHT", "WARLOCK" },
-	Dreadweaver = { "DEATHKNIGHT", "DRUID" },
-	Elementalist = { "SHAMAN", "MAGE" }, Harbinger = { "SHAMAN", "WARLOCK" }, Sage = { "SHAMAN", "DRUID" },
-	Sorcerer = { "MAGE", "WARLOCK" }, Conjurer = { "MAGE", "DRUID" },
-	Witch = { "WARLOCK", "DRUID" },
-}
-local comboByPair = {}
-for combo, pair in pairs(COMBOS) do
-	comboByPair[pair[1] .. "/" .. pair[2]] = combo
-	comboByPair[pair[2] .. "/" .. pair[1]] = combo
+-- fn() returns the character's classes in pick order, as class keys, for servers where a character has several.
+function RA:SetClassProvider(fn)
+	classProvider = fn
 end
 
-function RA:ComboName(a, b)
-	return a and b and comboByPair[a .. "/" .. b]
+-- fn(group) returns a name for talent group `group`, or nil for none.
+function RA:SetSpecNameProvider(fn)
+	specNameProvider = fn
+end
+
+-- names = { Lich = { "DEATHKNIGHT", "MAGE" }, ... }: one name to show for a two-class pair.
+function RA:AddClassNames(names)
+	for name, pair in pairs(names) do
+		pairNames[pair[1] .. "/" .. pair[2]] = name
+		pairNames[pair[2] .. "/" .. pair[1]] = name
+	end
+end
+
+function RA:PairName(a, b)
+	return a and b and pairNames[a .. "/" .. b]
 end
 
 function RA:Print(fmt, ...)
@@ -49,16 +38,8 @@ end
 
 -- The character's classes in pick order, as class keys.
 function RA:PlayerClasses()
-	local classes = {}
-	local count = CMCGetClassCount and CMCGetClassCount() or 0
-	if count >= 1 then
-		for i = 1, count do
-			local id = CMCGetClassAt(i)
-			classes[#classes + 1] = (CMCGetClassKey and CMCGetClassKey(id)) or self.CLASS_KEYS[id]
-		end
-	else
-		classes[1] = select(2, UnitClass("player"))
-	end
+	local classes = classProvider and classProvider()
+	if not classes or #classes == 0 then classes = { select(2, UnitClass("player")) } end
 	return classes
 end
 
@@ -82,17 +63,17 @@ local function className(key)
 	return LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[key] or key
 end
 
--- Class names in class colors, or plain: the server's name for a two-class pair, otherwise each class.
+-- Class names in class colors, or plain: a module's name for a two-class pair, otherwise each class.
 function RA:ClassText(classes, plain)
 	classes = classes or {}
-	local combo = #classes == 2 and self:ComboName(classes[1], classes[2])
+	local pairName = #classes == 2 and self:PairName(classes[1], classes[2])
 	local first = classes[1] and RAID_CLASS_COLORS[classes[1]]
 	local function paint(c, text)
 		return (not plain and c) and ("|cff%02x%02x%02x%s|r"):format(c.r * 255, c.g * 255, c.b * 255, text) or text
 	end
 	local text
-	if combo then
-		text = paint(first, combo)
+	if pairName then
+		text = paint(first, pairName)
 	else
 		local parts, seen = {}, {}
 		for _, key in ipairs(classes) do
@@ -115,7 +96,7 @@ function RA:SpecCount()
 end
 
 function RA:SpecName(group)
-	local name = GetCustomGameDataString and GetCustomGameDataString(21, group) or ""
+	local name = specNameProvider and specNameProvider(group)
 	return ("Spec %d"):format(group) .. ((name and name ~= "") and (": " .. name) or "")
 end
 

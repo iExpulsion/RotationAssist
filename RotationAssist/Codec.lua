@@ -1,7 +1,7 @@
 local _, NS = ...
 local RA = NS.RA
 
--- Rotation strings for sharing: !RA2!<data>! where data is the fields below, compressed with LibDeflate and
+-- Rotation strings for sharing: !RA1!<data>! where data is the fields below, compressed with LibDeflate and
 -- printed with its EncodeForPrint letters (no whitespace, so chat line wrapping can be stripped on import).
 --
 -- Fields are key=value;... with URL-style escapes, base-36 numbers, and a spell ID written #id so it can't be
@@ -12,7 +12,7 @@ local RA = NS.RA
 local Codec = {}
 RA.Codec = Codec
 
-local FORMAT = 2
+local FORMAT = 1
 local DIGITS = "0123456789abcdefghijklmnopqrstuvwxyz"
 local RESERVED = "[%%;,:=#.]"
 local Deflate = LibStub:GetLibrary("LibDeflate")
@@ -126,8 +126,6 @@ local function unwrap(text)
 		err = "Not a Rotation Assist String"
 	elseif tonumber(fmt) > FORMAT then
 		err = "Made by a Newer Rotation Assist: Update to Import It"
-	elseif tonumber(fmt) < FORMAT then
-		err = "Made by an Older Test Version: Export It Again"
 	else
 		local ok, data = pcall(Deflate.DecodeForPrint, Deflate, packed)
 		local inflated, result = false, nil

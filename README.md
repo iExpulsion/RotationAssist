@@ -1,7 +1,9 @@
 # Rotation Assist
 
-One-button rotations for WoW 3.3.5a, made for accessibility. Bind one key, or click one big on-screen button, and each press casts the first spell in
-your priority list that's ready.
+One-button rotations for WoW 3.3.5a (Wrath of the Lich King servers such as AzerothCore), made for accessibility.
+Bind one key, or click one big on-screen button, and each press casts the first spell in your priority list that's
+ready. It's an alternative to the GSE backports, built around what a 3.3.5a macro can really do, with an editor
+in game and a button that shows what the next press casts.
 
 ## Features
 
@@ -59,7 +61,8 @@ Every cast still needs a key press.
 
 1. Download the latest release.
 2. Extract the `RotationAssist` folder into `World of Warcraft\Interface\AddOns`.
-3. Restart the game, or log out to the character screen and back in.
+3. If your server has a module (see [Server Modules](#server-modules)), install it the same way.
+4. Restart the game, or log out to the character screen and back in.
 
 ## Getting Started
 
@@ -160,6 +163,8 @@ When you're happy with it, click **Export** to share it as a string.
 
 ## Commands
 
+`/rotationassist` works everywhere `/rota` does.
+
 - `/rota`: open or close the window
 - `/rota button`: show or hide the Rotation Button
 - `/rota lock`, `/rota unlock`: lock or unlock the Rotation Button's position
@@ -169,6 +174,18 @@ When you're happy with it, click **Export** to share it as a string.
   the press
 - `/rota minimap`: show or hide the minimap button
 - `/rota reset`: move the window and the Rotation Button back to the middle of the screen
+
+## Server Modules
+
+Rotation Assist works on any 3.3.5a server as it is. Servers that change the game (several classes per
+character, named specs, custom spells with rune costs or combo points) can have a small module addon that tells
+it about those changes. Install a module next to Rotation Assist; it loads after it.
+
+| Server    | Module                                                                          |
+|-----------|---------------------------------------------------------------------------------|
+| Synastria | [RotationAssist-Synastria](https://github.com/iExpulsion/RotationAssist-Synastria) |
+
+To write one for your server, read [docs/MODULES.md](docs/MODULES.md).
 
 ## License
 

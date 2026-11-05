@@ -61,6 +61,11 @@ local FINISHERS = {
 	Envenom = true, ["Deadly Throw"] = true, Rip = true, ["Ferocious Bite"] = true, Maim = true, ["Savage Roar"] = true,
 }
 
+-- For server modules: names = { "Spell Name", ... }, spells that need combo points.
+function RA:AddFinishers(names)
+	for _, name in ipairs(names) do FINISHERS[name] = true end
+end
+
 -- What IsUsableSpell misses: combo points for a finisher, and standing still for a spell with a cast time, unless
 -- it's marked Cast While Moving.
 local function castableNow(cast)

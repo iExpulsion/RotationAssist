@@ -60,15 +60,13 @@ S.colors = {
 	warn = M3.warning,
 	bad = M3.error,
 	badDim = M3.errorContainer,
-	-- the Perk Manager's set name green, kept so sets read as they do in the client
-	set = { 0.13, 1, 0.13, 1 },
 }
 
 -- One spacing scale for every panel: PAD inside a panel's edges (the same on all sides), GAP between neighboring
 -- controls, and one height for every button, input and dropdown so rows line up.
 S.PAD, S.GAP, S.CONTROL_H = 12, 8, 24
 
--- "1 perk", "3 perks".
+-- "1 spell", "3 spells".
 function S.Count(n, singular, plural)
 	return ("%d %s"):format(n, n == 1 and singular or (plural or singular .. "s"))
 end

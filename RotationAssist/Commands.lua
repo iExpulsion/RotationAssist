@@ -42,9 +42,9 @@ handlers.reset = function()
 	RA:Print("Window and Rotation Button moved back to the middle of the screen.")
 end
 
-SLASH_RA1 = "/rota"
-SLASH_RA2 = "/rotationassist"
-SlashCmdList.RA = function(msg)
+SLASH_ROTATIONASSIST1 = "/rota"
+SLASH_ROTATIONASSIST2 = "/rotationassist"
+SlashCmdList.ROTATIONASSIST = function(msg)
 	local cmd, arg = (msg or ""):match("^%s*(%S*)%s*(.-)%s*$")
 	local handler = handlers[cmd:lower()]
 	if handler then handler(arg) else help() end

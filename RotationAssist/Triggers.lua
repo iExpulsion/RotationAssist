@@ -9,8 +9,8 @@ local RA = NS.RA
 --   [nobuff:Horn of Winter]        the player doesn't have the buff
 --   [nodebuff:Blood Plague<3]      the target has none of the player's Blood Plague, or it ends within 3 seconds
 --   [debuff:Frost Fever>5]         the player's Frost Fever on the target has more than 5 seconds left
---   [noanydebuff:Mark of Frost]    the target has no Mark of Frost from anyone (the server credits the mark to
---                                  the target itself, so plain nodebuff never sees it)
+--   [noanydebuff:Faerie Fire]      the target has no Faerie Fire from anyone (also for debuffs a server credits
+--                                  to someone other than the player, which plain nodebuff never sees)
 --   [nocast:Icy Touch]             the player hasn't cast it on this target this fight (for spells with no
 --                                  aura to see); [nocast:X>30] also holds when the last one was over 30s ago
 --   [power>=40] [hp<35] [targethp<20] [combo>=5]

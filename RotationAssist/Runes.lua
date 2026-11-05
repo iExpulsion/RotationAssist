@@ -15,11 +15,24 @@ local FU, BFU = { [FROST] = 1, [UNHOLY] = 1 }, { [BLOOD] = 1, [FROST] = 1, [UNHO
 Runes.COSTS = {
 	["Blood Strike"] = B, ["Heart Strike"] = B, ["Pestilence"] = B, ["Blood Boil"] = B, ["Rune Tap"] = B,
 	["Strangulate"] = B, ["Dark Command"] = B,
-	["Icy Touch"] = F, ["Chains of Ice"] = F, ["Unbreakable Armor"] = F, ["Mark of Frost"] = F,
+	["Icy Touch"] = F, ["Chains of Ice"] = F, ["Unbreakable Armor"] = F,
 	["Plague Strike"] = U, ["Bone Shield"] = U, ["Anti-Magic Zone"] = U,
 	["Death Strike"] = FU, ["Obliterate"] = FU, ["Scourge Strike"] = FU, ["Howling Blast"] = FU,
 	["Death and Decay"] = BFU, ["Army of the Dead"] = BFU,
 }
+
+local KINDS = { blood = BLOOD, unholy = UNHOLY, frost = FROST }
+
+-- For server modules: costs = { ["Spell Name"] = { frost = 1, unholy = 1 }, ... }.
+function RA:AddRuneCosts(costs)
+	for name, cost in pairs(costs) do
+		local entry = {}
+		for kind, count in pairs(cost) do
+			if KINDS[kind] then entry[KINDS[kind]] = count end
+		end
+		Runes.COSTS[name] = entry
+	end
+end
 
 -- Whether the ready runes cover the spell's cost.
 function Runes.Enough(name)
