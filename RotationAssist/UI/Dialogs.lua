@@ -67,7 +67,7 @@ function Dialogs.NewFrame()
 end
 
 -- The Export and Import sheet: one text box that holds a rotation string to copy, or takes one pasted in.
-local SHARE_W, SHARE_H = 460, 250
+local SHARE_W, SHARE_H = 560, 300
 local share, measure
 
 -- The box only wraps at spaces and some punctuation, and a rotation string has long runs of neither, so it's
@@ -96,34 +96,75 @@ local function fitToBox(text, edit)
 	end)
 end
 
+-- Import: checks the pasted string as it changes, and only offers Import once it reads.
+local function refreshImport(f)
+	local text = f.box.edit:GetText() or ""
+	local rotation, err = RA.Codec.Decode(text)
+	if rotation then
+		local who = #(rotation.classes or {}) > 0 and RA:ClassText(rotation.classes, true) or "No Classes Listed"
+		f.note:SetText(S.Hex(C.good, rotation.name .. ": ") .. who)
+		f.import:Enable()
+	else
+		f.note:SetText(text:gsub("%s", "") == "" and "" or S.Hex(C.bad, err))
+		f.import:Disable()
+	end
+	if f.mode == "import" and text == "" then f.placeholder:Show() else f.placeholder:Hide() end
+end
+
+-- Title and instructions, Close at the top right, the string, and a footer with a note on the left and the action
+-- (Select All or Import) on the right.
 local function createShare()
 	S.RefreshFonts()
+	local wellTop = PAD + 16 + 4 + 12 + GAP
+	local footerH = PAD + CONTROL_H + PAD
 	local f = CreateFrame("Frame", "RotationAssistShareFrame", UIParent)
 	f:SetSize(SHARE_W, SHARE_H)
 	f:SetPoint("CENTER", 0, 80)
 	f:SetFrameStrata("DIALOG")
 	f:EnableMouse(true)
+	f:SetMovable(true)
+	f:RegisterForDrag("LeftButton")
+	f:SetScript("OnDragStart", f.StartMoving)
+	f:SetScript("OnDragStop", f.StopMovingOrSizing)
 	S.Panel(f, { C.window[1], C.window[2], C.window[3], 1 }, C.border)
 	tinsert(UISpecialFrames, "RotationAssistShareFrame")
 	f:HookScript("OnHide", S.Dismiss)
 
 	f.title = S.Text(f, "large")
 	f.title:SetPoint("TOPLEFT", PAD, -PAD)
-	local boxH = SHARE_H - (PAD + 16 + PAD) - (GAP + CONTROL_H + PAD)
-	f.box = RA.Widgets.TextArea(f, "RotationAssistShareText", SHARE_W - 2 * PAD, boxH, function()
-		if f.exported then
-			f.box.edit:SetText(f.exported)
-			f.box.edit:HighlightText()
+	f.sub = S.Text(f, "small", C.muted)
+	f.sub:SetPoint("TOPLEFT", f.title, "BOTTOMLEFT", 0, -4)
+	-- the close button's box lines up with the title's middle
+	f.close = S.Button(f, "Close", "ghost", 56, function() f:Hide() end)
+	f.close:SetPoint("TOPRIGHT", -PAD, -(PAD - 4))
+
+	f.box = RA.Widgets.TextArea(f, "RotationAssistShareText", SHARE_W - 2 * PAD, SHARE_H - wellTop - footerH, nil, "edit")
+	f.box:SetPoint("TOPLEFT", PAD, -wellTop)
+	f.box.edit:HookScript("OnTextChanged", function(self, userInput)
+		if f.mode == "import" then
+			refreshImport(f)
+		elseif userInput and f.exported then
+			self:SetText(f.exported)
+			self:HighlightText()
 		end
 	end)
-	f.box:SetPoint("TOPLEFT", PAD, -(PAD + 16 + PAD))
 	f.box.edit:HookScript("OnEditFocusGained", function(self)
-		if f.exported then self:HighlightText() end
+		if f.mode == "export" then self:HighlightText() end
 	end)
+	-- 3.3.5 gives addons no clipboard access, so the best is selecting the text and confirming the Ctrl+C
+	f.box.edit:HookScript("OnKeyDown", function(_, key)
+		if f.mode == "export" and key == "C" and IsControlKeyDown() then
+			f.note:SetText(S.Hex(C.good, "Copied: Paste It Anywhere with Ctrl+V"))
+		end
+	end)
+	f.placeholder = S.Text(f.box, "normal", C.muted)
+	f.placeholder:SetPoint("CENTER")
+	f.placeholder:SetText("Click here, then press Ctrl+V.")
 
-	f.close = S.Button(f, "Close", "secondary", 80, function() f:Hide() end)
-	f.close:SetPoint("BOTTOMRIGHT", -PAD, PAD)
-	f.import = S.Button(f, "Import", "primary", 80, function()
+	f.note = S.Text(f, "small", C.muted)
+	f.note:SetPoint("LEFT", f, "BOTTOMLEFT", PAD, footerH / 2)
+	f.note:SetJustifyH("LEFT")
+	f.import = S.Button(f, "Import", "primary", 100, function()
 		local rotation, err = RA.Codec.Decode(f.box.edit:GetText())
 		if rotation then
 			rotation.name = RA.Rotation.UniqueName(rotation.name)
@@ -132,41 +173,51 @@ local function createShare()
 		else
 			f.note:SetText(S.Hex(C.bad, err))
 		end
-	end)
-	f.import:SetPoint("RIGHT", f.close, "LEFT", -GAP, 0)
-	f.note = S.Text(f, "small", C.muted)
-	f.note:SetPoint("LEFT", f, "BOTTOMLEFT", PAD, PAD + CONTROL_H / 2)
-	f.note:SetPoint("RIGHT", f.import, "LEFT", -GAP, 0)
-	f.note:SetJustifyH("LEFT")
+	end, "Add the rotation, renamed if you already have one by that name.")
+	f.import:SetPoint("BOTTOMRIGHT", -PAD, PAD)
+	f.selectAll = S.Button(f, "Select All", "primary", 100, function()
+		f.box.edit:SetFocus()
+		f.box.edit:HighlightText()
+		f.note:SetText(S.Hex(C.warn, "Selected: Press Ctrl+C to Copy"))
+	end, "Select the whole string, ready for Ctrl+C.")
+	f.selectAll:SetPoint("BOTTOMRIGHT", -PAD, PAD)
+	f.note:SetPoint("RIGHT", f.import, "LEFT", -PAD, 0)
 	return f
 end
 
-local function showShare(title, text, note)
-	share = share or createShare()
-	share.title:SetText(title)
-	share.box.edit:ClearFocus()
-	share.box.edit:SetText(text)
-	share.note:SetText(note)
-	share:Show()
-	return share
-end
-
 function Dialogs.ShowExport(rotation)
+	S.Dismiss()
 	share = share or createShare()
-	local f = showShare("Export " .. rotation.name, fitToBox(RA.Codec.Encode(rotation), share.box.edit),
-		"Click the Box, Then Press Ctrl+C to Copy")
-	f.exported = f.box.edit:GetText()
-	f.import:Hide()
-	f.close:SetLabel("Close")
+	local text = RA.Codec.Encode(rotation)
+	share.mode = "export"
+	share.title:SetText("Export: " .. rotation.name)
+	share.sub:SetText("Select All, then Ctrl+C to copy. Share it with anyone who uses Rotation Assist.")
+	share.placeholder:Hide()
+	share.import:Hide()
+	share.selectAll:Show()
+	share.box.edit:ClearFocus()
+	share.exported = fitToBox(text, share.box.edit)
+	share.box.edit:SetText(share.exported)
+	share.box.edit:SetCursorPosition(0)
+	share.note:SetText(S.Count(#text, "Character"))
+	share:Show()
 end
 
 -- onImport(rotation) gets the new rotation, already renamed if its name was taken.
 function Dialogs.ShowImport(onImport)
-	local f = showShare("Import Rotation", "", "Paste a Rotation String, Then Click Import")
-	f.exported = nil
-	f.onImport = onImport
-	f.import:Show()
-	f.close:SetLabel("Cancel")
+	S.Dismiss()
+	share = share or createShare()
+	share.mode = "import"
+	share.exported = nil
+	share.onImport = onImport
+	share.title:SetText("Import a Rotation")
+	share.sub:SetText("Paste a Rotation Assist string, then click Import.")
+	share.selectAll:Hide()
+	share.import:Show()
+	share.box.edit:ClearFocus()
+	share.box.edit:SetText("")
+	refreshImport(share)
+	share:Show()
 end
 
 function Dialogs.ShareFrame()
