@@ -1,6 +1,6 @@
 # Rotation Assist
 
-One-button rotations for WoW 3.3.5a (Wrath of the Lich King servers such as AzerothCore), made for accessibility.
+One-button rotations for WoW 3.3.5a, made for accessibility.
 Bind one key, or click one big on-screen button, and each press casts the first spell in your priority list that's
 ready. It's an alternative to the GSE backports, built around what a 3.3.5a macro can really do, with an editor
 in game and a button that shows what the next press casts.

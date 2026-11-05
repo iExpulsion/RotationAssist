@@ -1,6 +1,6 @@
 # Writing a Server Module
 
-Rotation Assist only uses the stock 3.3.5a client API, so it runs on any Wrath server as it is. A server module
+Rotation Assist only uses the stock 3.3.5a client API, so it runs on any 3.3.5a server as it is. A server module
 is a small addon that tells it about the parts of your server that stock 3.3.5a doesn't have:
 
 - characters with more than one class
