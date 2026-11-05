@@ -75,14 +75,29 @@ local function castableNow(cast)
 	return comboOk and not (moving and castTime > 0 and not cast.moving)
 end
 
+local function condOk(cast)
+	return (cast.cond or "") == "" or SecureCmdOptionParse(cast.cond .. " x") == "x"
+end
+
+local function offCooldown(cast)
+	local start, duration = GetSpellCooldown(cast.name)
+	return start == nil or start == 0 or (duration or 0) <= GCD
+end
+
 -- Conditions hold, usable, the runes are up, off cooldown (or only on the global cooldown) and in range.
 local function looksReady(cast)
-	local condOk = cast.cond == "" or SecureCmdOptionParse(cast.cond .. " x") == "x"
-	local start, duration = GetSpellCooldown(cast.name)
-	local ready = start == nil or start == 0 or (duration or 0) <= GCD
 	local range = IsSpellInRange(cast.name, "target")
-	return condOk and IsUsableSpell(cast.name) and RA.Runes.Enough(cast.name) and castableNow(cast) and ready
-		and range ~= 0
+	return condOk(cast) and IsUsableSpell(cast.name) and RA.Runes.Enough(cast.name) and castableNow(cast)
+		and offCooldown(cast) and range ~= 0
+end
+RB.LooksReady = looksReady
+
+-- Whether a /cast of the spell fails without stopping the press: its condition fails, or it can't be afforded,
+-- isn't lit or is out of range. A cooldown or short runes fail as "not ready", which stops the press.
+function RB.FailsQuietly(cast)
+	local blocked = not offCooldown(cast) or not RA.Runes.Enough(cast.name)
+	local quiet = not IsUsableSpell(cast.name) or IsSpellInRange(cast.name, "target") == 0
+	return not condOk(cast) or (not blocked and quiet)
 end
 
 -- The spell to suggest next, and whether a trigger picked it. A ready spell whose trigger is met comes first,

@@ -33,8 +33,10 @@ in game and a button that shows what the next press casts.
 - **Smart Picks:** each press casts the spell the Rotation Button shows: the first one that's really ready
   (cooldowns, runes, power, combo points for finishers, range, and no cast times while you move), with any ready
   spell whose trigger is met going first. So a rotation can react to procs, debuffs, runes and cooldowns. It works
-  by clearing your target for an instant before every line it didn't pick (a line conditioned on `[exists]` then
-  can't cast) and retargeting right after, so target frames flicker while you mash, and it needs a target to cast.
+  by clearing your target for an instant before a line that could cast instead of the pick (a line conditioned on
+  `[exists]` then can't cast) and retargeting right after. Lines that can't cast anyway, and lines after the pick,
+  keep the target, so most presses don't touch it, but target frames can flicker on the rest. It needs a target
+  to cast.
   That makes it a poor fit for healing or buffing friends; use One Spell per Press or a plain list there.
 - **Import and Export:** share a rotation, with all its modes, actions, triggers and notes, as one string. Export
   is next to Duplicate at the top of a rotation, and Import is at the bottom of the rotation list.
@@ -107,7 +109,7 @@ On the **Modes** tab, pick one of three ways to run the list:
 | **One Spell per Press**| Tries one spell per press, top ones most often    | Healing or no target, when a plain list stalls |
 
 Smart Picks is the one that lets triggers (next step) decide what casts, so turn it on for a damage rotation. It
-needs an enemy targeted, and target frames flicker a little while you mash. Also turn on **Target the Nearest
+needs an enemy targeted, and target frames can flicker a little while you mash. Also turn on **Target the Nearest
 Enemy** and **Start Auto-Attack** if you want a press to pick a target and start attacking for you.
 
 ### 3. Add Triggers
