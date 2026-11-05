@@ -68,7 +68,33 @@ end
 
 -- The Export and Import sheet: one text box that holds a rotation string to copy, or takes one pasted in.
 local SHARE_W, SHARE_H = 460, 250
-local share
+local share, measure
+
+-- The box only wraps at spaces and some punctuation, and a rotation string has long runs of neither, so it's
+-- broken into lines no wider than `width` (as measureWidth reports them). Import ignores the line breaks.
+function Dialogs.FitLines(text, width, measureWidth)
+	local lines, line = {}, ""
+	for i = 1, #text do
+		local c = text:sub(i, i)
+		if line ~= "" and measureWidth(line .. c) > width then
+			lines[#lines + 1] = line
+			line = c
+		else
+			line = line .. c
+		end
+	end
+	lines[#lines + 1] = line
+	return table.concat(lines, "\n")
+end
+
+local function fitToBox(text, edit)
+	measure = measure or UIParent:CreateFontString(nil, "OVERLAY")
+	if edit.GetFont and edit:GetFont() then measure:SetFont(edit:GetFont()) end
+	return Dialogs.FitLines(text, (edit:GetWidth() or 0) - 4, function(s)
+		measure:SetText(s)
+		return measure:GetStringWidth() or 0
+	end)
+end
 
 local function createShare()
 	S.RefreshFonts()
@@ -126,7 +152,9 @@ local function showShare(title, text, note)
 end
 
 function Dialogs.ShowExport(rotation)
-	local f = showShare("Export " .. rotation.name, RA.Codec.Encode(rotation), "Click the Box, Then Press Ctrl+C to Copy")
+	share = share or createShare()
+	local f = showShare("Export " .. rotation.name, fitToBox(RA.Codec.Encode(rotation), share.box.edit),
+		"Click the Box, Then Press Ctrl+C to Copy")
 	f.exported = f.box.edit:GetText()
 	f.import:Hide()
 	f.close:SetLabel("Close")
