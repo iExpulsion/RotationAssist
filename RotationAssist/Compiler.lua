@@ -9,10 +9,6 @@ RA.Compiler = Compiler
 
 Compiler.MAX_MACRO, Compiler.MAX_LINE = 1023, 255
 Compiler.STEP_BUTTON = "RotationAssistStep"
--- A Smart Picks gate is the macro's own code: it reads the lines to clear from a CVar, never from addon code, so
--- the line stays untainted and ClearTarget is allowed in combat.
-Compiler.GATE_CVAR = "RAGate"
-Compiler.GATE = '/run if GetCVar"RAGate":find",%d,"then ClearTarget()end'
 
 local trim = RA.Spells.Trim
 
@@ -151,7 +147,7 @@ function Compiler.CompileMode(rotation, mode, env, firstStep)
 		lines[#lines + 1] = "/run RAPick()"
 		for i, line in ipairs(late) do
 			if gates[i] then
-				lines[#lines + 1] = Compiler.GATE:format(gates[i])
+				lines[#lines + 1] = ("/run RAGate(%d)"):format(gates[i])
 				lines[#lines + 1] = line
 				lines[#lines + 1] = "/targetlasttarget [noexists]"
 			else
