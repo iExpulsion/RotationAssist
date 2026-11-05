@@ -19,7 +19,9 @@ in game and a button that shows what the next press casts.
   can be **Once per Reset**: it casts each spell once (a debuff, a mark), then waits until a new target or the
   next fight.
 - **Rotation Button:** a large on-screen button showing the likely next spell, the mode and the key. You can
-  click it like the key, and resize or move it.
+  click it like the key, and resize or move it. A green dot lights on it and on the minimap button while presses
+  keep coming, from the key, clicks or a mouse macro, and goes out a second after the last one, so a repeating
+  mouse macro left on is easy to spot.
 - **Triggers:** give a spell a trigger like `[buff:Clearcasting]` or `[nodebuff:Corruption<3]`. While it's met
   and the spell is ready, the spell goes first and the Rotation Button glows; while it isn't, the spell is passed
   over. Triggers can check your buffs, your debuffs on the target,

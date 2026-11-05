@@ -12,8 +12,18 @@ local C = S.colors
 local SIZE, TOGGLE_SIZE = 56, 30
 local THROTTLE = 0.1
 local GCD = 1.5
+RB.RUNNING = 1
 
-local exec, toggle, mover
+local exec, toggle, mover, lastPress
+
+-- Whether the Rotation key, a click or a mouse macro pressed the rotation button in the last second.
+function RB.Running()
+	return lastPress ~= nil and GetTime() - lastPress < RB.RUNNING
+end
+
+function RB.Pressed()
+	lastPress = GetTime()
+end
 
 local function savePosition()
 	local point, _, relPoint, x, y = exec:GetPoint()
@@ -51,6 +61,7 @@ local function tooltip(self)
 		GameTooltip:AddLine("Click or press the Mode key to go to the next mode.", 0.8, 0.8, 0.8, true)
 	else
 		GameTooltip:AddLine("Click or press the Rotation key to cast the first ready spell. The icon is the likely next one; a glow means a trigger picked it, such as a proc.", 0.8, 0.8, 0.8, true)
+		GameTooltip:AddLine("The green dot shows while presses keep coming, from the key, clicks or a mouse macro, and goes out a second after the last one.", 0.8, 0.8, 0.8, true)
 	end
 	GameTooltip:Show()
 end
@@ -146,6 +157,7 @@ local function update()
 	end
 	exec.icon:SetTexture(icon)
 	exec.icon:SetDesaturated(upcoming == nil)
+	if RB.Running() then exec.running:Show() else exec.running:Hide() end
 	exec.mode:SetText(modeLabel())
 	exec.key:SetText(RA.Keys.Get("main") and RA.Keys.Text("main") or "")
 	toggle.key:SetText(RA.Keys.Get("toggle") and RA.Keys.Text("toggle") or "")
@@ -167,6 +179,14 @@ local function create()
 	exec.glow:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 2 })
 	exec.glow:SetBackdropBorderColor(unpack(C.warn))
 	exec.glow:Hide()
+	-- shown while presses keep coming, so a mouse macro left on is easy to spot
+	exec.running = CreateFrame("Frame", nil, exec)
+	exec.running:SetSize(10, 10)
+	exec.running:SetPoint("TOPLEFT", 4, -4)
+	exec.running:SetFrameLevel(exec:GetFrameLevel() + 3)
+	S.Panel(exec.running, C.good, { 0, 0, 0, 1 })
+	exec.running:Hide()
+	exec:HookScript("PreClick", RB.Pressed)
 	exec.mode = S.Text(exec, "small", C.muted, "OVERLAY")
 	exec.mode:SetPoint("TOP", exec, "BOTTOM", 0, -4)
 	exec.mode:SetJustifyH("CENTER")

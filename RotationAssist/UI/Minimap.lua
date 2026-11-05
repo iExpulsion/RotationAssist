@@ -61,6 +61,7 @@ local function fillTooltip(tt)
 	tt:AddLine("Rotation Assist", 1, 0.77, 0)
 	local active = RA:ActiveRotation()
 	tt:AddLine(RA:SpecName(RA:ActiveGroup()) .. ": " .. (active and active.name or "no rotation"), 1, 1, 1)
+	if RA.RotationButton.Running() then tt:AddLine("Running: the rotation key is being pressed.", 0.4, 0.85, 0.5) end
 	tt:AddLine("Left-click to open or close the rotation window.", 0.8, 0.8, 0.8)
 	tt:AddLine("Right-click to open this spec's rotation.", 0.8, 0.8, 0.8)
 	tt:AddLine("Drag to move. /rota minimap hides it.", 0.6, 0.6, 0.66)
@@ -95,6 +96,21 @@ local function create()
 	border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
 	border:SetSize(53, 53)
 	border:SetPoint("TOPLEFT")
+	-- the Rotation Button's running dot, for when that button is hidden
+	button.running = CreateFrame("Frame", nil, button)
+	button.running:SetSize(8, 8)
+	button.running:SetPoint("CENTER", button.icon, "BOTTOMRIGHT", -1, 1)
+	button.running:SetFrameLevel(button:GetFrameLevel() + 2)
+	RA.Style.Panel(button.running, RA.Style.colors.good, { 0, 0, 0, 1 })
+	button.running:Hide()
+	local elapsed = 0
+	button:SetScript("OnUpdate", function(_, dt)
+		elapsed = elapsed + dt
+		if elapsed >= 0.1 then
+			elapsed = 0
+			if RA.RotationButton.Running() then button.running:Show() else button.running:Hide() end
+		end
+	end)
 
 	button:SetScript("OnClick", onClick)
 	button:SetScript("OnEnter", function(self)
