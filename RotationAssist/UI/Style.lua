@@ -1,10 +1,10 @@
-local _, NS = ...
-local RA = NS.RA
-
--- Flat dark style kit on Material 3 color roles: one accent color, 1px borders, and a few button kinds.
--- The same kit is in Synastria Build Suite and Synastria Companion; keep the copies in step.
+-- Vendored from LuaMaterialUI 6113b35. Change it there, then run tools/sync_style.py.
+-- LuaMaterialUI: a flat dark style kit for WoW 3.3.5 addons on Material 3 color roles: one accent color, 1px
+-- borders, state layers and a few button kinds. Each addon ships its own copy, listed in its .toc, and reads it
+-- as NS.Style from its addon table; font objects are named after the addon, so copies never clash.
+local ADDON, NS = ...
 local S = {}
-RA.Style = S
+NS.Style = S
 
 local WHITE = "Interface\\Buttons\\WHITE8X8"
 
@@ -67,7 +67,7 @@ S.colors = {
 -- controls, and one height for every button, input and dropdown so rows line up.
 S.PAD, S.GAP, S.CONTROL_H = 12, 8, 24
 
--- "1 spell", "3 spells".
+-- "1 item", "3 items".
 function S.Count(n, singular, plural)
 	return ("%d %s"):format(n, n == 1 and singular or (plural or singular .. "s"))
 end
@@ -143,7 +143,7 @@ local STOCK = { small = "GameFontHighlightSmall", normal = "GameFontHighlight", 
 local FALLBACK_SIZE = { small = 10, normal = 12, large = 16, huge = 20, edit = 14 }
 S.FONTS = {}
 for size in pairs(STOCK) do
-	S.FONTS[size] = CreateFont("RAFont" .. size:sub(1, 1):upper() .. size:sub(2))
+	S.FONTS[size] = CreateFont(ADDON .. "Font" .. size:sub(1, 1):upper() .. size:sub(2))
 end
 local FONTS = S.FONTS
 local specs = {}

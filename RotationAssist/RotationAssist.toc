@@ -11,6 +11,7 @@ Libs\LibDeflate\LibDeflate.lua
 Core.lua
 Spells.lua
 UI\Style.lua
+UI\StyleSetup.lua
 Rotation.lua
 Compiler.lua
 Engine.lua
