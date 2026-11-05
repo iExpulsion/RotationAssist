@@ -2,6 +2,7 @@ local _, NS = ...
 local RA = NS.RA
 
 -- Flat dark style kit on Material 3 color roles: one accent color, 1px borders, and a few button kinds.
+-- The same kit is in Synastria Build Suite and Synastria Companion; keep the copies in step.
 local S = {}
 RA.Style = S
 
@@ -69,6 +70,18 @@ S.PAD, S.GAP, S.CONTROL_H = 12, 8, 24
 -- "1 spell", "3 spells".
 function S.Count(n, singular, plural)
 	return ("%d %s"):format(n, n == 1 and singular or (plural or singular .. "s"))
+end
+
+-- An item quality's color as { r, g, b, a }, made once per quality since tables ask for it on every redraw.
+local qualityColors = {}
+function S.QualityColor(q)
+	local color = qualityColors[q or -1]
+	if not color then
+		local c = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[q]
+		color = c and { c.r, c.g, c.b, 1 } or S.colors.text
+		qualityColors[q or -1] = color
+	end
+	return color
 end
 
 function S.Hex(c, text)
@@ -235,6 +248,10 @@ function S.Button(parent, label, kind, width, onClick, tooltip, template)
 		self.label:SetText(text)
 		self:SetWidth(math.max(self.minWidth or 70, self.label:GetStringWidth() + 24))
 	end
+	-- changes the label and keeps the width; the button's own SetText would set a text it doesn't show
+	function b:SetText(text)
+		self.label:SetText(text)
+	end
 	b.minWidth = width
 	paint(b)
 	return b
@@ -286,6 +303,11 @@ function S.OnDismiss(fn)
 	dismissers[#dismissers + 1] = fn
 end
 
+-- A popup that closes like a dropdown menu: on a click outside it and its popup.owner, and on S.Dismiss.
+function S.TrackPopup(popup)
+	menus[#menus + 1] = popup
+end
+
 function S.CloseMenus()
 	for _, menu in ipairs(menus) do menu:Hide() end
 end
@@ -329,10 +351,21 @@ clicks:SetScript("OnUpdate", function()
 	wasDown = down
 end)
 
--- Flat dropdown: a button showing the current choice that opens a menu below it. SetOptions takes
--- { { value, text, tooltip } }; picking one calls onSelect(value) and closes the menu. Opening one closes the others.
-function S.Dropdown(parent, width, onSelect)
-	local b = S.Button(parent, "", "secondary", width)
+-- A section heading in a navigation list: small dim text with a rule running from it to the right edge, so it
+-- reads as a divider rather than one of the entries under it.
+function S.SectionHeading(parent, text, x, y, rightInset)
+	local label = S.Text(parent, "small", S.colors.outline)
+	label:SetPoint("TOPLEFT", x, y)
+	label:SetText(text)
+	local line = S.Solid(parent, "BORDER", S.colors.border)
+	line:SetHeight(1)
+	line:SetPoint("LEFT", label, "RIGHT", 6, 0)
+	line:SetPoint("RIGHT", parent, "RIGHT", -(rightInset or x), 0)
+	return label, line
+end
+
+-- Gives a button a dropdown's arrow and left-aligned label, for buttons that open a list (a menu or a picker).
+function S.AddArrow(b)
 	b.label:ClearAllPoints()
 	b.label:SetPoint("LEFT", 8, 0)
 	b.label:SetPoint("RIGHT", -24, 0)
@@ -346,6 +379,14 @@ function S.Dropdown(parent, width, onSelect)
 	arrow:SetPoint("RIGHT", -10, -2)
 	arrow:SetDesaturated(true)
 	arrow:SetVertexColor(unpack(S.colors.muted))
+	b.arrow = arrow
+	return b
+end
+
+-- Flat dropdown: a button showing the current choice that opens a menu below it. SetOptions takes
+-- { { value, text, tooltip } }; picking one calls onSelect(value) and closes the menu. Opening one closes the others.
+function S.Dropdown(parent, width, onSelect)
+	local b = S.AddArrow(S.Button(parent, "", "secondary", width))
 
 	local menu = CreateFrame("Frame", nil, b)
 	-- above DIALOG, so the menu covers the controls of the dialog it opens from
