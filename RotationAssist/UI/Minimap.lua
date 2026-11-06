@@ -2,7 +2,7 @@ local _, NS = ...
 local RA = NS.RA
 
 -- Minimap button: left-click opens the window, right-click opens the rotation linked to the active spec, drag
--- moves it around the minimap. Position and visibility are saved in RotationAssistDB.minimap. When a
+-- moves it around the minimap and Shift-drag anywhere on screen. Position and visibility are saved in RotationAssistDB.minimap. When a
 -- LibDataBroker display is installed, a launcher is registered there too.
 local MinimapButton = {}
 RA.MinimapButton = MinimapButton
@@ -29,21 +29,35 @@ local SHAPES = {
 	["TRICORNER-BOTTOMRIGHT"] = { true, true, true, false },
 }
 
+-- Shift-drag frees the button: it moves to UIParent at a saved spot (db.minimap.free), so it stays up even when
+-- the minimap is hidden. A plain drag puts it back on the minimap's edge.
 local function place()
-	local angle = math.rad(RA.db.minimap.angle or DEFAULT_ANGLE)
-	local x, y = math.cos(angle), math.sin(angle)
-	local quadrant = 1 + (x < 0 and 1 or 0) + (y > 0 and 2 or 0)
-	local shape = GetMinimapShape and GetMinimapShape() or "ROUND"
-	local radius = Minimap:GetWidth() / 2 + 5
-	if (SHAPES[shape] or SHAPES.ROUND)[quadrant] then
-		x, y = x * radius, y * radius
-	else
-		local diagonal = math.sqrt(2 * radius * radius) - 10
-		x = math.max(-radius, math.min(x * diagonal, radius))
-		y = math.max(-radius, math.min(y * diagonal, radius))
+	local free = RA.db.minimap.free
+	local parent = free and UIParent or Minimap
+	if button:GetParent() ~= parent then
+		button:SetParent(parent)
+		button:SetFrameStrata("MEDIUM")
+		button:SetFrameLevel(8)
+		button.running:SetFrameLevel(button:GetFrameLevel() + 2)
 	end
 	button:ClearAllPoints()
-	button:SetPoint("CENTER", Minimap, "CENTER", x, y)
+	if free then
+		button:SetPoint("CENTER", UIParent, "BOTTOMLEFT", free.x, free.y)
+	else
+		local angle = math.rad(RA.db.minimap.angle or DEFAULT_ANGLE)
+		local x, y = math.cos(angle), math.sin(angle)
+		local quadrant = 1 + (x < 0 and 1 or 0) + (y > 0 and 2 or 0)
+		local shape = GetMinimapShape and GetMinimapShape() or "ROUND"
+		local radius = Minimap:GetWidth() / 2 + 5
+		if (SHAPES[shape] or SHAPES.ROUND)[quadrant] then
+			x, y = x * radius, y * radius
+		else
+			local diagonal = math.sqrt(2 * radius * radius) - 10
+			x = math.max(-radius, math.min(x * diagonal, radius))
+			y = math.max(-radius, math.min(y * diagonal, radius))
+		end
+		button:SetPoint("CENTER", Minimap, "CENTER", x, y)
+	end
 end
 
 local function onClick(_, mouse)
@@ -64,15 +78,26 @@ local function fillTooltip(tt)
 	if RA.RotationButton.Running() then tt:AddLine("Running: the rotation key is being pressed.", 0.4, 0.85, 0.5) end
 	tt:AddLine("Left-click to open or close the rotation window.", 0.8, 0.8, 0.8)
 	tt:AddLine("Right-click to open this spec's rotation.", 0.8, 0.8, 0.8)
-	tt:AddLine("Drag to move. /rota minimap hides it.", 0.6, 0.6, 0.66)
+	tt:AddLine("Drag to move it around the minimap, Shift-drag to place it anywhere.", 0.6, 0.6, 0.66)
+	tt:AddLine("/rota minimap hides it; /rota minimap reset puts it back.", 0.6, 0.6, 0.66)
 end
 
+-- Ends on the mouse release itself: a reparent mid-drag can cost the OnDragStop.
 local function onDragUpdate()
-	local mx, my = Minimap:GetCenter()
-	local px, py = GetCursorPosition()
-	local scale = Minimap:GetEffectiveScale()
-	RA.db.minimap.angle = math.deg(math.atan2(py / scale - my, px / scale - mx)) % 360
-	place()
+	if IsMouseButtonDown("LeftButton") then
+		local px, py = GetCursorPosition()
+		if RA.db.minimap.free then
+			local scale = UIParent:GetEffectiveScale()
+			RA.db.minimap.free.x, RA.db.minimap.free.y = px / scale, py / scale
+		else
+			local mx, my = Minimap:GetCenter()
+			local scale = Minimap:GetEffectiveScale()
+			RA.db.minimap.angle = math.deg(math.atan2(py / scale - my, px / scale - mx)) % 360
+		end
+		place()
+	else
+		button.dragging = false
+	end
 end
 
 local function create()
@@ -80,6 +105,7 @@ local function create()
 	button:SetSize(31, 31)
 	button:SetFrameStrata("MEDIUM")
 	button:SetFrameLevel(8)
+	button:SetClampedToScreen(true)
 	button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	button:RegisterForDrag("LeftButton")
 	button:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
@@ -105,6 +131,7 @@ local function create()
 	button.running:Hide()
 	local elapsed = 0
 	button:SetScript("OnUpdate", function(_, dt)
+		if button.dragging then onDragUpdate() end
 		elapsed = elapsed + dt
 		if elapsed >= 0.1 then
 			elapsed = 0
@@ -121,9 +148,10 @@ local function create()
 	button:SetScript("OnLeave", function() GameTooltip:Hide() end)
 	button:SetScript("OnDragStart", function(self)
 		GameTooltip:Hide()
-		self:SetScript("OnUpdate", onDragUpdate)
+		RA.db.minimap.free = IsShiftKeyDown() and (RA.db.minimap.free or {}) or nil
+		self.dragging = true
 	end)
-	button:SetScript("OnDragStop", function(self) self:SetScript("OnUpdate", nil) end)
+	button:SetScript("OnDragStop", function(self) self.dragging = false end)
 	place()
 end
 
@@ -148,6 +176,12 @@ function MinimapButton.Toggle()
 	RA.db.minimap.hide = not RA.db.minimap.hide
 	MinimapButton.Refresh()
 	RA:Print(RA.db.minimap.hide and "Minimap button hidden. /rota minimap shows it again." or "Minimap button shown.")
+end
+
+function MinimapButton.ResetPosition()
+	RA.db.minimap.free, RA.db.minimap.angle = nil, nil
+	place()
+	RA:Print("Minimap button moved back to the minimap.")
 end
 
 function MinimapButton.Frame()

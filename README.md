@@ -195,7 +195,9 @@ string. To use one someone shared, click **Import** at the bottom of the rotatio
 - `/rota quiet`: turn Quiet Errors on or off
 - `/rota trace`: after each press, list the spells sent, cast or failed, and the errors, to see which line took
   the press
-- `/rota minimap`: show or hide the minimap button
+- `/rota minimap`: show or hide the minimap button (drag it around the minimap, or Shift-drag it anywhere on
+  screen)
+- `/rota minimap reset`: put the minimap button back on the minimap
 - `/rota reset`: move the window and the Rotation Button back to the middle of the screen
 
 ## Server Modules

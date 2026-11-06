@@ -4,7 +4,7 @@ local RA = NS.RA
 local function help()
 	RA:Print("v%s commands (/rota alone opens the window):", RA.version)
 	RA:Print("  /rota button (show or hide the Rotation Button) | lock | unlock")
-	RA:Print("  /rota macros | quiet | trace | minimap | reset")
+	RA:Print("  /rota macros | quiet | trace | minimap [reset] | reset")
 end
 
 local handlers = {}
@@ -35,7 +35,9 @@ handlers.trace = function()
 		RA:Print("Trace needs a full game restart after an update; /reload doesn't load new files.")
 	end
 end
-handlers.minimap = function() RA.MinimapButton.Toggle() end
+handlers.minimap = function(arg)
+	if arg:lower() == "reset" then RA.MinimapButton.ResetPosition() else RA.MinimapButton.Toggle() end
+end
 handlers.reset = function()
 	RA.Window.ResetPosition()
 	RA.RotationButton.ResetPosition()
