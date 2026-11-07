@@ -71,13 +71,17 @@ local function onClick(_, mouse)
 	end
 end
 
-local function fillTooltip(tt)
+local function fillBrokerTooltip(tt)
 	tt:AddLine("Rotation Assist", 1, 0.77, 0)
 	local active = RA:ActiveRotation()
 	tt:AddLine(RA:SpecName(RA:ActiveGroup()) .. ": " .. (active and active.name or "no rotation"), 1, 1, 1)
 	if RA.RotationButton.Running() then tt:AddLine("Running: the rotation key is being pressed.", 0.4, 0.85, 0.5) end
 	tt:AddLine("Left-click to open or close the rotation window.", 0.8, 0.8, 0.8)
 	tt:AddLine("Right-click to open this spec's rotation.", 0.8, 0.8, 0.8)
+end
+
+local function fillTooltip(tt)
+	fillBrokerTooltip(tt)
 	tt:AddLine("Drag to move it around the minimap, Shift-drag to place it anywhere.", 0.6, 0.6, 0.66)
 	tt:AddLine("/rota minimap hides it; /rota minimap reset puts it back.", 0.6, 0.6, 0.66)
 end
@@ -155,18 +159,16 @@ local function create()
 	place()
 end
 
-local function registerBroker()
-	local ldb = LibStub and LibStub("LibDataBroker-1.1", true)
-	if ldb then
-		ldb:NewDataObject("RotationAssist", {
-			type = "launcher",
-			icon = ICON,
-			label = "Rotation Assist",
-			OnClick = onClick,
-			OnTooltipShow = fillTooltip,
-		})
-	end
-end
+-- Registered while the addon loads, not at login: displays like ElvUI fill their panels on PLAYER_LOGIN before
+-- our handler runs, and a launcher created after that never lands in the panel set to it.
+LibStub("LibDataBroker-1.1"):NewDataObject("RotationAssist", {
+	type = "launcher",
+	icon = ICON,
+	label = "Rotation Assist",
+	text = "Rotation Assist",
+	OnClick = onClick,
+	OnTooltipShow = fillBrokerTooltip,
+})
 
 function MinimapButton.Refresh()
 	if RA.db.minimap.hide then button:Hide() else button:Show() end
@@ -193,7 +195,6 @@ loader:RegisterEvent("PLAYER_LOGIN")
 loader:SetScript("OnEvent", function(self)
 	RA.db.minimap = RA.db.minimap or {}
 	create()
-	registerBroker()
 	MinimapButton.Refresh()
 	self:UnregisterEvent("PLAYER_LOGIN")
 end)

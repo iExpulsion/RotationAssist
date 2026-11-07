@@ -209,6 +209,9 @@ string. To use one someone shared, click **Import** at the bottom of the rotatio
 The window snaps to whole screen pixels, so its borders stay crisp. At most UI scales that makes it a little
 larger or smaller than the rest of your UI; `/rota pixel` turns it off if you'd rather it matched exactly.
 
+With a LibDataBroker display such as Titan Panel or ElvUI's data texts, Rotation Assist appears there too, with
+the same clicks as the minimap button.
+
 ## Server Modules
 
 Rotation Assist works on any 3.3.5a server as it is. Servers that change the game (several classes per
@@ -224,5 +227,6 @@ To write one for your server, read [docs/MODULES.md](docs/MODULES.md).
 ## License
 
 MIT. Bundles [LibDeflate](https://github.com/SafeteeWoW/LibDeflate) (zlib License) to compress rotation
-strings, and LibStub (public domain). The Cognac art in `RotationAssist/UI/Skins/Cognac` is from
+strings, LibStub and LibDataBroker-1.1 (public domain), and CallbackHandler-1.0 (from Ace3, under its own
+BSD-style license). The Cognac art in `RotationAssist/UI/Skins/Cognac` is from
 [AttuneNext](https://github.com/speedyrulz/AttuneNext) and isn't covered by the MIT License.
