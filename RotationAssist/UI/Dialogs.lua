@@ -7,19 +7,23 @@ RA.Dialogs = Dialogs
 
 local S = RA.Style
 local C = S.colors
-local PAD, GAP, CONTROL_H = S.PAD, S.GAP, S.CONTROL_H
+local GAP, CONTROL_H = S.GAP, S.CONTROL_H
 local W, H = 380, 130
 
 local sheet
 
 local function create()
+	-- the theme's dialog padding; the dialog grows by the difference from the kit's, so its contents keep their size
+	local PAD = S.metrics.inset
+	local grow = 2 * (PAD - S.PAD)
 	S.RefreshFonts()
 	local f = CreateFrame("Frame", "RotationAssistNewFrame", UIParent)
-	f:SetSize(W, H)
+	f:SetSize(W + grow, H + grow)
 	f:SetPoint("CENTER", 0, 80)
 	f:SetFrameStrata("DIALOG")
 	f:EnableMouse(true)
-	S.Panel(f, { C.window[1], C.window[2], C.window[3], 1 }, C.border)
+	RA.PixelScale(f)
+	S.Frame(f, "popup")
 	tinsert(UISpecialFrames, "RotationAssistNewFrame")
 	f:HookScript("OnHide", S.Dismiss)
 
@@ -28,10 +32,10 @@ local function create()
 	title:SetText("New Rotation")
 
 	local nameLabel = S.Text(f, "small", C.muted)
-	nameLabel:SetPoint("TOPLEFT", PAD, -(PAD + 16 + PAD + 6))
+	nameLabel:SetPoint("TOPLEFT", PAD, -(PAD + 16 + S.PAD + 6))
 	nameLabel:SetText("Name")
-	f.name = S.Input(f, "RotationAssistNewName", W - 2 * PAD - 80, "Rotation Name", 40)
-	f.name:SetPoint("TOPLEFT", PAD + 80, -(PAD + 16 + PAD))
+	f.name = S.Input(f, "RotationAssistNewName", W - 2 * S.PAD - 80, "Rotation Name", 40)
+	f.name:SetPoint("TOPLEFT", PAD + 80, -(PAD + 16 + S.PAD))
 
 	local cancel = S.Button(f, "Cancel", "secondary", 80, function() f:Hide() end)
 	cancel:SetPoint("BOTTOMRIGHT", -PAD, PAD)
@@ -114,11 +118,13 @@ end
 -- Title and instructions, Close at the top right, the string, and a footer with a note on the left and the action
 -- (Select All or Import) on the right.
 local function createShare()
+	local PAD = S.metrics.inset
+	local grow = 2 * (PAD - S.PAD)
 	S.RefreshFonts()
 	local wellTop = PAD + 16 + 4 + 12 + GAP
 	local footerH = PAD + CONTROL_H + PAD
 	local f = CreateFrame("Frame", "RotationAssistShareFrame", UIParent)
-	f:SetSize(SHARE_W, SHARE_H)
+	f:SetSize(SHARE_W + grow, SHARE_H + grow)
 	f:SetPoint("CENTER", 0, 80)
 	f:SetFrameStrata("DIALOG")
 	f:EnableMouse(true)
@@ -126,7 +132,8 @@ local function createShare()
 	f:RegisterForDrag("LeftButton")
 	f:SetScript("OnDragStart", f.StartMoving)
 	f:SetScript("OnDragStop", f.StopMovingOrSizing)
-	S.Panel(f, { C.window[1], C.window[2], C.window[3], 1 }, C.border)
+	RA.PixelScale(f)
+	S.Frame(f, "popup")
 	tinsert(UISpecialFrames, "RotationAssistShareFrame")
 	f:HookScript("OnHide", S.Dismiss)
 
@@ -138,7 +145,8 @@ local function createShare()
 	f.close = S.Button(f, "Close", "ghost", 56, function() f:Hide() end)
 	f.close:SetPoint("TOPRIGHT", -PAD, -(PAD - 4))
 
-	f.box = RA.Widgets.TextArea(f, "RotationAssistShareText", SHARE_W - 2 * PAD, SHARE_H - wellTop - footerH, nil, "edit")
+	f.box = RA.Widgets.TextArea(f, "RotationAssistShareText", SHARE_W - 2 * S.PAD, SHARE_H + grow - wellTop - footerH, nil,
+		"edit")
 	f.box:SetPoint("TOPLEFT", PAD, -wellTop)
 	f.box.edit:HookScript("OnTextChanged", function(self, userInput)
 		if f.mode == "import" then

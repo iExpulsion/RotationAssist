@@ -27,11 +27,10 @@ local SPECS_KEY = "\1specs"
 
 local frame
 
--- The default spot: centered across the screen, its top 128 units below the screen's top, so windows of different
--- heights line up.
+-- The default spot is the style kit's, top middle of the screen, shared with Companion and Build Suite.
 local function placeDefault(f)
-	f:ClearAllPoints()
-	f:SetPoint("TOP", UIParent, "TOP", 0, -128)
+	S.PlaceWindow(f)
+	RA.SnapPosition(f)
 end
 
 -- settings: the Settings view (keys, the Rotation Button, errors) shows in place of the selected rotation
@@ -300,10 +299,32 @@ local function useRotation()
 	end
 end
 
-local function createTitleBar(f)
+-- The theme picker: every skin the kit has, with who made it on hover. A change applies after a reload.
+local function createThemePicker(bar, anchor)
+	local label = S.Text(bar, "small", C.muted)
+	label:SetPoint("LEFT", anchor, "RIGHT", 2 * GAP, 0)
+	label:SetText("Theme")
+	local options, inUse = {}, nil
+	for _, skin in ipairs(S.Skins()) do
+		options[#options + 1] = { value = skin.key, text = skin.label, tooltip = skin.credit }
+		if skin.key == S.Skin() then inUse = skin.label end
+	end
+	local picker
+	picker = S.Dropdown(bar, 96, function(key)
+		RA.SetSkin(key)
+		for _, opt in ipairs(options) do
+			if opt.value == key then picker:SetText(opt.text) end
+		end
+	end)
+	picker:SetOptions(options)
+	picker:SetText(inUse or "")
+	picker:SetPoint("LEFT", label, "RIGHT", GAP, 0)
+end
+
+local function createTitleBar(f, edge)
 	local bar = CreateFrame("Frame", nil, f)
-	bar:SetPoint("TOPLEFT")
-	bar:SetPoint("TOPRIGHT")
+	bar:SetPoint("TOPLEFT", edge, -edge)
+	bar:SetPoint("TOPRIGHT", -edge, -edge)
 	bar:SetHeight(TITLE_H)
 	bar:EnableMouse(true)
 	bar:RegisterForDrag("LeftButton")
@@ -313,6 +334,7 @@ local function createTitleBar(f)
 	end)
 	bar:SetScript("OnDragStop", function()
 		f:StopMovingOrSizing()
+		RA.SnapPosition(f)
 		local point, _, relPoint, x, y = f:GetPoint()
 		RA.db.window = { point = point, relPoint = relPoint, x = x, y = y }
 	end)
@@ -324,6 +346,7 @@ local function createTitleBar(f)
 	local version = S.Text(bar, "small", C.muted)
 	version:SetPoint("LEFT", title, "RIGHT", GAP, 0)
 	version:SetText("v" .. RA.version)
+	createThemePicker(bar, version)
 
 	local inset = (TITLE_H - CONTROL_H) / 2
 	local close = S.Button(bar, "Close", "ghost", 56, function() f:Hide() end)
@@ -338,18 +361,15 @@ local function createTitleBar(f)
 	f.statusDot:SetPoint("RIGHT", f.statusText, "LEFT", -GAP, 0)
 end
 
-local function createSidebar(f)
+local function createSidebar(f, edge)
 	local side = CreateFrame("Frame", nil, f)
-	side:SetPoint("TOPLEFT", 0, -TITLE_H)
-	side:SetPoint("BOTTOMLEFT")
+	side:SetPoint("TOPLEFT", edge, -edge - TITLE_H)
+	side:SetPoint("BOTTOMLEFT", edge, edge)
 	side:SetWidth(SIDEBAR_W)
-	local fill = S.Solid(side, "BACKGROUND", C.sidebar)
-	fill:SetPoint("TOPLEFT", 1, 0)
-	fill:SetPoint("BOTTOMRIGHT", 0, 1)
-	local edge = S.Solid(side, "BORDER", C.border)
-	edge:SetWidth(1)
-	edge:SetPoint("TOPRIGHT")
-	edge:SetPoint("BOTTOMRIGHT")
+	side:SetHeight(H - TITLE_H)
+	S.Sidebar(side)
+	-- the list rows sit in from the sidebar's sides by the skin's frame around it
+	local inset = S.metrics.navInset
 
 	f.search = S.Input(side, "RotationAssistSearch", SIDEBAR_W - 2 * PAD, "Search Rotations", 40)
 	f.search:SetPoint("TOPLEFT", PAD, -PAD)
@@ -359,8 +379,9 @@ local function createSidebar(f)
 	end)
 
 	local listTop = PAD + CONTROL_H + GAP
-	f.list = RA.List.New(side, "RotationAssistListScroll", SIDEBAR_W - 14, H - TITLE_H - listTop - FOOTER_H, "sidebar")
-	f.list.scroll:SetPoint("TOPLEFT", 0, -listTop)
+	f.list = RA.List.New(side, "RotationAssistListScroll", SIDEBAR_W - 14 - 2 * inset, H - TITLE_H - listTop - FOOTER_H,
+		"sidebar")
+	f.list.scroll:SetPoint("TOPLEFT", inset, -listTop)
 	f.noMatches = S.Text(side, "small", C.muted)
 	f.noMatches:SetPoint("TOP", 0, -(listTop + PAD))
 	f.noMatches:SetText("No rotations match your search.")
@@ -497,8 +518,7 @@ local function createTabBar(main)
 		b.underline:SetHeight(2)
 		b.underline:SetPoint("BOTTOMLEFT", 6, 0)
 		b.underline:SetPoint("BOTTOMRIGHT", -6, 0)
-		local hover = S.Solid(b, "HIGHLIGHT", C.hover)
-		hover:SetAllPoints()
+		S.Highlight(b)
 		b:SetScript("OnClick", function()
 			PlaySound("igCharacterInfoTab")
 			S.Dismiss()
@@ -510,10 +530,10 @@ local function createTabBar(main)
 	end
 end
 
-local function createMain(f)
+local function createMain(f, edge)
 	local main = CreateFrame("Frame", nil, f)
-	main:SetPoint("TOPLEFT", SIDEBAR_W, -TITLE_H)
-	main:SetPoint("BOTTOMRIGHT")
+	main:SetPoint("TOPLEFT", edge + SIDEBAR_W, -edge - TITLE_H)
+	main:SetPoint("BOTTOMRIGHT", -edge, edge)
 	f.main = main
 	createHeader(main)
 	createTabBar(main)
@@ -540,10 +560,10 @@ local function createMain(f)
 	f.summary:SetPoint("RIGHT", -PAD, 0)
 end
 
-local function createEmpty(f)
+local function createEmpty(f, edge)
 	local empty = CreateFrame("Frame", nil, f)
-	empty:SetPoint("TOPLEFT", SIDEBAR_W, -TITLE_H)
-	empty:SetPoint("BOTTOMRIGHT")
+	empty:SetPoint("TOPLEFT", edge + SIDEBAR_W, -edge - TITLE_H)
+	empty:SetPoint("BOTTOMRIGHT", -edge, edge)
 	local title = S.Text(empty, "large")
 	title:SetPoint("CENTER", 0, 50)
 	title:SetJustifyH("CENTER")
@@ -558,10 +578,10 @@ local function createEmpty(f)
 	f.empty = empty
 end
 
-local function createSettings(f)
+local function createSettings(f, edge)
 	local pane = CreateFrame("Frame", nil, f)
-	pane:SetPoint("TOPLEFT", SIDEBAR_W, -TITLE_H)
-	pane:SetPoint("BOTTOMRIGHT")
+	pane:SetPoint("TOPLEFT", edge + SIDEBAR_W, -edge - TITLE_H)
+	pane:SetPoint("BOTTOMRIGHT", -edge, edge)
 	local title = S.Text(pane, "large")
 	title:SetPoint("TOPLEFT", PAD, -PAD)
 	title:SetText("Settings")
@@ -584,23 +604,31 @@ local function create()
 	S.RefreshFonts()
 	local f = CreateFrame("Frame", "RotationAssistFrame", UIParent)
 	frame = f
-	f:SetSize(W, H)
+	-- the theme's border (S.metrics.edge) goes around the same content area, so every screen keeps its size
+	local edge = S.metrics.edge
+	f:SetSize(W + 2 * edge, H + 2 * edge)
 	f:SetFrameStrata("HIGH")
 	f:SetToplevel(true)
 	f:EnableMouse(true)
 	f:SetMovable(true)
 	f:SetClampedToScreen(true)
+	RA.PixelScale(f)
 	local pos = RA.db.window
-	if pos then f:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y) else placeDefault(f) end
-	S.Panel(f, C.window, C.border)
+	if pos then
+		f:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
+		RA.SnapPosition(f)
+	else
+		placeDefault(f)
+	end
+	S.Frame(f, "window")
 	tinsert(UISpecialFrames, "RotationAssistFrame")
 	f:Hide()
 
-	createTitleBar(f)
-	createSidebar(f)
-	createMain(f)
-	createEmpty(f)
-	createSettings(f)
+	createTitleBar(f, edge)
+	createSidebar(f, edge)
+	createMain(f, edge)
+	createEmpty(f, edge)
+	createSettings(f, edge)
 
 	f:SetScript("OnShow", function()
 		PlaySound("igCharacterInfoOpen")

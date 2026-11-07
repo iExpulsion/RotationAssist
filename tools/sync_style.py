@@ -8,5 +8,5 @@ import os, runpy, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LIB = os.environ.get('MATERIALCRAFTUI', os.path.join(ROOT, '..', 'MaterialCraftUI'))
-sys.argv = [sys.argv[0], ROOT, 'RotationAssist']
+sys.argv = [sys.argv[0], ROOT, 'RotationAssist', 'Cognac', 'Classic']
 runpy.run_path(os.path.join(LIB, 'tools', 'sync_style.py'), run_name='__main__')

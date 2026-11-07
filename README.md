@@ -37,6 +37,9 @@ in game and a button that shows what the next press casts.
 - **Per Spec:** link a rotation to a talent spec, and it switches with your spec.
 - **Preview:** see exactly which macro each mode runs on your character, and which spells were left out
   because you don't know them.
+- **Themes:** the flat Material look, Classic for the game's own frames and buttons, or Cognac's painted gold
+  frames on dark glass. Pick one from **Theme** in the window's title bar; it applies after a reload, which
+  Rotation Assist offers to do for you.
 
 ## What a Button Can and Can't Do on 3.3.5a
 
@@ -200,6 +203,11 @@ string. To use one someone shared, click **Import** at the bottom of the rotatio
 - `/rota minimap reset`: put the minimap button back on the minimap
 - `/rota reset`: move the window back to the top middle of the screen, and the Rotation Button back under the
   middle
+- `/rota theme <name>`: switch the theme after a reload: `material`, `classic` or `cognac`
+- `/rota pixel`: turn pixel snapping off or back on
+
+The window snaps to whole screen pixels, so its borders stay crisp. At most UI scales that makes it a little
+larger or smaller than the rest of your UI; `/rota pixel` turns it off if you'd rather it matched exactly.
 
 ## Server Modules
 
@@ -216,4 +224,5 @@ To write one for your server, read [docs/MODULES.md](docs/MODULES.md).
 ## License
 
 MIT. Bundles [LibDeflate](https://github.com/SafeteeWoW/LibDeflate) (zlib License) to compress rotation
-strings, and LibStub (public domain).
+strings, and LibStub (public domain). The Cognac art in `RotationAssist/UI/Skins/Cognac` isn't covered by the
+MIT License.

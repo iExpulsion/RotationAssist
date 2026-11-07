@@ -113,11 +113,14 @@ end
 local function createDetail(parent, width, height)
 	local d = CreateFrame("Frame", nil, parent)
 	d:SetSize(width, height)
-	S.Panel(d, C.panel, C.border)
-	local inner = width - 2 * PAD
+	S.Well(d)
+	-- the controls sit inside the well's frame, however thick the theme draws it
+	local pad = PAD + S.metrics.wellInset
+	d.pad = pad
+	local inner = width - 2 * pad
 
 	d.title = S.Text(d, "normal")
-	d.title:SetPoint("TOPLEFT", PAD, -PAD)
+	d.title:SetPoint("TOPLEFT", pad, -pad)
 	d.title:SetWidth(inner)
 	d.title:SetWordWrap(false)
 	d.status = S.Text(d, "small", C.muted)
@@ -192,14 +195,14 @@ local function createDetail(parent, width, height)
 	end)
 
 	d.up = S.Button(d, "Move Up", "secondary", 70, function() move(-1) end, "Try this action earlier.")
-	d.up:SetPoint("BOTTOMLEFT", PAD, PAD)
+	d.up:SetPoint("BOTTOMLEFT", pad, pad)
 	d.down = S.Button(d, "Move Down", "secondary", 80, function() move(1) end, "Try this action later.")
 	d.down:SetPoint("LEFT", d.up, "RIGHT", GAP, 0)
 	d.remove = S.Button(d, "Remove", "danger", 70, remove)
-	d.remove:SetPoint("BOTTOMRIGHT", -PAD, PAD)
+	d.remove:SetPoint("BOTTOMRIGHT", -pad, pad)
 
 	d.none = S.Text(d, "small", C.muted)
-	d.none:SetPoint("TOPLEFT", PAD, -PAD)
+	d.none:SetPoint("TOPLEFT", pad, -pad)
 	d.none:SetWidth(inner)
 	d.none:SetText("Pick an action to change it.\n\nThe button tries actions from the top down on every press and casts the first one that's ready, so put what matters most first.\n\nDrag spells here from your spellbook, or type a name above.")
 	return d
@@ -217,12 +220,12 @@ local function layoutDetail(d, kind)
 		{ d.moving, show = kind == "spell" },
 		{ d.textLabel, d.text, show = kind == "steps" or kind == "macro" },
 	}
-	local y = PAD + 16 + 4 + 12 + PAD
+	local y = d.pad + 16 + 4 + 12 + PAD
 	for _, group in ipairs(controls) do
 		for _, w in ipairs(group) do
 			if group.show then
 				w:ClearAllPoints()
-				w:SetPoint("TOPLEFT", PAD, -y)
+				w:SetPoint("TOPLEFT", d.pad, -y)
 				w:Show()
 				y = y + (w.GetHeight and w:GetHeight() or 12) + 4
 			else
@@ -265,9 +268,11 @@ function Editor.Create(parent, width, height)
 	local well = CreateFrame("Frame", nil, f)
 	well:SetPoint("TOPLEFT", 0, -listTop)
 	well:SetSize(LIST_W, listH)
-	S.Panel(well, C.well, C.border)
-	f.list = RA.List.New(well, "RotationAssistActionList", LIST_W - 14, listH - 2, "content")
-	f.list.scroll:SetPoint("TOPLEFT", 1, -1)
+	S.Well(well)
+	-- the rows sit inside the well's frame, however thick the theme draws it
+	local wi = 1 + S.metrics.wellInset
+	f.list = RA.List.New(well, "RotationAssistActionList", LIST_W - 14 - 2 * (wi - 1), listH - 2 * wi, "content")
+	f.list.scroll:SetPoint("TOPLEFT", wi, -wi)
 	-- dropping a spell on the empty part of the list adds it at the end
 	f.list.content:EnableMouse(true)
 	well:EnableMouse(true)

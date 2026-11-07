@@ -12,24 +12,20 @@ local C = S.colors
 function Widgets.TextArea(parent, name, width, height, onChange, fontSize)
 	local box = CreateFrame("Frame", nil, parent)
 	box:SetSize(width, height)
-	S.Panel(box, C.well, C.border)
+	S.Well(box)
+	-- the text sits inside the well's frame, however thick the theme draws it
+	local pad = 8 + S.metrics.wellInset
 	local scroll = CreateFrame("ScrollFrame", name, box, "UIPanelScrollFrameTemplate")
-	scroll:SetPoint("TOPLEFT", 8, -8)
-	scroll:SetPoint("BOTTOMRIGHT", -18, 8)
+	scroll:SetPoint("TOPLEFT", pad, -pad)
+	scroll:SetPoint("BOTTOMRIGHT", -pad - 10, pad)
 	local edit = CreateFrame("EditBox", nil, scroll)
 	edit:SetMultiLine(true)
 	edit:SetAutoFocus(false)
 	S.SetFont(edit, fontSize or "small")
-	edit:SetWidth(width - 26)
+	edit:SetWidth(width - 2 * pad - 10)
 	edit:SetScript("OnEscapePressed", edit.ClearFocus)
-	edit:SetScript("OnEditFocusGained", function(self)
-		self.focused = true
-		box:SetBackdropBorderColor(unpack(C.accent))
-	end)
-	edit:SetScript("OnEditFocusLost", function(self)
-		self.focused = false
-		box:SetBackdropBorderColor(unpack(C.border))
-	end)
+	edit:SetScript("OnEditFocusGained", function(self) self.focused = true end)
+	edit:SetScript("OnEditFocusLost", function(self) self.focused = false end)
 	edit:SetScript("OnTextChanged", function(self, userInput)
 		if userInput and onChange then onChange(self:GetText()) end
 	end)
@@ -54,13 +50,13 @@ end
 function Widgets.Toggle(parent, label, tooltip, onClick)
 	local row = CreateFrame("Button", nil, parent)
 	row:SetHeight(S.CONTROL_H)
-	row.check = S.Check(row, 14, function() row:Click() end)
+	row.check = S.Check(row, nil, function() row:Click() end)
 	row.check:SetPoint("LEFT", 0, 0)
 	row.check.tooltipText = tooltip
 	row.label = S.Text(row, "small")
 	row.label:SetPoint("LEFT", row.check, "RIGHT", S.GAP, 0)
 	row.label:SetText(label)
-	row:SetWidth(14 + S.GAP + row.label:GetStringWidth() + 4)
+	row:SetWidth(S.CHECK_H + S.GAP + row.label:GetStringWidth() + 4)
 	row:SetScript("OnClick", function(self)
 		if self.check.usable then onClick(not self.check.on) end
 	end)

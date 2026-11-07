@@ -1,10 +1,17 @@
 local _, NS = ...
 local RA = NS.RA
 
+local function themeNames()
+	local names = {}
+	for _, skin in ipairs(RA.Style.Skins()) do names[#names + 1] = skin.key end
+	return table.concat(names, ", ")
+end
+
 local function help()
 	RA:Print("v%s commands (/rota alone opens the window):", RA.version)
 	RA:Print("  /rota button (show or hide the Rotation Button) | lock | unlock")
 	RA:Print("  /rota macros | quiet | trace | minimap [reset] | reset")
+	RA:Print("  /rota theme <name> (after a reload: %s) | pixel (snap the window to whole screen pixels)", themeNames())
 end
 
 local handlers = {}
@@ -42,6 +49,21 @@ handlers.reset = function()
 	RA.Window.ResetPosition()
 	RA.RotationButton.ResetPosition()
 	RA:Print("Window moved back to the top middle of the screen, and the Rotation Button under the middle.")
+end
+handlers.theme = function(arg)
+	local key = arg:lower()
+	if key == "" then
+		RA:Print("Theme: %s. Themes: %s.", RA.Style.Skin(), themeNames())
+	elseif not RA.SetSkin(key) then
+		RA:Print("No theme called %s. Themes: %s.", key, themeNames())
+	else
+		RA:Print("Theme: %s. /reload if it hasn't switched yet.", key)
+	end
+end
+handlers.pixel = function()
+	RA.SetPixelScale(not RA.db.pixelScale)
+	RA:Print(RA.db.pixelScale and "The window snaps to whole screen pixels." or
+		"The window follows the UI scale exactly; borders may blur at some scales.")
 end
 
 SLASH_ROTATIONASSIST1 = "/rota"
