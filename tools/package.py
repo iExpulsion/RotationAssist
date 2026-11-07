@@ -3,8 +3,8 @@
     python tools/package.py [output folder]
 
 Writes <output>/RotationAssist-<version>.zip with a top-level RotationAssist/ folder (extract it into
-Interface/AddOns): the .toc, the Lua files the .toc loads, the README, when there is one the LICENSE, and the
-bundled libraries' license files.
+Interface/AddOns): the .toc, the Lua files the .toc loads, the textures, and the bundled libraries' license files,
+which their licenses require.
 """
 import os, re, sys, zipfile
 
@@ -34,6 +34,10 @@ def lua_files(addon):
     return files_matching(addon, lambda n: n.endswith(".lua"))
 
 
+def textures(addon):
+    return files_matching(addon, lambda n: n.lower().endswith((".tga", ".blp")))
+
+
 def license_files(addon):
     return files_matching(addon, lambda n: n.upper().startswith("LICENSE"))
 
@@ -42,12 +46,8 @@ def main():
     addon = os.path.join(ROOT, NAME)
     meta, loaded = toc_info(addon)
     version = meta.get("Version", "0").strip()
-    files = [NAME + ".toc"] + loaded + license_files(addon)
-    extra = {"README.md": os.path.join(ROOT, "README.md")}
-    if os.path.isfile(os.path.join(ROOT, "LICENSE")):
-        extra["LICENSE"] = os.path.join(ROOT, "LICENSE")
+    files = [NAME + ".toc"] + loaded + textures(addon) + license_files(addon)
     missing = [f for f in files if not os.path.isfile(os.path.join(addon, f))]
-    missing += [f for f, p in extra.items() if not os.path.isfile(p)]
     if missing:
         sys.exit("not packaged, missing:\n  " + "\n  ".join(missing))
     stray = sorted(set(lua_files(addon)) - set(loaded))
@@ -58,9 +58,7 @@ def main():
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
         for f in files:
             z.write(os.path.join(addon, f), NAME + "/" + f)
-        for f, p in extra.items():
-            z.write(p, NAME + "/" + f)
-    print("%s  (%d files, %.0f KB)" % (out, len(files) + len(extra), os.path.getsize(out) / 1024))
+    print("%s  (%d files, %.0f KB)" % (out, len(files), os.path.getsize(out) / 1024))
 
 
 if __name__ == "__main__":
