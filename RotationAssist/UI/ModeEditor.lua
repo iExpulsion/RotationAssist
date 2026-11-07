@@ -12,7 +12,7 @@ local W = RA.Widgets
 local PAD, GAP, CONTROL_H = S.PAD, S.GAP, S.CONTROL_H
 local ROW_H = CONTROL_H + 6
 local LEFT_W = 300
-local NUMBER_W, REMOVE_W = 18, 60
+local HANDLE_W, REMOVE_W = 28, 60
 local OPTION_H = CONTROL_H + 14
 
 local frame
@@ -49,27 +49,33 @@ local function modeLabel(row)
 	return text ~= "" and text or ("Mode " .. row.moveIndex)
 end
 
--- A mode row: its number, which is the handle that drags it to a new place, its name and Remove.
+-- A mode row: a grip and its number, the handle that drags it to a new place, then its name and Remove.
 local function newRow(parent, i, reorder)
 	local row = CreateFrame("Frame", nil, parent)
 	row:SetSize(LEFT_W, ROW_H)
 	row.handle = CreateFrame("Button", nil, row)
-	row.handle:SetSize(NUMBER_W, ROW_H)
+	row.handle:SetSize(HANDLE_W - 4, ROW_H)
 	row.handle:SetPoint("LEFT", 0, 0)
 	S.Highlight(row.handle)
+	row.grip = S.Grip(row.handle)
+	row.grip:SetPoint("LEFT", 3, 0)
 	row.handle:SetScript("OnEnter", function(self)
+		row.grip:SetColor(C.text)
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 		GameTooltip:SetText("Drag to change the order. Mode numbers in a Condition Rule don't follow.", nil, nil, nil, nil, true)
 		GameTooltip:Show()
 	end)
-	row.handle:SetScript("OnLeave", function() GameTooltip:Hide() end)
+	row.handle:SetScript("OnLeave", function()
+		row.grip:SetColor(C.muted)
+		GameTooltip:Hide()
+	end)
 	reorder:Attach(row.handle, modeLabel, row)
 	row.number = S.Text(row.handle, "normal", C.muted)
-	row.number:SetPoint("LEFT", 0, 0)
+	row.number:SetPoint("LEFT", row.grip, "RIGHT", 5, 0)
 	row.number:SetText(i)
-	local inputW = LEFT_W - NUMBER_W - REMOVE_W - GAP
+	local inputW = LEFT_W - HANDLE_W - REMOVE_W - GAP
 	row.input = S.Input(row, "RotationAssistModeName" .. i, inputW, "Mode " .. i, 24)
-	row.input:SetPoint("LEFT", NUMBER_W, 0)
+	row.input:SetPoint("LEFT", HANDLE_W, 0)
 	row.input:SetScript("OnTextChanged", function(self, userInput)
 		self:UpdatePlaceholder()
 		if userInput then edit(function(r) r.modes[i].label = self:GetText() end) end
@@ -106,7 +112,7 @@ function Editor.Create(parent, width, height)
 	f.modesHelp = S.Text(f, "small", C.muted)
 	f.modesHelp:SetWidth(LEFT_W)
 	f.modesHelp:SetJustifyH("LEFT")
-	f.modesHelp:SetText("Each mode is its own priority list on the Actions tab. Drag a mode's number to change its place. A Condition Rule switches by these numbers, so moving a mode changes which rule value picks it.")
+	f.modesHelp:SetText("Each mode is its own priority list on the Actions tab. Drag a mode by its grip to change its place. A Condition Rule switches by these numbers, so moving a mode changes which rule value picks it.")
 
 	-- centered on the old 1px line, on whole pixels whatever the skin's width
 	local divider, dividerW = S.VerticalDivider(f)
@@ -189,7 +195,7 @@ function Editor.Render(rotation)
 		end
 	end
 	frame.addMode:ClearAllPoints()
-	frame.addMode:SetPoint("TOPLEFT", 18, -(16 + count * ROW_H))
+	frame.addMode:SetPoint("TOPLEFT", HANDLE_W, -(16 + count * ROW_H))
 	if count < RA.Rotation.MAX_MODES then frame.addMode:Enable() else frame.addMode:Disable() end
 	frame.modesHelp:ClearAllPoints()
 	frame.modesHelp:SetPoint("TOPLEFT", 0, -(16 + count * ROW_H + CONTROL_H + 2 * GAP))
