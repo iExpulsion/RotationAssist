@@ -96,10 +96,11 @@ function Editor.Create(parent, width, height)
 	f.modesHelp:SetJustifyH("LEFT")
 	f.modesHelp:SetText("Each mode is its own priority list on the Actions tab. A Condition Rule switches by these numbers, so moving a mode changes which rule value picks it.")
 
-	local divider = S.Solid(f, "BORDER", C.border)
-	divider:SetWidth(1)
-	divider:SetPoint("TOPLEFT", LEFT_W + PAD, 0)
-	divider:SetPoint("BOTTOMLEFT", LEFT_W + PAD, 0)
+	-- centered on the old 1px line, on whole pixels whatever the skin's width
+	local divider, dividerW = S.VerticalDivider(f)
+	local dividerX = LEFT_W + PAD - math.floor((dividerW - 1) / 2)
+	divider:SetPoint("TOPLEFT", dividerX, 0)
+	divider:SetPoint("BOTTOMLEFT", dividerX, 0)
 
 	local rightX = LEFT_W + 2 * PAD + 1
 	local rightW = width - rightX
