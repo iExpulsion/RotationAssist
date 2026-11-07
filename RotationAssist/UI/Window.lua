@@ -598,7 +598,8 @@ local function create()
 	-- the theme's border (S.metrics.edge) goes around the same content area, so every screen keeps its size
 	local edge = S.metrics.edge
 	f:SetSize(W + 2 * edge, H + 2 * edge)
-	f:SetFrameStrata("HIGH")
+	-- the game's panel layer, with the bags and the auction house: whichever was clicked or opened last is on top
+	f:SetFrameStrata("MEDIUM")
 	f:SetToplevel(true)
 	f:EnableMouse(true)
 	f:SetMovable(true)
@@ -639,6 +640,7 @@ function Window.Open(name)
 	frame = frame or create()
 	if name then Window.Select(name) end
 	frame:Show()
+	frame:Raise()
 	Window.Render()
 end
 
