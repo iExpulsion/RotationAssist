@@ -197,7 +197,7 @@ local function renderTabs()
 	for i, tab in ipairs(TABS) do
 		local b = frame.tabs[i]
 		b:SetSelected(tab.key == state.tab)
-		b:SetWidth(PAD + b.label:GetStringWidth() + PAD)
+		b:SetWidth(b.label:GetStringWidth() + 2 * S.metrics.tabPad)
 	end
 	setShown(frame.notes, state.tab == "notes")
 	for key, editor in pairs(frame.editors) do setShown(editor, key == state.tab) end
@@ -503,7 +503,7 @@ local function createTabBar(main)
 	bar:SetPoint("TOPLEFT", 0, -HEADER_H)
 	bar:SetPoint("TOPRIGHT", 0, -HEADER_H)
 	bar:SetHeight(TABS_H)
-	S.Rule(bar, "BOTTOM")
+	S.Rule(bar, "BOTTOM", "tabs")
 	f.tabs = {}
 	for i, tab in ipairs(TABS) do
 		local b = CreateFrame("Button", nil, bar)
