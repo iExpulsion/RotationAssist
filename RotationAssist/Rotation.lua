@@ -95,11 +95,10 @@ function Rotation.AddMode(rotation, label)
 	return ok
 end
 
--- Swaps list[i] with list[i + delta] when both exist.
-function Rotation.Move(list, i, delta)
-	local j = i + delta
-	local ok = list[i] ~= nil and list[j] ~= nil
-	if ok then list[i], list[j] = list[j], list[i] end
+-- Moves list[from] to list[to], shifting the ones between, when both exist.
+function Rotation.Move(list, from, to)
+	local ok = list[from] ~= nil and list[to] ~= nil
+	if ok then table.insert(list, to, table.remove(list, from)) end
 	return ok
 end
 

@@ -12,7 +12,7 @@ local W = RA.Widgets
 local PAD, GAP, CONTROL_H = S.PAD, S.GAP, S.CONTROL_H
 local ROW_H = CONTROL_H + 6
 local LEFT_W = 300
-local UP_W, DOWN_W, REMOVE_W = 36, 44, 60
+local NUMBER_W, REMOVE_W = 18, 60
 local OPTION_H = CONTROL_H + 14
 
 local frame
@@ -44,34 +44,43 @@ local function edit(fn)
 	end
 end
 
-local function newRow(parent, i)
+local function modeLabel(row)
+	local text = row.input:GetText() or ""
+	return text ~= "" and text or ("Mode " .. row.moveIndex)
+end
+
+-- A mode row: its number, which is the handle that drags it to a new place, its name and Remove.
+local function newRow(parent, i, reorder)
 	local row = CreateFrame("Frame", nil, parent)
 	row:SetSize(LEFT_W, ROW_H)
-	row.number = S.Text(row, "normal", C.muted)
+	row.handle = CreateFrame("Button", nil, row)
+	row.handle:SetSize(NUMBER_W, ROW_H)
+	row.handle:SetPoint("LEFT", 0, 0)
+	S.Highlight(row.handle)
+	row.handle:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		GameTooltip:SetText("Drag to change the order. Mode numbers in a Condition Rule don't follow.", nil, nil, nil, nil, true)
+		GameTooltip:Show()
+	end)
+	row.handle:SetScript("OnLeave", function() GameTooltip:Hide() end)
+	reorder:Attach(row.handle, modeLabel, row)
+	row.number = S.Text(row.handle, "normal", C.muted)
 	row.number:SetPoint("LEFT", 0, 0)
 	row.number:SetText(i)
-	local inputW = LEFT_W - 18 - UP_W - DOWN_W - REMOVE_W - 3 * GAP
+	local inputW = LEFT_W - NUMBER_W - REMOVE_W - GAP
 	row.input = S.Input(row, "RotationAssistModeName" .. i, inputW, "Mode " .. i, 24)
-	row.input:SetPoint("LEFT", 18, 0)
+	row.input:SetPoint("LEFT", NUMBER_W, 0)
 	row.input:SetScript("OnTextChanged", function(self, userInput)
 		self:UpdatePlaceholder()
 		if userInput then edit(function(r) r.modes[i].label = self:GetText() end) end
 	end)
-	row.up = S.Button(row, "Up", "secondary", UP_W, function()
-		edit(function(r) RA.Rotation.Move(r.modes, i, -1) end)
-	end, "Move this mode earlier. Mode numbers in a Condition Rule don't follow.")
-	row.up:SetPoint("LEFT", row.input, "RIGHT", GAP, 0)
-	row.down = S.Button(row, "Down", "secondary", DOWN_W, function()
-		edit(function(r) RA.Rotation.Move(r.modes, i, 1) end)
-	end, "Move this mode later. Mode numbers in a Condition Rule don't follow.")
-	row.down:SetPoint("LEFT", row.up, "RIGHT", GAP, 0)
 	row.remove = S.Button(row, "Remove", "danger", REMOVE_W, function()
 		edit(function(r)
 			table.remove(r.modes, i)
 			RA.Window.state.mode = 1
 		end)
 	end)
-	row.remove:SetPoint("LEFT", row.down, "RIGHT", GAP, 0)
+	row.remove:SetPoint("LEFT", row.input, "RIGHT", GAP, 0)
 	return row
 end
 
@@ -83,8 +92,11 @@ function Editor.Create(parent, width, height)
 	local modes = W.Heading(f, "Modes")
 	modes:SetPoint("TOPLEFT", 0, 0)
 	f.rows = {}
+	f.reorder = S.Reorder.New({ rows = f.rows, lineParent = f, onMove = function(from, to)
+		edit(function(r) RA.Rotation.Move(r.modes, from, to) end)
+	end })
 	for i = 1, RA.Rotation.MAX_MODES do
-		local row = newRow(f, i)
+		local row = newRow(f, i, f.reorder)
 		row:SetPoint("TOPLEFT", 0, -(16 + (i - 1) * ROW_H))
 		f.rows[i] = row
 	end
@@ -94,7 +106,7 @@ function Editor.Create(parent, width, height)
 	f.modesHelp = S.Text(f, "small", C.muted)
 	f.modesHelp:SetWidth(LEFT_W)
 	f.modesHelp:SetJustifyH("LEFT")
-	f.modesHelp:SetText("Each mode is its own priority list on the Actions tab. A Condition Rule switches by these numbers, so moving a mode changes which rule value picks it.")
+	f.modesHelp:SetText("Each mode is its own priority list on the Actions tab. Drag a mode's number to change its place. A Condition Rule switches by these numbers, so moving a mode changes which rule value picks it.")
 
 	-- centered on the old 1px line, on whole pixels whatever the skin's width
 	local divider, dividerW = S.VerticalDivider(f)
@@ -168,11 +180,11 @@ function Editor.Render(rotation)
 		local mode = rotation.modes[i]
 		if mode then
 			setText(row.input, mode.label)
-			if i > 1 then row.up:Enable() else row.up:Disable() end
-			if i < count then row.down:Enable() else row.down:Disable() end
 			if count > 1 then row.remove:Enable() else row.remove:Disable() end
+			row.moveIndex = count > 1 and i or nil
 			row:Show()
 		else
+			row.moveIndex = nil
 			row:Hide()
 		end
 	end

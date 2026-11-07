@@ -92,7 +92,8 @@ rotations.
 
 Click **New Rotation**, name it, and add your spells on the **Actions** tab. Drag them from your spellbook, or
 type a name and click **Add**. Put them in the order you'd want them if everything were ready at once: big
-cooldowns and procs near the top, your filler spell last.
+cooldowns and procs near the top, your filler spell last. Drag an action up or down the list to change its place;
+on the **Modes** tab, drag a mode by its number.
 
 | # | Spell         | Why it's here                               |
 |---|---------------|---------------------------------------------|

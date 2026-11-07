@@ -84,11 +84,13 @@ local function edit(fn)
 	end
 end
 
-local function move(delta)
+-- An action dragged to a new place in the list; it becomes the selected one.
+local function move(from, to)
 	local rotation, state = RA.Window.Selected(), RA.Window.state
 	local mode = rotation and currentMode(rotation, state)
-	if mode and state.action and RA.Rotation.Move(mode.actions, state.action, delta) then
-		state.action = state.action + delta
+	if mode and RA.Rotation.Move(mode.actions, from, to) then
+		S.Dismiss()
+		state.action = to
 		RA.Window.Edited()
 	end
 end
@@ -194,17 +196,13 @@ local function createDetail(parent, width, height)
 		end)
 	end)
 
-	d.up = S.Button(d, "Move Up", "secondary", 70, function() move(-1) end, "Try this action earlier.")
-	d.up:SetPoint("BOTTOMLEFT", pad, pad)
-	d.down = S.Button(d, "Move Down", "secondary", 80, function() move(1) end, "Try this action later.")
-	d.down:SetPoint("LEFT", d.up, "RIGHT", GAP, 0)
 	d.remove = S.Button(d, "Remove", "danger", 70, remove)
 	d.remove:SetPoint("BOTTOMRIGHT", -pad, pad)
 
 	d.none = S.Text(d, "small", C.muted)
 	d.none:SetPoint("TOPLEFT", pad, -pad)
 	d.none:SetWidth(inner)
-	d.none:SetText("Pick an action to change it.\n\nThe button tries actions from the top down on every press and casts the first one that's ready, so put what matters most first.\n\nDrag spells here from your spellbook, or type a name above.")
+	d.none:SetText("Pick an action to change it.\n\nThe button tries actions from the top down on every press and casts the first one that's ready, so put what matters most first. Drag an action up or down the list to change its place.\n\nDrag spells here from your spellbook, or type a name above.")
 	return d
 end
 
@@ -273,6 +271,7 @@ function Editor.Create(parent, width, height)
 	local wi = 1 + S.metrics.wellInset
 	f.list = RA.List.New(well, "RotationAssistActionList", LIST_W - 14 - 2 * (wi - 1), listH - 2 * wi, "content")
 	f.list.scroll:SetPoint("TOPLEFT", wi, -wi)
+	f.list:SetReorder(move)
 	-- dropping a spell on the empty part of the list adds it at the end
 	f.list.content:EnableMouse(true)
 	well:EnableMouse(true)
@@ -311,7 +310,7 @@ end
 local function renderDetail(rotation, state, compiled)
 	local d = frame.detail
 	local action, mode = selectedAction(rotation, state)
-	local controls = { d.title, d.status, d.up, d.down, d.remove }
+	local controls = { d.title, d.status, d.remove }
 	for _, w in ipairs(controls) do if action then w:Show() else w:Hide() end end
 	if action then
 		d.none:Hide()
@@ -333,8 +332,6 @@ local function renderDetail(rotation, state, compiled)
 		d.once:SetChecked(action.once)
 		d.text:SetValue(action.kind == "steps" and table.concat(action.steps or {}, "\n") or action.text)
 		d.textLabel:SetText(action.kind == "steps" and "Steps, One per Line (a Spell Name or a Macro Line)" or "Lines")
-		if state.action > 1 then d.up:Enable() else d.up:Disable() end
-		if state.action < #mode.actions then d.down:Enable() else d.down:Disable() end
 	else
 		layoutDetail(d, "none")
 		d.none:Show()
@@ -365,6 +362,7 @@ function Editor.Render(rotation, state)
 			icon = RA.Rotation.ActionIcon(action),
 			status = status and status() or nil,
 			selected = state.action == i,
+			move = i, dragLabel = RA.Rotation.ActionText(action),
 			onClick = function()
 				S.Dismiss()
 				state.action = i
