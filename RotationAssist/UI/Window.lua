@@ -196,9 +196,7 @@ end
 local function renderTabs()
 	for i, tab in ipairs(TABS) do
 		local b = frame.tabs[i]
-		local selected = tab.key == state.tab
-		b.label:SetTextColor(unpack(selected and C.text or C.muted))
-		setShown(b.underline, selected)
+		b:SetSelected(tab.key == state.tab)
 		b:SetWidth(PAD + b.label:GetStringWidth() + PAD)
 	end
 	setShown(frame.notes, state.tab == "notes")
@@ -511,14 +509,7 @@ local function createTabBar(main)
 		local b = CreateFrame("Button", nil, bar)
 		b:SetHeight(TABS_H)
 		if i == 1 then b:SetPoint("BOTTOMLEFT", 0, 0) else b:SetPoint("LEFT", f.tabs[i - 1], "RIGHT", 0, 0) end
-		b.label = S.Text(b, "normal", C.muted)
-		b.label:SetPoint("LEFT", PAD, 0)
-		b.label:SetText(tab.label)
-		b.underline = S.Solid(b, "OVERLAY", C.accent)
-		b.underline:SetHeight(2)
-		b.underline:SetPoint("BOTTOMLEFT", 6, 0)
-		b.underline:SetPoint("BOTTOMRIGHT", -6, 0)
-		S.Highlight(b)
+		S.Tab(b, tab.label)
 		b:SetScript("OnClick", function()
 			PlaySound("igCharacterInfoTab")
 			S.Dismiss()
