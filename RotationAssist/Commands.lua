@@ -41,7 +41,7 @@ end
 handlers.reset = function()
 	RA.Window.ResetPosition()
 	RA.RotationButton.ResetPosition()
-	RA:Print("Window and Rotation Button moved back to the middle of the screen.")
+	RA:Print("Window moved back to the top middle of the screen, and the Rotation Button under the middle.")
 end
 
 SLASH_ROTATIONASSIST1 = "/rota"

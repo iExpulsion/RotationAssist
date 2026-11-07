@@ -198,7 +198,8 @@ string. To use one someone shared, click **Import** at the bottom of the rotatio
 - `/rota minimap`: show or hide the minimap button (drag it around the minimap, or Shift-drag it anywhere on
   screen)
 - `/rota minimap reset`: put the minimap button back on the minimap
-- `/rota reset`: move the window and the Rotation Button back to the middle of the screen
+- `/rota reset`: move the window back to the top middle of the screen, and the Rotation Button back under the
+  middle
 
 ## Server Modules
 

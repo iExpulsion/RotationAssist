@@ -26,6 +26,14 @@ local EDITORS = { actions = "ActionEditor", modes = "ModeEditor", preview = "Pre
 local SPECS_KEY = "\1specs"
 
 local frame
+
+-- The default spot: centered across the screen, its top 60 units below the screen's top, so windows of different
+-- heights line up.
+local function placeDefault(f)
+	f:ClearAllPoints()
+	f:SetPoint("TOP", UIParent, "TOP", 0, -60)
+end
+
 -- settings: the Settings view (keys, the Rotation Button, errors) shows in place of the selected rotation
 local state = { selected = nil, tab = "actions", mode = 1, action = nil, collapsed = {}, search = "", settings = false }
 Window.state = state
@@ -583,7 +591,7 @@ local function create()
 	f:SetMovable(true)
 	f:SetClampedToScreen(true)
 	local pos = RA.db.window
-	if pos then f:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y) else f:SetPoint("CENTER", 0, 40) end
+	if pos then f:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y) else placeDefault(f) end
 	S.Panel(f, C.window, C.border)
 	tinsert(UISpecialFrames, "RotationAssistFrame")
 	f:Hide()
@@ -621,10 +629,7 @@ end
 
 function Window.ResetPosition()
 	RA.db.window = nil
-	if frame then
-		frame:ClearAllPoints()
-		frame:SetPoint("CENTER", 0, 40)
-	end
+	if frame then placeDefault(frame) end
 end
 
 function Window.Frame()
