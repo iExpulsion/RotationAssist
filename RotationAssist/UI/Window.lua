@@ -27,11 +27,11 @@ local SPECS_KEY = "\1specs"
 
 local frame
 
--- The default spot: centered across the screen, its top 60 units below the screen's top, so windows of different
+-- The default spot: centered across the screen, its top 128 units below the screen's top, so windows of different
 -- heights line up.
 local function placeDefault(f)
 	f:ClearAllPoints()
-	f:SetPoint("TOP", UIParent, "TOP", 0, -60)
+	f:SetPoint("TOP", UIParent, "TOP", 0, -128)
 end
 
 -- settings: the Settings view (keys, the Rotation Button, errors) shows in place of the selected rotation
