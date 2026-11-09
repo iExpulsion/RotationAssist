@@ -103,7 +103,8 @@ on the **Modes** tab, drag a mode by the grip beside its number.
 | 4 | Fireball      | The filler                                  |
 
 Select an action to change it. **Off the Global Cooldown** lets a line fire alongside whatever else casts on that
-press, which suits trinkets, racials and cooldowns like Combustion.
+press, which suits trinkets, racials and cooldowns like Combustion. **Conditions** takes macro conditions; put
+`[@player]` there to cast a spell on yourself, like Power Word: Shield, while you have an enemy targeted.
 
 ### 2. Choose How a Press Works
 
@@ -136,6 +137,7 @@ skipped. A spell with no trigger is always a candidate. Some more you can use:
 
 - `[nodebuff:X<3]`: your debuff is missing or has under 3 seconds left, to refresh before it falls off
 - `[nobuff:X]`: a self-buff is missing
+- `[noselfdebuff:X]`: a debuff isn't on you, like Weakened Soul before a Power Word: Shield
 - `[power>=60]`, `[hp<35]`, `[targethp<20]`, `[combo>=5]`: power, your health, the target's health, combo points
 - `[stacks:X>=5]`, `[debuffstacks:X<5]`: stacks of a buff on you, or of your debuff on the target
   (`anydebuffstacks` counts anyone's)

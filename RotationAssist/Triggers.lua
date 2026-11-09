@@ -7,6 +7,7 @@ local RA = NS.RA
 --
 --   [buff:Freezing Fog]            the player has the buff
 --   [nobuff:Horn of Winter]        the player doesn't have the buff
+--   [noselfdebuff:Weakened Soul]   the player doesn't have the debuff, from anyone
 --   [nodebuff:Blood Plague<3]      the target has none of the player's Blood Plague, or it ends within 3 seconds
 --   [debuff:Frost Fever>5]         the player's Frost Fever on the target has more than 5 seconds left
 --   [noanydebuff:Faerie Fire]      the target has no Faerie Fire from anyone (also for debuffs a server credits
@@ -46,6 +47,7 @@ local function aura(kind, name)
 		local unit, filter = "player", "HELPFUL"
 		if kind == "debuff" then unit, filter = "target", "HARMFUL|PLAYER" end
 		if kind == "anydebuff" then unit, filter = "target", "HARMFUL" end
+		if kind == "selfdebuff" then filter = "HARMFUL" end
 		local found, _, _, _, _, _, expires = UnitAura(unit, name, nil, filter)
 		present = found ~= nil
 		if found then left = (expires and expires > 0) and (expires - GetTime()) or math.huge end
@@ -114,7 +116,7 @@ local function parseTerm(term)
 		end
 	elseif STACKS[kind] then
 		problem = ("\"%s\" Needs a Count, Like stacks:Maelstrom Weapon>=5"):format(term)
-	elseif kind == "buff" or kind == "debuff" or kind == "anydebuff" or kind == "cast" then
+	elseif kind == "buff" or kind == "selfdebuff" or kind == "debuff" or kind == "anydebuff" or kind == "cast" then
 		local negate = no == "no"
 		local name, op, number = rest:match("^(.-)%s*([<>]=?)%s*(%d+%.?%d*)$")
 		name = trim(name or rest)
@@ -124,7 +126,7 @@ local function parseTerm(term)
 			local limit = op and tonumber(number)
 			test = function()
 				-- debuff and cast terms need an enemy target, so nodebuff doesn't light up with nothing targeted
-				local can = kind == "buff" or (UnitExists("target") and UnitCanAttack("player", "target"))
+				local can = kind == "buff" or kind == "selfdebuff" or (UnitExists("target") and UnitCanAttack("player", "target"))
 				local present, left = aura(kind, name)
 				local holds = present
 				if limit then holds = present and COMPARE[op](left, limit) end
@@ -150,6 +152,9 @@ local function build(text)
 	local bodies = {}
 	for body in text:gmatch("%[(.-)%]") do bodies[#bodies + 1] = body end
 	if #bodies == 0 and text ~= "" then bodies[1] = text end
+	if #bodies > 0 and text:gsub("%[.-%]", ""):match("%S") then
+		parsed.problems[#parsed.problems + 1] = "Text Outside the Brackets: [a, b] Means And, [a][b] Means Or"
+	end
 	for _, body in ipairs(bodies) do
 		local group = {}
 		for term in body:gmatch("[^,]+") do

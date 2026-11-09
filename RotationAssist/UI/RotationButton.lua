@@ -101,11 +101,15 @@ local function offCooldown(cast)
 	return start == nil or start == 0 or (duration or 0) <= GCD
 end
 
--- Conditions hold, usable, the runes are up, off cooldown (or only on the global cooldown) and in range.
+local function outOfRange(cast)
+	return IsSpellInRange(cast.name, cast.unit or "target") == 0
+end
+
+-- Conditions hold, usable, the runes are up, off cooldown (or only on the global cooldown) and in range of the unit
+-- the conditions cast on.
 local function looksReady(cast)
-	local range = IsSpellInRange(cast.name, "target")
 	return condOk(cast) and IsUsableSpell(cast.name) and RA.Runes.Enough(cast.name) and castableNow(cast)
-		and offCooldown(cast) and range ~= 0
+		and offCooldown(cast) and not outOfRange(cast)
 end
 RB.LooksReady = looksReady
 
@@ -113,7 +117,7 @@ RB.LooksReady = looksReady
 -- isn't lit or is out of range. A cooldown or short runes fail as "not ready", which stops the press.
 function RB.FailsQuietly(cast)
 	local blocked = not offCooldown(cast) or not RA.Runes.Enough(cast.name)
-	local quiet = not IsUsableSpell(cast.name) or IsSpellInRange(cast.name, "target") == 0
+	local quiet = not IsUsableSpell(cast.name) or outOfRange(cast)
 	return not condOk(cast) or (not blocked and quiet)
 end
 

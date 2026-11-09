@@ -34,6 +34,16 @@ function Compiler.Merge(when, extra)
 	return out
 end
 
+-- The unit a condition casts on when it names one other than the target ("[@player]", "[target=focus]"), else nil.
+function Compiler.Unit(when)
+	local unit
+	for g in trim(when):gmatch("%[(.-)%]") do
+		local named = g:match("@%s*([%w]+)") or g:match("target%s*=%s*([%w]+)")
+		if not unit and named and named:lower() ~= "target" then unit = named:lower() end
+	end
+	return unit
+end
+
 local function command(verb, cond, rest)
 	return verb .. " " .. (cond ~= "" and (cond .. " ") or "") .. rest
 end
@@ -69,14 +79,28 @@ function Compiler.CompileMode(rotation, mode, env, firstStep)
 		if not action.offGcd then gates[#late] = index end
 	end
 
+	-- A gated line that casts on another unit ([@player]) can't be stopped by clearing the target, since its
+	-- [exists] checks that unit, so the cast goes on a step button behind a /click gated on the target instead
+	local function emitCast(action, verb, rest, index)
+		local unit = Compiler.Unit(action.when)
+		if smart and unit and not action.offGcd then
+			local number = firstStep + #result.steps
+			result.steps[#result.steps + 1] = { lines = { command(verb, Compiler.Merge(action.when, guard), rest) } }
+			emit(action, command("/click", condition(action, ""), Compiler.STEP_BUTTON .. number), index)
+		else
+			emit(action, command(verb, condition(action, action.when), rest), index)
+		end
+		return unit
+	end
+
 	for index, action in ipairs(mode.actions or {}) do
 		local status = "ok"
 		if action.kind == "spell" then
 			local name = env.name(action.spell)
 			if name and env.known(name) then
 				local cond = Compiler.Merge(action.when, guard)
-				emit(action, command("/cast", condition(action, action.when), name), index)
-				result.casts[#result.casts + 1] = { index = index, kind = "spell", name = name, cond = cond, offGcd = action.offGcd, moving = action.moving, trigger = trim(action.trigger) }
+				local unit = emitCast(action, "/cast", name, index)
+				result.casts[#result.casts + 1] = { index = index, kind = "spell", name = name, cond = cond, unit = unit, offGcd = action.offGcd, moving = action.moving, trigger = trim(action.trigger) }
 			else
 				status = "skipped"
 				result.skipped[#result.skipped + 1] = name or ("#" .. tostring(action.spell))
@@ -97,8 +121,8 @@ function Compiler.CompileMode(rotation, mode, env, firstStep)
 				if action.once then names[#names + 1] = "null" end
 				local reset = trim(action.reset)
 				local cond = Compiler.Merge(action.when, guard)
-				emit(action, command("/castsequence", condition(action, action.when), (reset ~= "" and ("reset=" .. reset .. " ") or "") .. table.concat(names, ", ")), index)
-				result.casts[#result.casts + 1] = { index = index, kind = "sequence", name = names[1], cond = cond, once = action.once }
+				local unit = emitCast(action, "/castsequence", (reset ~= "" and ("reset=" .. reset .. " ") or "") .. table.concat(names, ", "), index)
+				result.casts[#result.casts + 1] = { index = index, kind = "sequence", name = names[1], cond = cond, unit = unit, once = action.once }
 				status = missing > 0 and "partial" or "ok"
 			else
 				status = "skipped"
