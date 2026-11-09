@@ -71,12 +71,15 @@ local function pick()
 	local cast = RA.RotationButton.Predict(targeted and casts or castsOnUnits(casts))
 	if not InCombatLockdown() then fillSolo(not targeted and cast and cast.index) end
 	for k in pairs(clears) do clears[k] = nil end
-	local refused = RA.RotationButton.Refused
+	local refused, T = RA.RotationButton.Refused, RA.Triggers
 	for _, other in ipairs(casts) do
 		if not other.offGcd and other ~= cast then
-			-- a spell the game just refused would end the press again, so it's held back even with no pick
-			local held = other.kind == "spell" and refused(other)
-			clears[other.index] = held or (cast ~= nil and mustClear(other, cast.index))
+			-- with no pick the press runs as a plain list, but a spell the game just refused would end it again and
+			-- a spell whose trigger isn't met mustn't cast, so both are still held back
+			local spell = other.kind == "spell"
+			local held = spell and refused(other)
+			local unmet = spell and T.Has(other.trigger) and not T.Holds(other.trigger)
+			clears[other.index] = held or (cast == nil and unmet) or (cast ~= nil and mustClear(other, cast.index))
 		end
 	end
 	return cast and cast.index, clears
@@ -114,7 +117,8 @@ blanker:SetScript("OnEvent", function()
 	end
 end)
 
--- With nothing looking ready, only lines the game just refused are gated, and the press works like a plain list.
+-- With nothing looking ready, only lines the game just refused or whose trigger isn't met are gated, and the rest of
+-- the press works like a plain list.
 function RAGate(index)
 	if Smart.clears and Smart.clears[index] then ClearTarget() end
 end

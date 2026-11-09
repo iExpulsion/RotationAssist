@@ -61,6 +61,8 @@ What that means in play:
 - Target frames can flicker on the presses that do clear.
 - It needs an enemy targeted, so it's a poor fit for healing or buffing friends. Use One Spell per Press or a
   plain list there.
+- When nothing looks ready, a press runs the list in order, still skipping spells whose trigger isn't met. Keep a
+  filler with no trigger at the end so there's always something to cast.
 - The first clear in a fight prints "Interface action failed because of an AddOn" in chat, once per session.
   The target still clears, so it's safe to ignore.
 
