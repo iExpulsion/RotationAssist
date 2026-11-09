@@ -54,7 +54,8 @@ local function mustClear(cast, pickIndex)
 		if after then
 			clear = T.Has(cast.trigger) and not T.Holds(cast.trigger) and RB.LooksReady(cast)
 		else
-			clear = not RB.FailsQuietly(cast)
+			-- a refused self-cast (Power Word: Shield under Weakened Soul) still stops the press, unusable or not
+			clear = cast.unit ~= nil or not RB.FailsQuietly(cast)
 		end
 	end
 	return clear

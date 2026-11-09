@@ -167,8 +167,10 @@ follows a form, stance or modifier key, like `[mod:shift] 2; 1` for mode 2 while
 2. Click **Use Rotation** so your spec runs it.
 3. Find a training dummy and mash the key. Watch the Rotation Button: it shows the spell the next press should
    cast, glows when a trigger picked it, and shows a green dot while presses keep coming.
-4. If a spell never goes, or goes too often, check its trigger and its place in the list. `/rota trace` prints what
-   each press tried, and the **Preview** tab shows the exact macro each mode runs.
+4. If a spell never goes, or goes too often, check its trigger and its place in the list. `/rota trace` prints the
+   spell each press picked and what it tried, and the **Preview** tab shows the exact macro each mode runs. A spell
+   the game refuses (like Power Word: Shield under Weakened Soul) is passed over for a couple of seconds, so it
+   can't stall the rotation, but a trigger that keeps picking it still costs a press now and then.
 
 ![The Settings view: the Rotation Key and Mode Key, Make Action Bar Macros, the Rotation Button's options and Quiet Errors](docs/images/settings.png)
 

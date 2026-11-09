@@ -25,6 +25,22 @@ function RB.Pressed()
 	lastPress = GetTime()
 end
 
+-- A spell the game refused while neither it nor the global cooldown was running (Power Word: Shield under Weakened
+-- Soul, or a trigger that's met too often) is passed over for a moment, so it can't stall every press.
+RB.REFUSED_HOLD = 2
+local refusedAt = {}
+local refusals = CreateFrame("Frame")
+refusals:RegisterEvent("UNIT_SPELLCAST_FAILED")
+refusals:SetScript("OnEvent", function(_, _, unit, spell)
+	local start = unit == "player" and spell and GetSpellCooldown(spell)
+	if start == 0 then refusedAt[spell] = GetTime() end
+end)
+
+local function refused(cast)
+	local at = refusedAt[cast.name]
+	return at ~= nil and GetTime() - at < RB.REFUSED_HOLD
+end
+
 local function savePosition()
 	local point, _, relPoint, x, y = exec:GetPoint()
 	RA.db.button.point = { point = point, relPoint = relPoint, x = x, y = y }
@@ -105,11 +121,11 @@ local function outOfRange(cast)
 	return IsSpellInRange(cast.name, cast.unit or "target") == 0
 end
 
--- Conditions hold, usable, the runes are up, off cooldown (or only on the global cooldown) and in range of the unit
--- the conditions cast on.
+-- Conditions hold, usable, the runes are up, off cooldown (or only on the global cooldown), in range of the unit
+-- the conditions cast on, and not just refused.
 local function looksReady(cast)
 	return condOk(cast) and IsUsableSpell(cast.name) and RA.Runes.Enough(cast.name) and castableNow(cast)
-		and offCooldown(cast) and not outOfRange(cast)
+		and offCooldown(cast) and not outOfRange(cast) and not refused(cast)
 end
 RB.LooksReady = looksReady
 

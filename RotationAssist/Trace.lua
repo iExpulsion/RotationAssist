@@ -28,7 +28,10 @@ function Trace.Pressed()
 		press = press + 1
 		watchUntil = GetTime() + Trace.WINDOW
 		local mode = RA.Engine.rotation and RA.Engine.rotation.modes[RA.Engine.ModeIndex()]
-		RA:Print("Press %d (%s, %d enemies)", press, mode and mode.label or "no rotation", RA.Enemies.Count())
+		local compiled = RA.Engine.compiled and RA.Engine.compiled.modes[RA.Engine.ModeIndex()]
+		local pick = compiled and RA.RotationButton.Predict(compiled.casts)
+		RA:Print("Press %d (%s, %d enemies), pick: %s", press, mode and mode.label or "no rotation", RA.Enemies.Count(),
+			pick and (pick.name or ("action " .. pick.index)) or "none")
 	end
 end
 
