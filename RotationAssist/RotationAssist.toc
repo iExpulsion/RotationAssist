@@ -2,7 +2,7 @@
 ## Title: Rotation Assist
 ## Notes: One-button rotations: each press casts the first ready spell of a priority list, with modes, a Mode key and an on-screen button. /rota
 ## Author: Expulsion
-## Version: 1.3.2
+## Version: 1.3.3
 ## SavedVariables: RotationAssistDB
 ## SavedVariablesPerCharacter: RotationAssistCharDB
 
