@@ -8,10 +8,39 @@ local RA = NS.RA
 local Smart = {}
 RA.Smart = Smart
 
-local function currentCasts()
+local NONE_SOLO = {}
+
+local function currentMode()
 	local compiled = RA.Engine.compiled
-	local mode = compiled and compiled.modes[RA.Engine.ModeIndex()]
+	return compiled and compiled.modes[RA.Engine.ModeIndex()]
+end
+
+local function currentCasts()
+	local mode = currentMode()
 	return mode and mode.casts or {}
+end
+
+-- With no target, only casts on another unit ([@player]) can go, through their solo buttons.
+local unitCasts = {}
+local function castsOnUnits(casts)
+	for k in pairs(unitCasts) do unitCasts[k] = nil end
+	for _, cast in ipairs(casts) do
+		if cast.unit then unitCasts[#unitCasts + 1] = cast end
+	end
+	return unitCasts
+end
+
+-- Out of combat only: the picked solo cast goes on its button and the rest are blanked. A secure button can't be
+-- changed in combat, so there the solo buttons stay blank and a press with no target does nothing.
+local function fillSolo(pickIndex)
+	local mode = currentMode()
+	for _, solo in ipairs(mode and mode.solo or NONE_SOLO) do
+		local button = _G[RA.Compiler.STEP_BUTTON .. solo.button]
+		if button then
+			button:SetAttribute("count", 1)
+			button:SetAttribute("s1", solo.index == pickIndex and solo.line or "")
+		end
+	end
 end
 
 -- Every clear flickers the target frames, so a line keeps the target unless it could cast or stop the press.
@@ -37,7 +66,9 @@ local clears, NONE = {}, {}
 -- The pick, and which lines' gates clear the target, all decided before the first gate runs.
 local function pick()
 	local casts = currentCasts()
-	local cast = RA.RotationButton.Predict(casts)
+	local targeted = UnitExists("target")
+	local cast = RA.RotationButton.Predict(targeted and casts or castsOnUnits(casts))
+	if not InCombatLockdown() then fillSolo(not targeted and cast and cast.index) end
 	for k in pairs(clears) do clears[k] = nil end
 	if cast then
 		for _, other in ipairs(casts) do
@@ -63,6 +94,19 @@ reporter:SetScript("OnUpdate", function()
 	if failed then
 		Smart.failed = nil
 		geterrorhandler()(failed)
+	end
+end)
+
+-- Combat lockdown starts right after this event, so a solo cast picked before the pull doesn't keep firing.
+local blanker = CreateFrame("Frame")
+blanker:RegisterEvent("PLAYER_REGEN_DISABLED")
+blanker:SetScript("OnEvent", function()
+	local compiled = RA.Engine.compiled
+	for _, mode in ipairs(compiled and compiled.modes or NONE_SOLO) do
+		for _, solo in ipairs(mode.solo or NONE_SOLO) do
+			local button = _G[RA.Compiler.STEP_BUTTON .. solo.button]
+			if button then button:SetAttribute("s1", "") end
+		end
 	end
 end)
 

@@ -62,8 +62,8 @@ function Compiler.CompileMode(rotation, mode, env, firstStep)
 	local options = rotation.options or {}
 	local guard = options.channels and "nochanneling" or nil
 	local smart = options.smart
-	local result = { lines = {}, status = {}, skipped = {}, casts = {}, steps = {}, warnings = {}, smart = smart }
-	local early, late, gates = {}, {}, {}
+	local result = { lines = {}, status = {}, skipped = {}, casts = {}, steps = {}, solo = {}, warnings = {}, smart = smart }
+	local early, late, gates, soloClicks = {}, {}, {}, {}
 
 	-- Smart Picks gates each GCD line on [exists]: at press time the addon clears the target for every line but
 	-- the one it picked, so only that one can cast
@@ -80,13 +80,19 @@ function Compiler.CompileMode(rotation, mode, env, firstStep)
 	end
 
 	-- A gated line that casts on another unit ([@player]) can't be stopped by clearing the target, since its
-	-- [exists] checks that unit, so the cast goes on a step button behind a /click gated on the target instead
+	-- [exists] checks that unit, so the cast goes on a step button behind a /click gated on the target instead.
+	-- With no target there's nothing to clear, so it also gets a solo button, blank until Smart Picks fills in its
+	-- pick out of combat (for buffing before a pull)
 	local function emitCast(action, verb, rest, index)
 		local unit = Compiler.Unit(action.when)
 		if smart and unit and not action.offGcd then
+			local line = command(verb, Compiler.Merge(action.when, guard), rest)
 			local number = firstStep + #result.steps
-			result.steps[#result.steps + 1] = { lines = { command(verb, Compiler.Merge(action.when, guard), rest) } }
+			result.steps[#result.steps + 1] = { lines = { line } }
 			emit(action, command("/click", condition(action, ""), Compiler.STEP_BUTTON .. number), index)
+			result.steps[#result.steps + 1] = { lines = {}, solo = line }
+			result.solo[#result.solo + 1] = { index = index, button = number + 1, line = line }
+			soloClicks[#soloClicks + 1] = "/click [noexists] " .. Compiler.STEP_BUTTON .. (number + 1)
 		else
 			emit(action, command(verb, condition(action, action.when), rest), index)
 		end
@@ -167,8 +173,9 @@ function Compiler.CompileMode(rotation, mode, env, firstStep)
 	for _, line in ipairs(early) do lines[#lines + 1] = line end
 	if smart and #late > 0 then
 		-- with no target, /targetlasttarget would grab an old one, so the gated lines need a target to start with
-		lines[#lines + 1] = "/stopmacro [noexists]"
 		lines[#lines + 1] = "/run RAPick()"
+		for _, line in ipairs(soloClicks) do lines[#lines + 1] = line end
+		lines[#lines + 1] = "/stopmacro [noexists]"
 		for i, line in ipairs(late) do
 			if gates[i] then
 				lines[#lines + 1] = ("/run RAGate(%d)"):format(gates[i])

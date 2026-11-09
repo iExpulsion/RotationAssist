@@ -25,8 +25,13 @@ local function previewText(rotation, compiled)
 		parts[#parts + 1] = ""
 	end
 	for n, step in ipairs(compiled.steps) do
-		parts[#parts + 1] = S.Hex(C.heading, (step.cycle and "One Spell per Press %d" or "Steps Block %d"):format(n)) .. "  " .. S.Hex(C.muted, "one line per press")
-		for i, line in ipairs(step.lines) do parts[#parts + 1] = ("%d: %s"):format(i, line) end
+		if step.solo then
+			parts[#parts + 1] = S.Hex(C.heading, ("No-Target Cast %d"):format(n)) .. "  " .. S.Hex(C.muted, "only when Smart Picks picks it, out of combat with nothing targeted")
+			parts[#parts + 1] = step.solo
+		else
+			parts[#parts + 1] = S.Hex(C.heading, (step.cycle and "One Spell per Press %d" or "Steps Block %d"):format(n)) .. "  " .. S.Hex(C.muted, "one line per press")
+			for i, line in ipairs(step.lines) do parts[#parts + 1] = ("%d: %s"):format(i, line) end
+		end
 		parts[#parts + 1] = ""
 	end
 	if compiled.toggle then
