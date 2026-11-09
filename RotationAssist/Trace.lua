@@ -23,6 +23,18 @@ frame:SetScript("OnEvent", function(_, event, a, b)
 	end
 end)
 
+-- With no pick: why each spell that could have been picked (no trigger, or a met one) isn't ready.
+function Trace.NoPick(casts)
+	local T, RB = RA.Triggers, RA.RotationButton
+	local reasons = {}
+	for _, cast in ipairs(casts or {}) do
+		local candidate = cast.kind == "spell" and not cast.offGcd and (not T.Has(cast.trigger) or T.Holds(cast.trigger))
+		local why = candidate and RB.NotReady(cast)
+		if why then reasons[#reasons + 1] = cast.name .. ": " .. why end
+	end
+	return #reasons > 0 and ("none (" .. table.concat(reasons, "; ") .. ")") or "none"
+end
+
 function Trace.Pressed()
 	if on then
 		press = press + 1
@@ -31,7 +43,7 @@ function Trace.Pressed()
 		local compiled = RA.Engine.compiled and RA.Engine.compiled.modes[RA.Engine.ModeIndex()]
 		local pick = compiled and RA.RotationButton.Predict(compiled.casts)
 		RA:Print("Press %d (%s, %d enemies), pick: %s", press, mode and mode.label or "no rotation", RA.Enemies.Count(),
-			pick and (pick.name or ("action " .. pick.index)) or "none")
+			pick and (pick.name or ("action " .. pick.index)) or Trace.NoPick(compiled and compiled.casts))
 	end
 end
 

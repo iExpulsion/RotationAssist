@@ -121,13 +121,33 @@ local function outOfRange(cast)
 	return IsSpellInRange(cast.name, cast.unit or "target") == 0
 end
 
--- Conditions hold, usable, the runes are up, off cooldown (or only on the global cooldown), in range of the unit
--- the conditions cast on, and not just refused.
+-- Why the spell isn't ready, or nil when it is: conditions hold, usable, the runes are up, castable now, off
+-- cooldown (or only on the global cooldown), in range of the unit the conditions cast on, and not just refused.
+function RB.NotReady(cast)
+	local why
+	if not condOk(cast) then
+		why = "conditions"
+	elseif not IsUsableSpell(cast.name) then
+		why = "not usable"
+	elseif not RA.Runes.Enough(cast.name) then
+		why = "runes"
+	elseif not castableNow(cast) then
+		why = "moving or no combo points"
+	elseif not offCooldown(cast) then
+		why = "on cooldown"
+	elseif outOfRange(cast) then
+		why = "out of range"
+	elseif refused(cast) then
+		why = "just refused"
+	end
+	return why
+end
+
 local function looksReady(cast)
-	return condOk(cast) and IsUsableSpell(cast.name) and RA.Runes.Enough(cast.name) and castableNow(cast)
-		and offCooldown(cast) and not outOfRange(cast) and not refused(cast)
+	return RB.NotReady(cast) == nil
 end
 RB.LooksReady = looksReady
+RB.Refused = refused
 
 -- Whether a /cast of the spell fails without stopping the press: its condition fails, or it can't be afforded,
 -- isn't lit or is out of range. A cooldown or short runes fail as "not ready", which stops the press.
