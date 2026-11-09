@@ -91,7 +91,7 @@ function Editor.Create(parent, width, height)
 
 	local errorHeading = W.Heading(f, "Errors")
 	errorHeading:SetPoint("TOPLEFT", scaleLabel, "BOTTOMLEFT", 0, -3 * GAP)
-	f.quiet = W.Toggle(f, "Quiet Errors", "Hides the red error text for a moment after each press, and turns off the spoken errors. Lines that can't cast yet fail on purpose, so without this every press shows \"Not ready yet\".",
+	f.quiet = W.Toggle(f, "Quiet Errors", "Hides the red error text for a moment after each press, and turns off the spoken errors. Lines that can't cast yet fail on purpose, so without this every press shows \"Not ready yet\". With Smart Picks, presses during the global cooldown also try nothing, so failed casts don't play their fizzle sound.",
 		function(on) RA.Quiet.Set(on) RA.Window.Render() end)
 	f.quiet:SetPoint("TOPLEFT", errorHeading, "BOTTOMLEFT", 0, -4)
 	return f

@@ -42,8 +42,10 @@ function Trace.Pressed()
 		local mode = RA.Engine.rotation and RA.Engine.rotation.modes[RA.Engine.ModeIndex()]
 		local compiled = RA.Engine.compiled and RA.Engine.compiled.modes[RA.Engine.ModeIndex()]
 		local pick = compiled and RA.RotationButton.Predict(compiled.casts)
-		RA:Print("Press %d (%s, %d enemies), pick: %s", press, mode and mode.label or "no rotation", RA.Enemies.Count(),
-			pick and (pick.name or ("action " .. pick.index)) or Trace.NoPick(compiled and compiled.casts))
+		local waiting = compiled and compiled.smart and RA.db.quiet and RA.RotationButton.OnGlobalCooldown(compiled.casts)
+		RA:Print("Press %d (%s, %d enemies), pick: %s%s", press, mode and mode.label or "no rotation", RA.Enemies.Count(),
+			pick and (pick.name or ("action " .. pick.index)) or Trace.NoPick(compiled and compiled.casts),
+			waiting and ", held for the global cooldown" or "")
 	end
 end
 

@@ -146,6 +146,19 @@ end
 local function looksReady(cast)
 	return RB.NotReady(cast) == nil
 end
+
+-- Whether the global cooldown is running, judged from the first spell in the list whose cooldown is only the
+-- global one. A cast tried now can only fail, and 3.3.5 has no spell queue to hold it.
+function RB.OnGlobalCooldown(casts)
+	local now = GetTime()
+	for _, cast in ipairs(casts) do
+		if cast.kind == "spell" then
+			local start, duration = GetSpellCooldown(cast.name)
+			if start and start > 0 and duration > 0 and duration <= GCD then return start + duration > now end
+		end
+	end
+	return false
+end
 RB.LooksReady = looksReady
 RB.Refused = refused
 

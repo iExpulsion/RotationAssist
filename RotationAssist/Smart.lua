@@ -69,11 +69,16 @@ local function pick()
 	local casts = currentCasts()
 	local targeted = UnitExists("target")
 	local cast = RA.RotationButton.Predict(targeted and casts or castsOnUnits(casts))
-	if not InCombatLockdown() then fillSolo(not targeted and cast and cast.index) end
+	-- with Quiet Errors, nothing is tried during the global cooldown: the cast could only fail, and a failed cast
+	-- plays the spell's fizzle sound on every press
+	local waiting = RA.db.quiet and RA.RotationButton.OnGlobalCooldown(casts)
+	if not InCombatLockdown() then fillSolo(not targeted and not waiting and cast and cast.index) end
 	for k in pairs(clears) do clears[k] = nil end
 	local refused, T = RA.RotationButton.Refused, RA.Triggers
 	for _, other in ipairs(casts) do
-		if not other.offGcd and other ~= cast then
+		if waiting and not other.offGcd then
+			clears[other.index] = true
+		elseif not other.offGcd and other ~= cast then
 			-- with no pick the press runs as a plain list, but a spell the game just refused would end it again and
 			-- a spell whose trigger isn't met mustn't cast, so both are still held back
 			local spell = other.kind == "spell"
