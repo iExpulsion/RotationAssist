@@ -36,13 +36,13 @@ local refusedAt, refusedUnusable = {}, {}
 local lowered = RA.Spells.Lower
 local refusals = CreateFrame("Frame")
 refusals:RegisterEvent("UNIT_SPELLCAST_FAILED")
+-- An unusable spell is remembered even when a cooldown was running: tried right after another cast, as a line below
+-- the pick is, the global cooldown always is, and holding back a spell that can't cast costs nothing.
 refusals:SetScript("OnEvent", function(_, _, unit, spell)
-	local start = unit == "player" and spell and GetSpellCooldown(spell)
-	if start == 0 then
-		local key = lowered[spell]
-		refusedAt[key] = GetTime()
-		if not IsUsableSpell(spell) then refusedUnusable[key] = true end
-	end
+	local mine = unit == "player" and spell ~= nil
+	local key = mine and lowered[spell]
+	if key and not IsUsableSpell(spell) then refusedUnusable[key] = true end
+	if key and GetSpellCooldown(spell) == 0 then refusedAt[key] = GetTime() end
 end)
 
 local function refused(cast)
