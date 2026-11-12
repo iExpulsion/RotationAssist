@@ -27,17 +27,29 @@ end
 
 -- A spell the game refused while neither it nor the global cooldown was running (Power Word: Shield under Weakened
 -- Soul, or a trigger that's met too often) is passed over for a moment, so it can't stall every press.
+-- Keyed by lower-case name: the event names the spell as the game spells it, and a rotation may not.
+-- A spell refused while it read as unusable (Hunger For Blood with no bleed) is remembered for the session: the
+-- client still tries it and the refusal ends the press, so it can't be trusted to fail quietly.
 RB.REFUSED_HOLD = 2
-local refusedAt = {}
+local refusedAt, refusedUnusable = {}, {}
+local lowered = setmetatable({}, { __index = function(t, name)
+	local key = name:lower()
+	t[name] = key
+	return key
+end })
 local refusals = CreateFrame("Frame")
 refusals:RegisterEvent("UNIT_SPELLCAST_FAILED")
 refusals:SetScript("OnEvent", function(_, _, unit, spell)
 	local start = unit == "player" and spell and GetSpellCooldown(spell)
-	if start == 0 then refusedAt[spell] = GetTime() end
+	if start == 0 then
+		local key = lowered[spell]
+		refusedAt[key] = GetTime()
+		if not IsUsableSpell(spell) then refusedUnusable[key] = true end
+	end
 end)
 
 local function refused(cast)
-	local at = refusedAt[cast.name]
+	local at = refusedAt[lowered[cast.name]]
 	return at ~= nil and GetTime() - at < RB.REFUSED_HOLD
 end
 
@@ -166,7 +178,7 @@ RB.Refused = refused
 -- isn't lit or is out of range. A cooldown or short runes fail as "not ready", which stops the press.
 function RB.FailsQuietly(cast)
 	local blocked = not offCooldown(cast) or not RA.Runes.Enough(cast.name)
-	local quiet = not IsUsableSpell(cast.name) or outOfRange(cast)
+	local quiet = (not IsUsableSpell(cast.name) and not refusedUnusable[lowered[cast.name]]) or outOfRange(cast)
 	return not condOk(cast) or (not blocked and quiet)
 end
 
