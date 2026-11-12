@@ -24,7 +24,7 @@ local RA = NS.RA
 local Triggers = {}
 RA.Triggers = Triggers
 
-local trim = RA.Spells.Trim
+local trim, lower, findAura = RA.Spells.Trim, RA.Spells.Lower, RA.Spells.FindAura
 local cache = {}
 
 local COMPARE = {
@@ -41,14 +41,15 @@ local casts = {}
 local function aura(kind, name)
 	local present, left
 	if kind == "cast" then
-		local at = casts[name] and casts[name][UnitGUID("target") or ""]
+		local key = lower[name]
+		local at = casts[key] and casts[key][UnitGUID("target") or ""]
 		present, left = at ~= nil, at and (GetTime() - at)
 	else
 		local unit, filter = "player", "HELPFUL"
 		if kind == "debuff" then unit, filter = "target", "HARMFUL|PLAYER" end
 		if kind == "anydebuff" then unit, filter = "target", "HARMFUL" end
 		if kind == "selfdebuff" then filter = "HARMFUL" end
-		local found, _, _, _, _, _, expires = UnitAura(unit, name, nil, filter)
+		local found, _, expires = findAura(unit, name, filter)
 		present = found ~= nil
 		if found then left = (expires and expires > 0) and (expires - GetTime()) or math.huge end
 	end
@@ -64,7 +65,7 @@ local STACKS = {
 -- Stacks of the aura, 0 when it's missing. A single-stack aura reports 0, so it counts as 1.
 local function stacks(kind, name)
 	local unit, filter = STACKS[kind][1], STACKS[kind][2]
-	local found, _, _, count = UnitAura(unit, name, nil, filter)
+	local found, count = findAura(unit, name, filter)
 	return found and math.max(count or 0, 1) or 0
 end
 
@@ -78,8 +79,9 @@ tracker:SetScript("OnEvent", function(_, event, unit, spell)
 	if event == "PLAYER_REGEN_ENABLED" then
 		casts = {}
 	elseif guid then
-		casts[spell] = casts[spell] or {}
-		casts[spell][guid] = GetTime()
+		local key = lower[spell]
+		casts[key] = casts[key] or {}
+		casts[key][guid] = GetTime()
 	end
 end)
 

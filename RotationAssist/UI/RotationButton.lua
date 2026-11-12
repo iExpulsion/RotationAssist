@@ -32,11 +32,7 @@ end
 -- client still tries it and the refusal ends the press, so it can't be trusted to fail quietly.
 RB.REFUSED_HOLD = 2
 local refusedAt, refusedUnusable = {}, {}
-local lowered = setmetatable({}, { __index = function(t, name)
-	local key = name:lower()
-	t[name] = key
-	return key
-end })
+local lowered = RA.Spells.Lower
 local refusals = CreateFrame("Frame")
 refusals:RegisterEvent("UNIT_SPELLCAST_FAILED")
 refusals:SetScript("OnEvent", function(_, _, unit, spell)

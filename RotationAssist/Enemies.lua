@@ -15,8 +15,9 @@ local HOSTILE = (COMBATLOG_OBJECT_REACTION_HOSTILE or 0x40) + (COMBATLOG_OBJECT_
 local AURAS = { SPELL_AURA_APPLIED = true, SPELL_AURA_REFRESH = true, SPELL_AURA_APPLIED_DOSE = true }
 local DEATHS = { UNIT_DIED = true, UNIT_DESTROYED = true, PARTY_KILL = true }
 
--- seen[guid] = last contact; auras[guid][spell name] = true while it carries that aura from you
+-- seen[guid] = last contact; auras[guid][lower-case spell name] = true while it carries that aura from you
 local seen, auras = {}, {}
+local lower, findAura = RA.Spells.Lower, RA.Spells.FindAura
 
 local function has(flags, flag)
 	return bit.band(flags or 0, flag) ~= 0
@@ -34,9 +35,9 @@ end
 local function track(sub, guid, spell)
 	if AURAS[sub] or sub == "SPELL_PERIODIC_DAMAGE" then
 		auras[guid] = auras[guid] or {}
-		auras[guid][spell] = true
+		auras[guid][lower[spell]] = true
 	elseif sub == "SPELL_AURA_REMOVED" and auras[guid] then
-		auras[guid][spell] = nil
+		auras[guid][lower[spell]] = nil
 	end
 end
 
@@ -82,9 +83,9 @@ end
 local function missing(guid, target, name)
 	local carries
 	if guid == target then
-		carries = UnitAura("target", name, nil, "HARMFUL|PLAYER") ~= nil
+		carries = findAura("target", name, "HARMFUL|PLAYER") ~= nil
 	else
-		carries = auras[guid] ~= nil and auras[guid][name] == true
+		carries = auras[guid] ~= nil and auras[guid][lower[name]] == true
 	end
 	return not carries
 end

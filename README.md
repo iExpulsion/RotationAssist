@@ -152,6 +152,7 @@ skipped. A spell with no trigger is always a candidate. Some more you can use:
 - `[enemies>=3]`: three or more enemies in the fight (ones you've hit or that hit you in the last few seconds)
 - `[without:X>=1]`: at least one enemy in the fight is missing your X, for a spell that spreads it
 - `[a, b]` means a and b; `[a][b]` means a or b
+- Names ignore capitals, so `[nobuff:Hunger for Blood]` finds Hunger For Blood
 
 Hover over the Trigger box in game for the full list.
 

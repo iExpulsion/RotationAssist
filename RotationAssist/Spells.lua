@@ -14,6 +14,30 @@ local function trim(s)
 end
 Spells.Trim = trim
 
+-- Names in lower case, kept so the checks run many times a second make no new strings. The game's spelling of a
+-- name can differ from a rotation's in capitals ("Hunger For Blood").
+Spells.Lower = setmetatable({}, { __index = function(t, name)
+	local key = name:lower()
+	t[name] = key
+	return key
+end })
+local lower = Spells.Lower
+
+local function scanAuras(unit, key, filter)
+	for i = 1, 40 do
+		local name, _, _, count, _, _, expires = UnitAura(unit, i, filter)
+		if not name then break end
+		if lower[name] == key then return name, count, expires end
+	end
+end
+
+-- UnitAura by name with capitals ignored: name, stack count and expiry, or nil when it's missing.
+function Spells.FindAura(unit, name, filter)
+	local found, _, _, count, _, _, expires = UnitAura(unit, name, nil, filter)
+	if not found then found, count, expires = scanAuras(unit, lower[name], filter) end
+	return found, count, expires
+end
+
 local function idFromLink(link)
 	return link and tonumber(link:match("|Hspell:(%d+)"))
 end
