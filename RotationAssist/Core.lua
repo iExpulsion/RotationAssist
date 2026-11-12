@@ -166,21 +166,38 @@ end
 
 local frame = CreateFrame("Frame")
 RA.frame = frame
+-- The client stores the per-character file by name, so a new character reusing a deleted one's name would inherit
+-- it. UnitGUID("player") is nil at ADDON_LOADED on a fresh login, so this runs again at PLAYER_LOGIN, when other
+-- files already hold its subtables: a reset empties them in place.
+local function claimCharFile(t)
+	local guid = UnitGUID("player")
+	if guid and t.guid and t.guid ~= guid then
+		for k, v in pairs(t) do
+			if type(v) == "table" then
+				for key in pairs(v) do v[key] = nil end
+			else
+				t[k] = nil
+			end
+		end
+	end
+	t.guid = guid or t.guid
+end
+
 frame:RegisterEvent("ADDON_LOADED")
+frame:RegisterEvent("PLAYER_LOGIN")
 frame:SetScript("OnEvent", function(self, event, name)
-	if event == "ADDON_LOADED" and name == ADDON then
+	if event == "PLAYER_LOGIN" then
+		claimCharFile(RA.charDB)
+		self:UnregisterEvent("PLAYER_LOGIN")
+	elseif event == "ADDON_LOADED" and name == ADDON then
 		RotationAssistDB = RotationAssistDB or {}
 		local db = RotationAssistDB
 		db.rotations = db.rotations or {}
 		db.links = db.links or {}
 		db.button = db.button or { shown = true, locked = true, scale = 1 }
 		if db.quiet == nil then db.quiet = true end
-		-- the per-character file follows the name, so a new character reusing a deleted one's name would inherit it
-		local guid = UnitGUID("player")
-		if not RotationAssistCharDB or (guid and RotationAssistCharDB.guid and RotationAssistCharDB.guid ~= guid) then
-			RotationAssistCharDB = {}
-		end
-		RotationAssistCharDB.guid = guid or RotationAssistCharDB.guid
+		RotationAssistCharDB = RotationAssistCharDB or {}
+		claimCharFile(RotationAssistCharDB)
 		RotationAssistCharDB.keys = RotationAssistCharDB.keys or {}
 		RA.db, RA.charDB = db, RotationAssistCharDB
 		self:UnregisterEvent("ADDON_LOADED")
