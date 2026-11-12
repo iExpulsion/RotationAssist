@@ -31,7 +31,9 @@ loader:SetScript("OnEvent", function(self, _, name)
 	if name == ADDON then
 		if not known(RA.db.skin) then RA.db.skin = "material" end
 		if RA.db.pixelScale == nil then RA.db.pixelScale = true end
+		if RA.db.windowScale == nil then RA.db.windowScale = 1 end
 		S.UseSkin(RA.db.skin, YELLOW)
+		S.SetWindowScale(RA.db.windowScale)
 		self:UnregisterEvent("ADDON_LOADED")
 	end
 end)
@@ -81,4 +83,24 @@ function RA.SetPixelScale(on)
 		S.PixelScale(frame, on)
 		RA.SnapPosition(frame)
 	end
+	RA.Window.Rescaled()
+end
+
+-- the sizes offered for the window and dialogs
+RA.WINDOW_SCALES = { 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2 }
+local MIN_SCALE, MAX_SCALE = 0.5, 3
+
+function RA.ScaleLabel(scale)
+	return ("%d%%"):format(math.floor(scale * 100 + 0.5))
+end
+
+-- Sets the size of the window and dialogs and keeps the window's saved spot. Returns false when out of range.
+function RA.SetWindowScale(scale)
+	local ok = type(scale) == "number" and scale >= MIN_SCALE and scale <= MAX_SCALE
+	if ok then
+		RA.db.windowScale = scale
+		S.SetWindowScale(scale)
+		RA.Window.Rescaled()
+	end
+	return ok
 end

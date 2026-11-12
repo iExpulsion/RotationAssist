@@ -40,6 +40,9 @@ in game and a button that shows what the next press casts.
 - **Themes:** the flat Material look, Classic for the game's own frames and buttons, or Cognac's painted gold
   frames on dark glass. Pick one from **Theme** in the window's title bar; it applies after a reload, which
   Rotation Assist offers to do for you.
+- **Window Size:** **Size** in the title bar makes the window and its dialogs bigger or smaller, from 80% to 200%,
+  for large screens or bigger text. **Snap to Pixels** keeps borders crisp; turn it off to match your UI scale
+  exactly.
 
 ## What a Button Can and Can't Do on 3.3.5a
 
@@ -212,10 +215,12 @@ string. To use one someone shared, click **Import** at the bottom of the rotatio
 - `/rota reset`: move the window back to the top middle of the screen, and the Rotation Button back under the
   middle
 - `/rota theme <name>`: switch the theme after a reload: `material`, `classic` or `cognac`
+- `/rota scale <percent>`: set the window size, from 50 to 300 (`/rota scale 150`)
 - `/rota pixel`: turn pixel snapping off or back on
 
 The window snaps to whole screen pixels, so its borders stay crisp. At most UI scales that makes it a little
-larger or smaller than the rest of your UI; `/rota pixel` turns it off if you'd rather it matched exactly.
+larger or smaller than the rest of your UI; `/rota pixel` turns it off if you'd rather it matched exactly. Sizes other than 100% snap only when they land on
+whole pixels, so their borders may blur slightly.
 
 With a LibDataBroker display such as Titan Panel or ElvUI's data texts, Rotation Assist appears there too, with
 the same clicks as the minimap button.

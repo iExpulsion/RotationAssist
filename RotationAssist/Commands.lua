@@ -12,6 +12,7 @@ local function help()
 	RA:Print("  /rota button (show or hide the Rotation Button) | lock | unlock")
 	RA:Print("  /rota macros | quiet | trace | minimap [reset] | reset")
 	RA:Print("  /rota theme <name> (after a reload: %s) | pixel (snap the window to whole screen pixels)", themeNames())
+	RA:Print("  /rota scale <percent> (window size, such as /rota scale 150)")
 end
 
 local handlers = {}
@@ -58,6 +59,14 @@ handlers.theme = function(arg)
 		RA:Print("No theme called %s. Themes: %s.", key, themeNames())
 	else
 		RA:Print("Theme: %s. /reload if it hasn't switched yet.", key)
+	end
+end
+handlers.scale = function(arg)
+	local percent = tonumber(arg)
+	if percent and RA.SetWindowScale(percent / 100) then
+		RA:Print("Window size: %s.", RA.ScaleLabel(RA.db.windowScale))
+	else
+		RA:Print("Window size: %s. /rota scale <50-300> sets it, in percent.", RA.ScaleLabel(RA.db.windowScale))
 	end
 end
 handlers.pixel = function()
