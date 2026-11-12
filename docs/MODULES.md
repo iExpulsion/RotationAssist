@@ -6,6 +6,7 @@ is a small addon that tells it about the parts of your server that stock 3.3.5a 
 - characters with more than one class
 - names for talent specs
 - custom spells that cost runes, or that need combo points
+- server limits that some of Rotation Assist's behavior runs into
 
 Modules live in repos of their own. [RotationAssist-Synastria](https://github.com/iExpulsion/RotationAssist-Synastria)
 is one to copy: the addon folder and a workflow that releases a zip when its version goes up.
@@ -88,6 +89,18 @@ RotationAssist:AddFinishers({ "Shadow Flurry" })
 
 Spells that need combo points. The client says a finisher is usable at 0 combo points, so Smart Picks passes over
 the ones in this list until there's at least one. The stock Rogue and Druid finishers are already in it.
+
+### Holding Presses During the Global Cooldown
+
+```lua
+if RotationAssist.SetGcdHoldDefault then RotationAssist:SetGcdHoldDefault(false) end
+```
+
+With Smart Picks, presses during the global cooldown normally try nothing, so failed casts don't play their fizzle
+sound. Rotation Assist does that by clearing and restoring the target around every line, many times a second
+while a player mashes. If your server disconnects players for that, turn it off by default here; the fizzle sounds
+come back. A player who picks a setting in Settings or with `/rota hold` keeps their choice. The check keeps the
+module working with Rotation Assist versions from before this hook.
 
 ## Testing
 

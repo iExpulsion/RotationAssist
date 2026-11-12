@@ -8,6 +8,7 @@ _G.RotationAssist = RA
 -- docs/MODULES.md.
 local classProvider, specNameProvider
 local pairNames = {}
+local gcdHoldDefault = true
 
 -- fn() returns the character's classes in pick order, as class keys, for servers where a character has several.
 function RA:SetClassProvider(fn)
@@ -25,6 +26,18 @@ function RA:AddClassNames(names)
 		pairNames[pair[1] .. "/" .. pair[2]] = name
 		pairNames[pair[2] .. "/" .. pair[1]] = name
 	end
+end
+
+-- Whether Smart Picks holds every line back on presses during the global cooldown when the player hasn't chosen.
+function RA:SetGcdHoldDefault(on)
+	gcdHoldDefault = on and true or false
+end
+
+-- Smart Picks' hold on presses during the global cooldown: the player's choice, else the default.
+function RA:HoldsDuringGcd()
+	local chosen = RA.db and RA.db.gcdHold
+	if chosen == nil then chosen = gcdHoldDefault end
+	return chosen
 end
 
 function RA:PairName(a, b)
@@ -195,6 +208,8 @@ frame:SetScript("OnEvent", function(self, event, name)
 		db.rotations = db.rotations or {}
 		db.links = db.links or {}
 		db.button = db.button or { shown = true, locked = true, scale = 1 }
+		-- the hold used to be part of Quiet Errors, so turning that off had turned it off too
+		if db.quiet == false and db.gcdHold == nil then db.gcdHold = false end
 		if db.quiet == nil then db.quiet = true end
 		RotationAssistCharDB = RotationAssistCharDB or {}
 		claimCharFile(RotationAssistCharDB)

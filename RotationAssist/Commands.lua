@@ -10,7 +10,7 @@ end
 local function help()
 	RA:Print("v%s commands (/rota alone opens the window):", RA.version)
 	RA:Print("  /rota button (show or hide the Rotation Button) | lock | unlock")
-	RA:Print("  /rota macros | quiet | trace | minimap [reset] | reset")
+	RA:Print("  /rota macros | quiet | hold | trace | minimap [reset] | reset")
 	RA:Print("  /rota theme <name> (after a reload: %s) | pixel (snap the window to whole screen pixels)", themeNames())
 	RA:Print("  /rota scale <percent> (window size, such as /rota scale 150)")
 end
@@ -34,6 +34,10 @@ handlers.macros = function() RA:Print(RA.Keys.MakeMacros()) end
 handlers.quiet = function()
 	RA.Quiet.Set(not RA.db.quiet)
 	RA:Print(RA.db.quiet and "Quiet Errors on." or "Quiet Errors off.")
+end
+handlers.hold = function()
+	RA.db.gcdHold = not RA:HoldsDuringGcd()
+	RA:Print(RA.db.gcdHold and "Hold Presses During the Global Cooldown on." or "Hold Presses During the Global Cooldown off.")
 end
 handlers.trace = function()
 	if RA.Trace then

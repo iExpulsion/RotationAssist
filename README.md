@@ -34,6 +34,8 @@ in game and a button that shows what the next press casts.
   mouse macro left on is easy to spot.
 - **Import and Export:** share a rotation, with all its modes, actions, triggers and notes, as one string.
 - **Quiet Errors:** hides the "Not ready yet" errors that a priority list causes on purpose.
+- **Hold Presses During the Global Cooldown:** with Smart Picks, presses during the global cooldown try nothing,
+  so failed casts don't play their fizzle sound. A server module may turn it off where the server objects.
 - **Per Spec:** link a rotation to a talent spec, and it switches with your spec.
 - **Preview:** see exactly which macro each mode runs on your character, and which spells were left out
   because you don't know them.
@@ -208,6 +210,7 @@ string. To use one someone shared, click **Import** at the bottom of the rotatio
 - `/rota lock`, `/rota unlock`: lock or unlock the Rotation Button's position
 - `/rota macros`: make the RA Rotation and RA Mode macros
 - `/rota quiet`: turn Quiet Errors on or off
+- `/rota hold`: turn Hold Presses During the Global Cooldown on or off
 - `/rota trace`: after each press, list the spells sent, cast or failed, and the errors, to see which line took
   the press
 - `/rota minimap`: show or hide the minimap button (drag it around the minimap, or Shift-drag it anywhere on

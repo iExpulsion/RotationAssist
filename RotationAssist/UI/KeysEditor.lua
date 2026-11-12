@@ -91,9 +91,12 @@ function Editor.Create(parent, width, height)
 
 	local errorHeading = W.Heading(f, "Errors")
 	errorHeading:SetPoint("TOPLEFT", scaleLabel, "BOTTOMLEFT", 0, -3 * GAP)
-	f.quiet = W.Toggle(f, "Quiet Errors", "Hides the red error text for a moment after each press, and turns off the spoken errors. Lines that can't cast yet fail on purpose, so without this every press shows \"Not ready yet\". With Smart Picks, presses during the global cooldown also try nothing, so failed casts don't play their fizzle sound.",
+	f.quiet = W.Toggle(f, "Quiet Errors", "Hides the red error text for a moment after each press, and turns off the spoken errors. Lines that can't cast yet fail on purpose, so without this every press shows \"Not ready yet\".",
 		function(on) RA.Quiet.Set(on) RA.Window.Render() end)
 	f.quiet:SetPoint("TOPLEFT", errorHeading, "BOTTOMLEFT", 0, -4)
+	f.gcdHold = W.Toggle(f, "Hold Presses During the Global Cooldown", "With Smart Picks, presses during the global cooldown try nothing, so failed casts don't play their fizzle sound. It does this by clearing and restoring your target around every line, many times a second while you mash. Some servers disconnect you for that, so a server module may turn it off.",
+		function(on) RA.db.gcdHold = on and true or false RA.Window.Render() end)
+	f.gcdHold:SetPoint("TOPLEFT", f.quiet, "BOTTOMLEFT", 0, -4)
 	return f
 end
 
@@ -109,6 +112,7 @@ function Editor.Render()
 	frame.lockButton:SetChecked(db.locked)
 	frame.scale:SetText(("%d%%"):format((db.scale or 1) * 100))
 	frame.quiet:SetChecked(RA.db.quiet)
+	frame.gcdHold:SetChecked(RA:HoldsDuringGcd())
 	local summary
 	if capturing then
 		summary = S.Hex(C.accent, "Press a Key, or Esc to Cancel")
