@@ -29,7 +29,8 @@ end
 -- Soul, or a trigger that's met too often) is passed over for a moment, so it can't stall every press.
 -- Keyed by lower-case name: the event names the spell as the game spells it, and a rotation may not.
 -- A spell refused while it read as unusable (Hunger For Blood with no bleed) is remembered for the session: the
--- client still tries it and the refusal ends the press, so it can't be trusted to fail quietly.
+-- client still sends it, the server refuses it and the press ends. So while it reads as unusable it's held back
+-- wherever it is in the list; held down, a key would send it many times a second, and a server can kick for that.
 RB.REFUSED_HOLD = 2
 local refusedAt, refusedUnusable = {}, {}
 local lowered = RA.Spells.Lower
@@ -45,8 +46,10 @@ refusals:SetScript("OnEvent", function(_, _, unit, spell)
 end)
 
 local function refused(cast)
-	local at = refusedAt[lowered[cast.name]]
-	return at ~= nil and GetTime() - at < RB.REFUSED_HOLD
+	local key = lowered[cast.name]
+	local at = refusedAt[key]
+	local recent = at ~= nil and GetTime() - at < RB.REFUSED_HOLD
+	return recent or (refusedUnusable[key] == true and not IsUsableSpell(cast.name))
 end
 
 local function savePosition()
@@ -174,7 +177,7 @@ RB.Refused = refused
 -- isn't lit or is out of range. A cooldown or short runes fail as "not ready", which stops the press.
 function RB.FailsQuietly(cast)
 	local blocked = not offCooldown(cast) or not RA.Runes.Enough(cast.name)
-	local quiet = (not IsUsableSpell(cast.name) and not refusedUnusable[lowered[cast.name]]) or outOfRange(cast)
+	local quiet = not IsUsableSpell(cast.name) or outOfRange(cast)
 	return not condOk(cast) or (not blocked and quiet)
 end
 
