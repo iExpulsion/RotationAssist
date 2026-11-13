@@ -244,6 +244,6 @@ To write one for your server, read [docs/MODULES.md](docs/MODULES.md).
 ## License
 
 MIT. Bundles [LibDeflate](https://github.com/SafeteeWoW/LibDeflate) (zlib License) to compress rotation
-strings, LibStub and LibDataBroker-1.1 (public domain), and CallbackHandler-1.0 (from Ace3, under its own
-BSD-style license). The Cognac art in `RotationAssist/UI/Skins/Cognac` is from
+strings, LibStub (public domain), LibDataBroker-1.1 (by Tekkub, with no license stated) and CallbackHandler-1.0
+(from Ace3, under its own BSD-style license, included next to it). The Cognac art in `RotationAssist/UI/Skins/Cognac` is from
 [AttuneNext](https://github.com/speedyrulz/AttuneNext) and isn't covered by the MIT License.
