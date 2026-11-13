@@ -1,5 +1,5 @@
 ## Interface: 30300
-## Title: Rotation Assist
+## Title: |cffff9a2eRotation Assist|r
 ## Notes: One-button rotations: each press casts the first ready spell of a priority list, with modes, a Mode key and an on-screen button. /rota
 ## Author: Expulsion
 ## Version: 1.4.0
