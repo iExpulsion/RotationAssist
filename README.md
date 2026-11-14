@@ -39,9 +39,9 @@ in game and a button that shows what the next press casts.
 - **Per Spec:** link a rotation to a talent spec, and it switches with your spec.
 - **Preview:** see exactly which macro each mode runs on your character, and which spells were left out
   because you don't know them.
-- **Themes:** the flat Material look, Classic for the game's own frames and buttons, or Cognac's painted gold
-  frames on dark glass. Pick one from **Theme** in the window's title bar; it applies after a reload, which
-  Rotation Assist offers to do for you.
+- **Themes:** the flat Material look, Classic for the game's own frames and buttons, Cognac's painted gold
+  frames on dark glass, or Material Glass, the Material look on see-through frosted glass. Pick one from
+  **Theme** in the window's title bar; it applies after a reload, which Rotation Assist offers to do for you.
 - **Window Size:** **Size** in the title bar makes the window and its dialogs bigger or smaller, from 80% to 200%,
   for large screens or bigger text. **Snap to Pixels** keeps borders crisp; turn it off to match your UI scale
   exactly.
@@ -218,7 +218,7 @@ string. To use one someone shared, click **Import** at the bottom of the rotatio
 - `/rota minimap reset`: put the minimap button back on the minimap
 - `/rota reset`: move the window back to the top middle of the screen, and the Rotation Button back under the
   middle
-- `/rota theme <name>`: switch the theme after a reload: `material`, `classic` or `cognac`
+- `/rota theme <name>`: switch the theme after a reload: `material`, `classic`, `cognac` or `materialglass`
 - `/rota scale <percent>`: set the window size, from 50 to 300 (`/rota scale 150`)
 - `/rota pixel`: turn pixel snapping off or back on
 
