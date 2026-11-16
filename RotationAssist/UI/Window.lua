@@ -522,10 +522,11 @@ local function createMain(f, edge)
 	createTabBar(main)
 
 	local bodyTop = HEADER_H + TABS_H + PAD
-	f.notes = RA.Widgets.TextArea(main, "RotationAssistNotesScroll", Window.BODY_W, Window.BODY_H, function(text)
-		local rotation = Window.Selected()
-		if rotation then rotation.notes = text end
-	end, "normal")
+	f.notes = S.TextArea(main, "RotationAssistNotesScroll", Window.BODY_W, Window.BODY_H, { font = "normal",
+		onInput = function(text)
+			local rotation = Window.Selected()
+			if rotation then rotation.notes = text end
+		end })
 	f.notes:SetPoint("TOPLEFT", PAD, -bodyTop)
 	f.editors = {}
 	for key, module in pairs(EDITORS) do

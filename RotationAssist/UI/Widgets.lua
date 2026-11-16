@@ -1,50 +1,13 @@
 local _, NS = ...
 local RA = NS.RA
 
--- Controls the editors share, built on the style kit: a multi-line text well and a labeled checkbox.
+-- Controls the editors share, built on the style kit: a labeled checkbox and a heading. (The text well is the
+-- kit's S.TextArea.)
 local Widgets = {}
 RA.Widgets = Widgets
 
 local S = RA.Style
 local C = S.colors
-
--- A scrolling multi-line edit box in a well. onChange(text) runs on typing; SetValue sets text without it.
-function Widgets.TextArea(parent, name, width, height, onChange, fontSize)
-	local box = CreateFrame("Frame", nil, parent)
-	box:SetSize(width, height)
-	S.Well(box)
-	-- the text sits inside the well's frame, however thick the theme draws it
-	local pad = 8 + S.metrics.wellInset
-	local scroll = CreateFrame("ScrollFrame", name, box, "UIPanelScrollFrameTemplate")
-	scroll:SetPoint("TOPLEFT", pad, -pad)
-	scroll:SetPoint("BOTTOMRIGHT", -pad - 10, pad)
-	local edit = CreateFrame("EditBox", nil, scroll)
-	edit:SetMultiLine(true)
-	edit:SetAutoFocus(false)
-	S.SetFont(edit, fontSize or "small")
-	edit:SetWidth(width - 2 * pad - 10)
-	edit:SetScript("OnEscapePressed", edit.ClearFocus)
-	edit:SetScript("OnEditFocusGained", function(self) self.focused = true end)
-	edit:SetScript("OnEditFocusLost", function(self) self.focused = false end)
-	edit:SetScript("OnTextChanged", function(self, userInput)
-		if userInput and onChange then onChange(self:GetText()) end
-	end)
-	scroll:SetScrollChild(edit)
-	S.TrackInput(edit, box)
-	S.List.AutoHideBar(scroll, name)
-	box:EnableMouse(true)
-	box:SetScript("OnMouseDown", function() edit:SetFocus() end)
-	box.edit = edit
-	function box:SetValue(text)
-		if not edit.focused then edit:SetText(text or "") end
-	end
-	function box:SetReadOnly(on)
-		edit:EnableMouse(not on)
-		box:EnableMouse(not on)
-		if on then edit:ClearFocus() end
-	end
-	return box
-end
 
 -- A checkbox with a clickable label. onClick(on) gets the new state.
 function Widgets.Toggle(parent, label, tooltip, onClick)

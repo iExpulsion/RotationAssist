@@ -185,7 +185,7 @@ local function createDetail(parent, width, height)
 		"Smart Picks passes over a spell with a cast time while you move. Turn this on for one you can cast on the move anyway, like Pyroblast with a [buff:Hot Streak] trigger.",
 		function(on) edit(function(a) a.moving = on or nil end) end)
 	d.textLabel = label(d, "Lines")
-	d.text = W.TextArea(d, "RotationAssistActionText", inner, 110, function(text)
+	d.text = S.TextArea(d, "RotationAssistActionText", inner, 110, { onInput = function(text)
 		edit(function(a)
 			if a.kind == "steps" then
 				local steps = {}
@@ -195,7 +195,7 @@ local function createDetail(parent, width, height)
 				a.text = text
 			end
 		end)
-	end)
+	end })
 
 	d.remove = S.Button(d, "Remove", "danger", 70, remove)
 	d.remove:SetPoint("BOTTOMRIGHT", -pad, pad)

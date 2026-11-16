@@ -47,9 +47,9 @@ local function previewText(rotation, compiled)
 end
 
 function Editor.Create(parent, width, height)
-	frame = RA.Widgets.TextArea(parent, "RotationAssistPreview", width, height, function()
+	frame = RA.Style.TextArea(parent, "RotationAssistPreview", width, height, { font = "edit", onInput = function()
 		frame.edit:SetText(frame.text or "")
-	end, "edit")
+	end })
 	return frame
 end
 

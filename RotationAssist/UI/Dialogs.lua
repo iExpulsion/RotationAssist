@@ -145,8 +145,8 @@ local function createShare()
 	f.close = S.Button(f, "Close", "ghost", 56, function() f:Hide() end)
 	f.close:SetPoint("TOPRIGHT", -PAD, -(PAD - 4))
 
-	f.box = RA.Widgets.TextArea(f, "RotationAssistShareText", SHARE_W - 2 * S.PAD, SHARE_H + grow - wellTop - footerH, nil,
-		"edit")
+	f.box = S.TextArea(f, "RotationAssistShareText", SHARE_W - 2 * S.PAD, SHARE_H + grow - wellTop - footerH,
+		{ font = "edit" })
 	f.box:SetPoint("TOPLEFT", PAD, -wellTop)
 	f.box.edit:HookScript("OnTextChanged", function(self, userInput)
 		if f.mode == "import" then
