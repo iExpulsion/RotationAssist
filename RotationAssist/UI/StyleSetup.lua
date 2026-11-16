@@ -16,91 +16,22 @@ local YELLOW = {
 }
 S.SetTheme(YELLOW)
 
-local function known(key)
-	for _, skin in ipairs(S.Skins()) do
-		if skin.key == key then return true end
-	end
-	return false
-end
-
--- The saved skin goes on once saved data is loaded (Core's handler runs first), before anything is built; frames
--- take their look when they're made.
+-- The saved skin, window size and pixel snapping (S.Settings) go on once saved data is loaded (Core's handler runs
+-- first), before anything is built; frames take their look when they're made.
 local loader = CreateFrame("Frame")
 loader:RegisterEvent("ADDON_LOADED")
 loader:SetScript("OnEvent", function(self, _, name)
 	if name == ADDON then
-		if not known(RA.db.skin) then RA.db.skin = "material" end
-		if RA.db.pixelScale == nil then RA.db.pixelScale = true end
-		if RA.db.windowScale == nil then RA.db.windowScale = 1 end
-		S.UseSkin(RA.db.skin, YELLOW)
-		S.SetWindowScale(RA.db.windowScale)
+		S.Settings.Use(RA.db, { theme = YELLOW, name = "Rotation Assist",
+			onRescaled = function() RA.Window.Rescaled() end })
 		self:UnregisterEvent("ADDON_LOADED")
 	end
 end)
 
-StaticPopupDialogs.ROTATION_ASSIST_RELOAD = {
-	text = "Rotation Assist switches to the %s theme after a reload. Reload now?",
-	button1 = "Reload",
-	button2 = "Later",
-	OnAccept = function() ReloadUI() end,
-	timeout = 0,
-	whileDead = true,
-	hideOnEscape = true,
-}
-
--- Saves a skin for the next load and offers to reload. Returns false for a skin that doesn't exist.
-function RA.SetSkin(key)
-	local ok = known(key)
-	if ok and key ~= RA.db.skin then
-		RA.db.skin = key
-		local label = key
-		for _, skin in ipairs(S.Skins()) do
-			if skin.key == key then label = skin.label end
-		end
-		StaticPopup_Show("ROTATION_ASSIST_RELOAD", label)
-	end
-	return ok
-end
-
--- The window and dialogs are pixel-scaled (S.PixelScale) unless the player turned it off, so their edges and 1px
--- borders land on whole screen pixels. RA.PixelScale registers one as it's made.
-local pixelFrames = {}
-
-function RA.PixelScale(frame)
-	pixelFrames[#pixelFrames + 1] = frame
-	S.PixelScale(frame, RA.db.pixelScale)
-	return frame
-end
-
--- Snaps a window's position to whole pixels, when pixel scaling is on.
-function RA.SnapPosition(frame)
-	if RA.db.pixelScale then S.SnapPosition(frame) end
-end
-
-function RA.SetPixelScale(on)
-	RA.db.pixelScale = on
-	for _, frame in ipairs(pixelFrames) do
-		S.PixelScale(frame, on)
-		RA.SnapPosition(frame)
-	end
-	RA.Window.Rescaled()
-end
-
--- the sizes offered for the window and dialogs
-RA.WINDOW_SCALES = { 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2 }
-local MIN_SCALE, MAX_SCALE = 0.5, 3
-
-function RA.ScaleLabel(scale)
-	return ("%d%%"):format(math.floor(scale * 100 + 0.5))
-end
-
--- Sets the size of the window and dialogs and keeps the window's saved spot. Returns false when out of range.
-function RA.SetWindowScale(scale)
-	local ok = type(scale) == "number" and scale >= MIN_SCALE and scale <= MAX_SCALE
-	if ok then
-		RA.db.windowScale = scale
-		S.SetWindowScale(scale)
-		RA.Window.Rescaled()
-	end
-	return ok
-end
+RA.WINDOW_SCALES = S.Settings.SCALES
+RA.ScaleLabel = S.Settings.ScaleLabel
+RA.SetWindowScale = S.Settings.SetWindowScale
+RA.PixelScale = S.Settings.PixelScale
+RA.SnapPosition = S.Settings.SnapPosition
+RA.SetPixelScale = S.Settings.SetPixelScale
+RA.SetSkin = S.Settings.SetSkin
