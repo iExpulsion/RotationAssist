@@ -31,7 +31,7 @@ function Widgets.TextArea(parent, name, width, height, onChange, fontSize)
 	end)
 	scroll:SetScrollChild(edit)
 	S.TrackInput(edit, box)
-	RA.List.AutoHideBar(scroll, name)
+	S.List.AutoHideBar(scroll, name)
 	box:EnableMouse(true)
 	box:SetScript("OnMouseDown", function() edit:SetFocus() end)
 	box.edit = edit

@@ -1,4 +1,4 @@
--- Vendored from MaterialCraftUI v1.6.0. Change it there, then run tools/sync_style.py.
+-- Vendored from MaterialCraftUI v1.6.0-5-geb12fb5. Change it there, then run tools/sync_style.py.
 -- MIT License, Copyright (c) 2026 Expulsion: https://github.com/iExpulsion/MaterialCraftUI
 -- MaterialCraftUI: a flat dark style kit for WoW 3.3.5 addons on Material 3 color roles: one accent color, 1px
 -- borders, state layers and a few button kinds. Each addon ships its own copy, listed in its .toc, and reads it
@@ -22,7 +22,8 @@ local function blend(base, over, alpha)
 end
 
 -- Material 3's baseline dark scheme (seed #6750a4). It has no success or warning roles, so those are custom
--- colors.
+-- colors, as are red, blue, green and yellow: hues for telling groups apart (S.Table's headerColor), light enough
+-- to read on any surface.
 local DEFAULT_SCHEME = {
 	surfaceLowest = rgb("0f0d13"),
 	surface = rgb("141218"),
@@ -39,6 +40,10 @@ local DEFAULT_SCHEME = {
 	errorContainer = rgb("8c1d18"),
 	success = rgb("78dc77"),
 	warning = rgb("ffb870"),
+	red = rgb("ffb4ab"),
+	blue = rgb("a8c7fa"),
+	green = rgb("8fdb8d"),
+	yellow = rgb("eccb6f"),
 }
 
 local M3 = {}
@@ -82,6 +87,7 @@ local function build()
 	c.warn = M3.warning
 	c.bad = M3.error
 	c.badDim = M3.errorContainer
+	c.red, c.blue, c.green, c.yellow = M3.red, M3.blue, M3.green, M3.yellow
 	-- roles a skin can set apart from the scheme: table rows, the selected entry of a navigation list, dropdown
 	-- arrows and scrollbar thumbs
 	c.rowHover = c.hover
@@ -1073,11 +1079,24 @@ function S.Highlight(frame)
 end
 
 -- An entry in a navigation sidebar: its label (b.label, in the "normal" size) and its hover and selected look.
+-- With an icon texture, b.icon sits where the skin puts the label and the label moves right of it.
 -- b:SetSelected(on) repaints it.
-function S.NavEntry(b, text)
+local NAV_ICON = 18
+function S.NavEntry(b, text, icon)
 	b.label = S.Text(b, "normal")
 	b.label:SetText(text)
 	skin.navEntry(b)
+	if icon then
+		local _, _, _, x = b.label:GetPoint()
+		b.icon = b:CreateTexture(nil, "ARTWORK")
+		b.icon:SetSize(NAV_ICON, NAV_ICON)
+		b.icon:SetPoint("LEFT", x or S.PAD, 0)
+		-- crops the uneven dark frame around Blizzard's icon art
+		b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+		b.icon:SetTexture(icon)
+		b.label:ClearAllPoints()
+		b.label:SetPoint("LEFT", (x or S.PAD) + NAV_ICON + 6, 0)
+	end
 	function b:SetSelected(on)
 		self.selected = on
 		skin.paintNav(self, on)
@@ -1304,6 +1323,22 @@ local function newRow(self, i)
 	row.headerText:SetPoint("LEFT", 6, 0)
 	row.headerText:SetPoint("RIGHT", -6 - BAR_SPACE, 0)
 	row.headerText:Hide()
+	if self.headerColor then
+		row.headerRule = S.Solid(row, "ARTWORK", C.heading)
+		row.headerRule:SetHeight(1)
+		row.headerRule:SetPoint("BOTTOMLEFT", 6, 0)
+		row.headerRule:SetPoint("BOTTOMRIGHT", -6 - BAR_SPACE, 0)
+		row.headerRule:Hide()
+	end
+	if i == 1 and self.stickyHeaders then
+		-- marks the top row's header as held in place, with the group's rows passing under it
+		local rule, ruleH = line(row, "header")
+		rule:SetHeight(ruleH)
+		rule:SetPoint("BOTTOMLEFT")
+		rule:SetPoint("BOTTOMRIGHT")
+		rule:Hide()
+		row.stickyRule = rule
+	end
 
 	-- the row's item, or nil for an empty row or a group heading, which get no tooltip and no clicks unless the
 	-- table takes header clicks
@@ -1411,6 +1446,9 @@ end
 -- first column has an icon), cell(item, key) -> text, color, icon(item) -> texture, tooltip(tt, item),
 -- onClick(item, button, row) (row: the clicked row, to open an S.ContextMenu beside), onSort(key, desc), header(item) -> label when the item is a group header row,
 -- headerClicks (group header rows also get tooltip and onClick, to collapse a group or act on all of it),
+-- stickyHeaders (once a group's header scrolls off, the top row shows it over the group's rows),
+-- headerColor(item) -> color for a group header's label and the rule under it (S.colors' red, blue, green and
+-- yellow are there for this), or nil for the usual heading color and no rule,
 -- isSelected(item), plain (a bare list for inside a menu or popup: no well frame and no column headers),
 -- onMove(from, to) (rows can be dragged to reorder; from and to are item indexes, to as it is after the move, and
 -- the table leaves moving the item to the caller). The table's frame is .frame; its contents sit inside the well's
@@ -1421,7 +1459,8 @@ function Table.New(parent, name, width, height, opts)
 	local inset = opts.plain and 0 or 1 + S.metrics.wellInset
 	local self = setmetatable({ columns = opts.columns, rowH = opts.rowH or 20, icons = opts.icons, cell = opts.cell,
 		iconOf = opts.icon, tooltip = opts.tooltip, onClick = opts.onClick, onSort = opts.onSort, header = opts.header,
-		headerClicks = opts.headerClicks, isSelected = opts.isSelected, plain = opts.plain, onMove = opts.onMove, items = {}, width = width,
+		headerClicks = opts.headerClicks, stickyHeaders = opts.stickyHeaders, headerColor = opts.headerColor,
+		isSelected = opts.isSelected, plain = opts.plain, onMove = opts.onMove, items = {}, width = width,
 		innerW = width - 2 * inset,
 		offset = 0, rows = {}, headers = {} }, { __index = Table })
 	local columns = {}
@@ -1583,11 +1622,28 @@ function Table:SetItems(items, emptyText, keepScroll)
 	self:Redraw()
 end
 
+-- The header of the group the top row is in, once that header has scrolled off: its item and label, or nil.
+local function stickyHeader(self)
+	local top = self.items[self.offset + 1]
+	if self.stickyHeaders and self.header and top and not self.header(top) then
+		for index = self.offset, 1, -1 do
+			local item = self.items[index]
+			local label = self.header(item)
+			if label then return item, label end
+		end
+	end
+end
+
 function Table:Redraw()
+	local stuckItem, stuckLabel = stickyHeader(self)
 	for i, row in ipairs(self.rows) do
 		local item = self.items[self.offset + i]
-		row.item = item
 		local header = item and self.header and self.header(item)
+		if i == 1 and stuckItem then item, header = stuckItem, stuckLabel end
+		if row.stickyRule then
+			if i == 1 and stuckItem then row.stickyRule:Show() else row.stickyRule:Hide() end
+		end
+		row.item = item
 		row.moveIndex = item and not header and self.offset + i or nil
 		if header then
 			for _, fs in ipairs(row.cells) do fs:SetText("") end
@@ -1598,6 +1654,16 @@ function Table:Redraw()
 		else
 			row.headerText:Hide()
 			row.headerTex:Hide()
+		end
+		local groupColor = header and self.headerColor and self.headerColor(item)
+		row.headerText:SetTextColor(unpack(groupColor or S.colors.heading))
+		if row.headerRule then
+			if groupColor then
+				row.headerRule:SetVertexColor(unpack(groupColor))
+				row.headerRule:Show()
+			else
+				row.headerRule:Hide()
+			end
 		end
 		if item and not header then
 			for c, col in ipairs(self.columns) do
@@ -1623,6 +1689,341 @@ end
 
 function Table:Show() self.frame:Show() end
 function Table:Hide() self.frame:Hide() end
+
+-------------------------------------------------------------------------------- list
+
+-- A scrolling list of flat rows for short mixed lists (navigation, pickers, editors), beside S.Table's data grids:
+-- optional icon, text with an optional second line, right-aligned status, tooltip, click and cursor drop. Rows can
+-- be headers (collapsible, colored, sticky), carry a checkbox, a remove button, or be dragged into order; the
+-- selected row gets an accent bar. It scrolls by pixels and keeps a frame per row it has shown, so rows can differ
+-- in height; S.Table is the one for long lists.
+local List = {}
+S.List = List
+
+local LIST_STYLES = {
+	content = { rowH = 22, subRowH = 36, header = "small", row = "small" },
+	sidebar = { rowH = 22, subRowH = 36, header = "small", row = "normal" },
+}
+
+-- A hovered row shows its highlight and, when it can be removed, its remove button in place of its status.
+local function listHover(row, on)
+	local removable = on and row.onRemove ~= nil
+	if on then row.hoverTex:Show() else row.hoverTex:Hide() end
+	if removable then row.remove:Show() row.status:Hide() else row.remove:Hide() row.status:Show() end
+end
+
+local function listEnter(row)
+	listHover(row, true)
+	if row.tooltip then
+		GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
+		row.tooltip(GameTooltip)
+		GameTooltip:Show()
+	end
+end
+
+-- Moving onto the remove button leaves the row; the row stays hovered while the mouse is over either.
+local function listLeave(row)
+	if not MouseIsOver(row) then listHover(row, false) end
+	GameTooltip:Hide()
+end
+
+local function listDropOrClick(row, button)
+	local kind, a, b = GetCursorInfo()
+	if kind and row.onDrop then
+		ClearCursor()
+		row.onDrop(kind, a, b)
+	elseif row.onClick and not (row.list.reorder and row.list.reorder:Busy()) then
+		row.onClick(row, button)
+	end
+end
+
+local function listDragLabel(row) return row.dragLabel end
+
+local function listRow(self, parent)
+	local style = self.style
+	local row = CreateFrame("Button", nil, parent or self.content)
+	row.list = self
+	row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+	if self.reorder and not parent then self.reorder:Attach(row, listDragLabel) end
+
+	row.hoverTex = S.Solid(row, "BACKGROUND", S.colors.rowHover)
+	row.hoverTex:SetAllPoints()
+	row.hoverTex:Hide()
+	row.selectedTex = S.Solid(row, "BACKGROUND", S.colors.rowSelected)
+	row.selectedTex:SetAllPoints()
+	row.bar = S.Solid(row, "BORDER", S.colors.accent)
+	row.bar:SetWidth(3)
+	row.bar:SetPoint("TOPLEFT")
+	row.bar:SetPoint("BOTTOMLEFT")
+
+	row.toggle = S.Text(row, "normal", S.colors.muted)
+	row.toggle:SetWidth(12)
+	row.toggle:SetJustifyH("CENTER")
+	row.check = S.Check(row, nil, function() if row.onCheck then row.onCheck(row) end end)
+	row.icon = row:CreateTexture(nil, "ARTWORK")
+	row.icon:SetSize(16, 16)
+
+	row.status = S.FontString(row, "small")
+	row.status:SetPoint("RIGHT", -S.PAD, 0)
+	row.status:SetJustifyH("RIGHT")
+	row.text = S.FontString(row, style.row)
+	row.text:SetJustifyH("LEFT")
+	row.text:SetPoint("RIGHT", row.status, "LEFT", -6, 0)
+	row.sub = S.Text(row, "small", S.colors.muted)
+	row.sub:SetPoint("TOPLEFT", row.text, "BOTTOMLEFT", 0, -2)
+	row.sub:SetPoint("RIGHT", row.status, "LEFT", -6, 0)
+	-- a colored header's rule
+	row.rule = S.Solid(row, "ARTWORK", S.colors.heading)
+	row.rule:SetHeight(1)
+	row.rule:SetPoint("BOTTOMLEFT", S.PAD, 0)
+	row.rule:SetPoint("BOTTOMRIGHT", -S.PAD, 0)
+	row.rule:Hide()
+
+	-- shown on hover for rows added with onRemove, over the status
+	row.remove = CreateFrame("Button", nil, row)
+	row.remove:SetSize(S.CONTROL_H, S.CONTROL_H)
+	row.remove:SetPoint("RIGHT", -S.PAD + 6, 0)
+	row.remove.label = S.Text(row.remove, "normal", S.colors.muted)
+	row.remove.label:SetPoint("CENTER")
+	row.remove.label:SetText("X")
+	row.remove:Hide()
+	row.remove:SetScript("OnClick", function() if row.onRemove then row.onRemove(row) end end)
+	row.remove:SetScript("OnEnter", function(b)
+		b.label:SetTextColor(unpack(S.colors.bad))
+		GameTooltip:SetOwner(b, "ANCHOR_RIGHT")
+		GameTooltip:SetText(row.removeTip or "Remove", nil, nil, nil, nil, true)
+		GameTooltip:Show()
+	end)
+	row.remove:SetScript("OnLeave", function(b)
+		b.label:SetTextColor(unpack(S.colors.muted))
+		listLeave(row)
+	end)
+
+	row:SetScript("OnClick", listDropOrClick)
+	row:SetScript("OnReceiveDrag", function(r) listDropOrClick(r, "LeftButton") end)
+	row:SetScript("OnEnter", listEnter)
+	row:SetScript("OnLeave", listLeave)
+	return row
+end
+
+-- A flat bar that only shows when there's something to scroll, for any UIPanelScrollFrameTemplate scroll frame;
+-- onToggle(shown), if given, runs with each update. Returns the update function.
+function List.AutoHideBar(scroll, scrollName, onToggle)
+	local bar = S.ScrollBar(scroll, scrollName)
+	local function update()
+		local shown = (scroll:GetVerticalScrollRange() or 0) > 0
+		if shown then bar:Show() else bar:Hide() end
+		if onToggle then onToggle(shown) end
+	end
+	scroll:HookScript("OnScrollRangeChanged", update)
+	update()
+	return update
+end
+
+-- style: "content" (default) or "sidebar" (larger row text). `width` leaves room on the right for the scroll bar;
+-- `gutter` is that room, which the rows take over while there's nothing to scroll and the bar is hidden.
+function List.New(parent, name, width, height, style, gutter)
+	local self = setmetatable({ rows = {}, headers = {}, headerCount = 0, count = 0, height = 0,
+		style = LIST_STYLES[style or "content"], width = width, name = name }, { __index = List })
+	self.scroll = CreateFrame("ScrollFrame", name, parent, "UIPanelScrollFrameTemplate")
+	self.scroll:SetSize(width, height)
+	self.content = CreateFrame("Frame", nil, self.scroll)
+	self.content:SetSize(width, height)
+	self.scroll:SetScrollChild(self.content)
+	self.updateBar = List.AutoHideBar(self.scroll, name, function(shown)
+		local w = shown and width or width + (gutter or 0)
+		self.scroll:SetWidth(w)
+		self.content:SetWidth(w)
+	end)
+	return self
+end
+
+-- The overlay row's copy of the header the list has scrolled past: shown while any of that header is above the
+-- top, hidden at the top or above the first header.
+local function updateSticky(self)
+	local stuck = self.stuck
+	local offset = self.scroll:GetVerticalScroll() or 0
+	local source
+	for i = 1, self.headerCount do
+		local row = self.headers[i]
+		if row.y < offset then source = row end
+	end
+	stuck.source = source
+	if source then
+		S.SetFont(stuck.text, self.style.header)
+		stuck.text:SetText(source.text:GetText() or "")
+		stuck.text:SetTextColor(source.text:GetTextColor())
+		stuck.status:SetText(source.status:GetText() or "")
+		if source.rule:IsShown() then
+			stuck.rule:SetVertexColor(source.rule:GetVertexColor())
+			stuck.rule:Show()
+		else
+			stuck.rule:Hide()
+		end
+		stuck:Show()
+	else
+		stuck:Hide()
+	end
+end
+
+-- Keeps the header of the section scrolled into on an overlay at the top, with a rule under it, until the next
+-- header reaches the top (S.Table's stickyHeaders). Clicks and the tooltip go to the header itself.
+function List:SetSticky()
+	local stuck = listRow(self, self.scroll)
+	stuck:SetFrameLevel(self.content:GetFrameLevel() + 3)
+	stuck:SetPoint("TOPLEFT", self.scroll, "TOPLEFT")
+	stuck:SetPoint("TOPRIGHT", self.scroll, "TOPRIGHT")
+	stuck:SetHeight(self.style.rowH)
+	stuck.bg = S.Solid(stuck, "BACKGROUND", S.colors.panel)
+	stuck.bg:SetDrawLayer("BACKGROUND", -1)
+	stuck.bg:SetAllPoints()
+	local divider, thickness = S.Divider(stuck, "header")
+	divider:SetHeight(thickness)
+	divider:SetPoint("BOTTOMLEFT")
+	divider:SetPoint("BOTTOMRIGHT")
+	stuck.text:ClearAllPoints()
+	stuck.text:SetPoint("LEFT", S.PAD, 0)
+	stuck.text:SetPoint("RIGHT", stuck.status, "LEFT", -6, 0)
+	stuck.selectedTex:Hide()
+	stuck.bar:Hide()
+	stuck.toggle:Hide()
+	stuck.check:Hide()
+	stuck.icon:Hide()
+	stuck.sub:Hide()
+	stuck:SetScript("OnClick", function(r, button)
+		if r.source and r.source.onClick then r.source.onClick(r.source, button) end
+	end)
+	stuck.tooltip = function(tt) if stuck.source and stuck.source.tooltip then stuck.source.tooltip(tt) end end
+	stuck:Hide()
+	self.stuck = stuck
+	self.scroll:HookScript("OnVerticalScroll", function() updateSticky(self) end)
+end
+
+-- Rows added with a move index can be dragged into a new order; onMove(from, to) gets the drop.
+function List:SetReorder(onMove)
+	local scroll = self.scroll
+	self.reorder = Reorder.New({ rows = self.rows, lineParent = self.content, area = scroll, onMove = onMove,
+		scroll = function(step)
+			local y = scroll:GetVerticalScroll() + step * self.style.rowH
+			scroll:SetVerticalScroll(math.max(0, math.min(scroll:GetVerticalScrollRange() or 0, y)))
+		end })
+	for _, row in ipairs(self.rows) do self.reorder:Attach(row, listDragLabel) end
+end
+
+-- Starts a redraw: Add each entry, then End.
+function List:Begin()
+	self.count = 0
+	self.height = 0
+	self.headerCount = 0
+end
+
+-- entry: text, sub, status, icon, header, color (a header's text and rule color, such as S.colors.red), collapsed
+-- (true/false shows +/-), indent, selected, check (true/false shows a checkbox), checkEnabled, checkTooltip,
+-- onCheck(row), tooltip(tt), onClick(row, button), onDrop(kind, ...) with GetCursorInfo's values for whatever is
+-- dropped on it, move (the index it drags from, with SetReorder), dragLabel (the text by the cursor while it's
+-- dragged), and onRemove(row) with removeTip (an X shown over the status while the row is hovered)
+function List:Add(entry)
+	local style = self.style
+	self.count = self.count + 1
+	local row = self.rows[self.count]
+	if not row then
+		row = listRow(self)
+		self.rows[self.count] = row
+	end
+	local h = entry.sub and style.subRowH or style.rowH
+	if entry.header and self.count > 1 then self.height = self.height + 6 end
+	row:ClearAllPoints()
+	row:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, -self.height)
+	row:SetPoint("TOPRIGHT", self.content, "TOPRIGHT", 0, -self.height)
+	row:SetHeight(h)
+	row.y = self.height
+	self.height = self.height + h
+	if entry.header then
+		self.headerCount = self.headerCount + 1
+		self.headers[self.headerCount] = row
+	end
+
+	local x = S.PAD + (entry.indent or 0)
+	if entry.collapsed ~= nil then
+		row.toggle:SetText(entry.collapsed and "+" or "-")
+		row.toggle:ClearAllPoints()
+		row.toggle:SetPoint("LEFT", x - 2, 0)
+		row.toggle:Show()
+		x = x + 16
+	else
+		row.toggle:Hide()
+	end
+	if entry.check ~= nil then
+		row.check:ClearAllPoints()
+		row.check:SetPoint("LEFT", x, 0)
+		row.check:SetChecked(entry.check)
+		row.check:SetEnabled(entry.checkEnabled ~= false)
+		row.check.tooltipText = entry.checkTooltip
+		row.check:Show()
+		x = x + S.CHECK_H + 6
+	else
+		row.check:Hide()
+	end
+	row.icon:ClearAllPoints()
+	row.text:ClearAllPoints()
+	row.text:SetPoint("RIGHT", row.status, "LEFT", -6, 0)
+	if entry.icon then
+		row.icon:SetTexture(entry.icon)
+		row.icon:SetPoint("LEFT", x, 0)
+		row.icon:Show()
+		x = x + 20
+	else
+		row.icon:Hide()
+	end
+	if entry.sub then
+		-- two lines (about 24px of text) centered in the taller row
+		row.text:SetPoint("TOPLEFT", x, -(style.subRowH - 24) / 2)
+		row.sub:SetText(entry.sub)
+		row.sub:Show()
+	else
+		row.text:SetPoint("LEFT", x, 0)
+		row.sub:Hide()
+	end
+
+	S.SetFont(row.text, entry.header and style.header or style.row)
+	row.text:SetText(entry.text or "")
+	-- rows are reused, so both kinds set their color; a header left to its font would keep an entry's white
+	row.text:SetTextColor(unpack(entry.header and (entry.color or S.colors.heading) or S.colors.text))
+	if entry.header and entry.color then
+		row.rule:SetVertexColor(unpack(entry.color))
+		row.rule:Show()
+	else
+		row.rule:Hide()
+	end
+	row.status:SetText(entry.status or "")
+	if entry.selected then
+		row.selectedTex:Show()
+		row.bar:Show()
+	else
+		row.selectedTex:Hide()
+		row.bar:Hide()
+	end
+
+	row.tooltip, row.onClick, row.onDrop, row.onCheck = entry.tooltip, entry.onClick, entry.onDrop, entry.onCheck
+	row.onRemove, row.removeTip = entry.onRemove, entry.removeTip
+	-- rows are reused, so a redraw under the mouse keeps the hover the new entry should have
+	listHover(row, row:IsShown() and MouseIsOver(row) or false)
+	row.moveIndex, row.dragLabel = entry.move, entry.dragLabel
+	row:Show()
+	return row
+end
+
+-- Ends a redraw: rows past the last entry hide and the scroll range follows the new height.
+function List:End()
+	for i = self.count + 1, #self.rows do self.rows[i]:Hide() end
+	self.content:SetHeight(math.max(1, self.height))
+	self.scroll:UpdateScrollChildRect()
+	self.updateBar()
+	if self.stuck then updateSticky(self) end
+end
+
+function List:Show() self.scroll:Show() end
+function List:Hide() self.scroll:Hide() end
 
 -------------------------------------------------------------------------------- picker
 
