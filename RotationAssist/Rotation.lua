@@ -73,6 +73,13 @@ function Rotation.Rename(rotation, newName)
 	return ok
 end
 
+-- Gives `into` an imported rotation's modes, switch, options and notes; its name, classes and spec links stay.
+function Rotation.ImportInto(into, rotation)
+	into.modes, into.switch, into.options, into.notes = rotation.modes, rotation.switch, rotation.options, rotation.notes
+	RA:Changed()
+	return into
+end
+
 function Rotation.Duplicate(rotation)
 	local dup = copy(rotation)
 	dup.name = Rotation.UniqueName(rotation.name .. " Copy")

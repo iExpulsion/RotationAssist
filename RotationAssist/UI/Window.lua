@@ -393,15 +393,20 @@ local function createSidebar(f, edge)
 		"Start a blank rotation for your classes.")
 	new:SetPoint("LEFT", PAD, 0)
 	f.import = S.Button(footer, "Import", "secondary", half, function()
-		RA.Dialogs.ShowImport(function(rotation)
-			RA.Rotation.Add(rotation)
+		local target = not state.settings and Window.Selected()
+		RA.Dialogs.ShowImport(function(rotation, into)
+			if into then
+				rotation = RA.Rotation.ImportInto(target, rotation)
+			else
+				RA.Rotation.Add(rotation)
+			end
 			state.search = ""
 			frame.search:SetText("")
 			state.collapsed[table.concat(rotation.classes, "/")] = false
 			Window.Select(rotation.name)
-			Window.Message(S.Hex(C.good, "Imported as " .. rotation.name))
-		end)
-	end, "Add a rotation from a string someone shared.")
+			Window.Message(S.Hex(C.good, (into and "Imported into " or "Imported as ") .. rotation.name))
+		end, target and target.name or nil)
+	end, "Add a rotation from a string someone shared, or bring one into the selected rotation.")
 	f.import:SetPoint("LEFT", new, "RIGHT", GAP, 0)
 end
 

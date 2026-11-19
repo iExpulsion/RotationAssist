@@ -108,9 +108,11 @@ local function refreshImport(f)
 		local who = #(rotation.classes or {}) > 0 and RA:ClassText(rotation.classes, true) or "No Classes Listed"
 		f.note:SetText(S.Hex(C.good, rotation.name .. ": ") .. who)
 		f.import:Enable()
+		f.into:Enable()
 	else
 		f.note:SetText(text:gsub("%s", "") == "" and "" or S.Hex(C.bad, err))
 		f.import:Disable()
+		f.into:Disable()
 	end
 	if f.mode == "import" and text == "" then f.placeholder:Show() else f.placeholder:Hide() end
 end
@@ -172,24 +174,28 @@ local function createShare()
 	f.note = S.Text(f, "small", C.muted)
 	f.note:SetPoint("LEFT", f, "BOTTOMLEFT", PAD, footerH / 2)
 	f.note:SetJustifyH("LEFT")
-	f.import = S.Button(f, "Import", "primary", 100, function()
+	local function import(into)
 		local rotation, err = RA.Codec.Decode(f.box.edit:GetText())
 		if rotation then
-			rotation.name = RA.Rotation.UniqueName(rotation.name)
+			if not into then rotation.name = RA.Rotation.UniqueName(rotation.name) end
 			f:Hide()
-			f.onImport(rotation)
+			f.onImport(rotation, into)
 		else
 			f.note:SetText(S.Hex(C.bad, err))
 		end
-	end, "Add the rotation, renamed if you already have one by that name.")
+	end
+	f.import = S.Button(f, "Import as New", "primary", 110, function() import(false) end,
+		"Add the rotation, renamed if you already have one by that name.")
 	f.import:SetPoint("BOTTOMRIGHT", -PAD, PAD)
+	f.into = S.Button(f, "Into Rotation", "secondary", 150, function() import(true) end)
+	f.into:SetPoint("RIGHT", f.import, "LEFT", -GAP, 0)
 	f.selectAll = S.Button(f, "Select All", "primary", 100, function()
 		f.box.edit:SetFocus()
 		f.box.edit:HighlightText()
 		f.note:SetText(S.Hex(C.warn, "Selected: Press Ctrl+C to Copy"))
 	end, "Select the whole string, ready for Ctrl+C.")
 	f.selectAll:SetPoint("BOTTOMRIGHT", -PAD, PAD)
-	f.note:SetPoint("RIGHT", f.import, "LEFT", -PAD, 0)
+	f.note:SetPoint("RIGHT", f.into, "LEFT", -PAD, 0)
 	return f
 end
 
@@ -202,6 +208,7 @@ function Dialogs.ShowExport(rotation)
 	share.sub:SetText("Select All, then Ctrl+C to copy. Share it with anyone who uses Rotation Assist.")
 	share.placeholder:Hide()
 	share.import:Hide()
+	share.into:Hide()
 	share.selectAll:Show()
 	share.box.edit:ClearFocus()
 	share.exported = fitToBox(text, share.box.edit)
@@ -211,17 +218,23 @@ function Dialogs.ShowExport(rotation)
 	share:Show()
 end
 
--- onImport(rotation) gets the new rotation, already renamed if its name was taken.
-function Dialogs.ShowImport(onImport)
+-- onImport(rotation, into) gets the read rotation: `into` is true when the user chose to import it into
+-- `targetName` (the selected rotation); otherwise it's new, already renamed if its name was taken.
+function Dialogs.ShowImport(onImport, targetName)
 	S.Dismiss()
 	share = share or createShare()
 	share.mode = "import"
 	share.exported = nil
 	share.onImport = onImport
 	share.title:SetText("Import a Rotation")
-	share.sub:SetText("Paste a Rotation Assist string, then click Import.")
+	share.sub:SetText("Paste a Rotation Assist string, then import it as a new rotation or into the selected one.")
 	share.selectAll:Hide()
 	share.import:Show()
+	share.into:SetLabel(targetName and ("Into " .. targetName) or "Into Rotation")
+	share.into.tooltipText = targetName
+		and ("Replace %s's modes, actions, options and notes with the string's. Its name and linked specs stay."):format(targetName)
+		or nil
+	if targetName then share.into:Show() else share.into:Hide() end
 	share.box.edit:ClearFocus()
 	share.box.edit:SetText("")
 	refreshImport(share)

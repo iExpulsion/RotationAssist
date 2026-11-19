@@ -187,7 +187,10 @@ follows a form, stance or modifier key, like `[mod:shift] 2; 1` for mode 2 while
 ![The Preview tab: each mode's macro on this character with its length, the spells left out because they aren't known, and the condition rule](docs/images/preview.png)
 
 When you're happy with it, click **Export**, next to Duplicate at the top of the rotation, to share it as a
-string. To use one someone shared, click **Import** at the bottom of the rotation list and paste it in.
+string. To use one someone shared, click **Import** at the bottom of the rotation list and paste it in. **Import
+as New** adds it as its own rotation; **Into** replaces the selected rotation's modes, actions, options and notes
+with the string's, keeping its name and the specs it's linked to, which suits an updated version of a rotation you
+already use.
 
 ![The Export sheet for Corruption Engine with its rotation string](docs/images/export.png)
 
