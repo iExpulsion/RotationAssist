@@ -36,7 +36,7 @@ in game and a button that shows what the next press casts.
 - **Quiet Errors:** hides the "Not ready yet" errors that a priority list causes on purpose.
 - **Hold Presses During the Global Cooldown:** with Smart Picks, presses during the global cooldown try nothing,
   so failed casts don't play their fizzle sound. A server module may turn it off where the server objects.
-- **Per Spec:** link a rotation to a talent spec, and it switches with your spec.
+- **Per Spec:** link a rotation to one or more talent specs, and it switches with your spec.
 - **Preview:** see exactly which macro each mode runs on your character, and which spells were left out
   because you don't know them.
 - **Themes:** the flat Material look, Classic for the game's own frames and buttons, Cognac's painted gold

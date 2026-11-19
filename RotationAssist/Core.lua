@@ -154,13 +154,18 @@ function RA:LinkedSpecs(name)
 	return groups
 end
 
--- Links a rotation to one spec on this character (replacing its other links), or unlinks it when group is nil.
+-- Links a rotation to a spec on this character, on top of its other links; the spec's previous rotation loses it.
 function RA:LinkSpec(name, group)
+	self:Links()[group] = name
+	self:Changed()
+end
+
+-- Unlinks a rotation from one spec, or from every spec on this character when group is nil.
+function RA:UnlinkSpec(name, group)
 	local links = self:Links()
 	for g, linked in pairs(links) do
-		if linked == name then links[g] = nil end
+		if linked == name and (group == nil or g == group) then links[g] = nil end
 	end
-	if group then links[group] = name end
 	self:Changed()
 end
 

@@ -210,11 +210,18 @@ local function renderHeader(rotation)
 
 	local count = RA:SpecCount()
 	local groups = RA:LinkedSpecs(rotation.name)
-	local options = { { value = 0, text = "Not Linked", tooltip = "Don't tie this rotation to a spec on this character." } }
+	local options = { { value = 0, text = "Not Linked", tooltip = "Unlink this rotation from every spec on this character." } }
 	for g = 1, count do
 		local other = RA:Links()[g]
-		local tip = other and other ~= rotation.name and ("Linked to " .. other .. " now; picking it moves that link here.") or nil
-		options[#options + 1] = { value = g, text = RA:SpecName(g) .. (g == RA:ActiveGroup() and " (Active)" or ""), tooltip = tip }
+		local mine = other == rotation.name
+		local tip = "Click to link this rotation to it too."
+		if mine then
+			tip = "Linked. Click to unlink it from this spec only."
+		elseif other then
+			tip = "Linked to " .. other .. " now; picking it moves that link here."
+		end
+		local text = RA:SpecName(g) .. (g == RA:ActiveGroup() and " (Active)" or "")
+		options[#options + 1] = { value = g, text = (mine and "|cffffc400+|r  " or "    ") .. text, tooltip = tip }
 	end
 	frame.specLink:SetOptions(options)
 	local label = #groups == 0 and "Not Linked" or RA:SpecName(groups[1])
@@ -456,11 +463,17 @@ local function createHeader(main)
 
 	f.specLink = S.Dropdown(main, 150, function(group)
 		local rotation = Window.Selected()
-		if rotation then RA:LinkSpec(rotation.name, group ~= 0 and group or nil) end
+		if rotation and group == 0 then
+			RA:UnlinkSpec(rotation.name)
+		elseif rotation and RA:Links()[group] == rotation.name then
+			RA:UnlinkSpec(rotation.name, group)
+		elseif rotation then
+			RA:LinkSpec(rotation.name, group)
+		end
 		Window.Render()
 	end)
 	f.specLink:SetPoint("RIGHT", row2, "RIGHT", 0, 0)
-	f.specLink.tooltipText = "The talent spec on this character that runs this rotation."
+	f.specLink.tooltipText = "The talent specs on this character that run this rotation. Click a spec to link or unlink it."
 	local linkLabel = S.Text(main, "small", C.muted)
 	linkLabel:SetPoint("RIGHT", f.specLink, "LEFT", -GAP, 0)
 	linkLabel:SetText("Linked to")
