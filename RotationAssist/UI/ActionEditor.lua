@@ -20,6 +20,67 @@ local PLACEHOLDERS = {
 	macro = "Macro Line, Like /use 13",
 }
 
+-- Field guides shown on hover: a string is a paragraph (or a heading when it starts with "#"), a pair is the syntax
+-- and what it means.
+local CONDITIONS_GUIDE = {
+	"Macro conditions the game checks as you press. When they don't hold, the line is skipped, and Smart Picks passes the spell over. A unit after @ casts the spell there instead of on your target.",
+	"#Target",
+	{ "[harm]  [help]", "an enemy or a friend" },
+	{ "[exists]  [dead]", "you have a target; it's dead" },
+	{ "[@player]  [@focus]  [@mouseover]", "cast on that unit" },
+	{ "[@playerlocation]  [@cursor]", "a ground spell where you stand or at the mouse, with a client mod that adds them" },
+	"#You",
+	{ "[mod:shift]  [mod:ctrl]  [mod:alt]", "while you hold that key" },
+	{ "[combat]", "in combat" },
+	{ "[stance:1]  [form:2]", "your stance, form or presence, by its number" },
+	{ "[stealth]  [mounted]  [flying]  [swimming]", "what you're doing" },
+	{ "[channeling]", "while you channel a spell" },
+	{ "[spec:2]  [pet]  [group]  [equipped:Shields]", "your talent spec, pet, group or gear" },
+	"#Combining",
+	"Commas mean and: [mod:shift,@player]. Separate brackets mean or: [a][b]. \"no\" turns one around: [nocombat].",
+}
+
+local TRIGGER_GUIDE = {
+	"Checked by Rotation Assist. While the trigger is met and the spell is ready, it goes first, wherever it is in the list, and the Rotation Button glows. While it isn't met, the spell is passed over. With Smart Picks on, that's what a press casts; without it, only the button changes.",
+	"#On You",
+	{ "[buff:X]  [nobuff:X]", "a buff on you" },
+	{ "[selfdebuff:X]  [noselfdebuff:X]", "a debuff on you" },
+	{ "[stacks:X>=5]", "stacks of a buff on you" },
+	"#On the Target",
+	{ "[debuff:X]  [nodebuff:X]", "your debuff on the target" },
+	{ "[anydebuff:X]  [noanydebuff:X]", "anyone's debuff on the target" },
+	{ "[debuffstacks:X<5]  [anydebuffstacks:X<5]", "stacks of your debuff, or anyone's" },
+	{ "[cast:X]  [nocast:X]", "you cast X on this target this fight" },
+	{ "[nodebuff:X<3]  [nocast:X>30]", "add a time: missing or under 3 seconds left; never cast or over 30 seconds ago" },
+	"#Numbers",
+	{ "[power>=40]", "your mana, rage, energy or runic power" },
+	{ "[hp<35]  [targethp<20]", "your health or the target's, in percent" },
+	{ "[combo>=5]", "combo points on the target" },
+	{ "[enemies>=3]", ("enemies you've hit or that hit you in the last %d seconds, your target included"):format(RA.Enemies.WINDOW) },
+	{ "[without:X>=1]", "how many of those enemies don't have your X, for spreading it" },
+	"#Combining",
+	"Compare with < <= > >= or =. Commas mean and; separate brackets mean or: [a][b].",
+}
+
+local function guide(owner, title, lines)
+	owner:HookScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		GameTooltip:AddLine(title, 1, 1, 1)
+		for _, line in ipairs(lines) do
+			if type(line) == "table" then
+				GameTooltip:AddLine(S.Hex(C.accent, line[1]) .. "  " .. line[2], 0.8, 0.8, 0.8, true)
+			elseif line:sub(1, 1) == "#" then
+				GameTooltip:AddLine(" ")
+				GameTooltip:AddLine(line:sub(2), 1, 1, 1)
+			else
+				GameTooltip:AddLine(line, 0.8, 0.8, 0.8, true)
+			end
+		end
+		GameTooltip:Show()
+	end)
+	owner:HookScript("OnLeave", function() GameTooltip:Hide() end)
+end
+
 local function setText(input, text)
 	if not input.focused then
 		input:SetText(text or "")
@@ -135,31 +196,14 @@ local function createDetail(parent, width, height)
 		self:UpdatePlaceholder()
 		if userInput then edit(function(a) a.when = self:GetText() end) end
 	end)
+	guide(d.when, "Conditions", CONDITIONS_GUIDE)
 	d.triggerLabel = label(d, "Trigger")
 	d.trigger = S.Input(d, "RotationAssistTrigger", inner, "None, or Like [buff:Clearcasting]", 180, 3)
 	d.trigger:SetScript("OnTextChanged", function(self, userInput)
 		self:UpdatePlaceholder()
 		if userInput then edit(function(a) a.trigger = self:GetText() end) end
 	end)
-	d.trigger:HookScript("OnEnter", function(self)
-		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		GameTooltip:AddLine("Trigger", 1, 1, 1)
-		GameTooltip:AddLine("While the trigger is met and the spell is ready, it goes first, wherever it is in the list, and the Rotation Button glows. While it isn't met, the spell is passed over.", 0.8, 0.8, 0.8, true)
-		GameTooltip:AddLine("With Smart Picks on, that's what a press casts. Without it, presses still go down the list and the trigger only changes the button.", 0.8, 0.8, 0.8, true)
-		GameTooltip:AddLine(" ")
-		GameTooltip:AddLine("[buff:X]  [nobuff:X]: on you", 0.8, 0.8, 0.8, true)
-		GameTooltip:AddLine("[selfdebuff:X]  [noselfdebuff:X]: a debuff on you, like Weakened Soul", 0.8, 0.8, 0.8, true)
-		GameTooltip:AddLine("[debuff:X]  [nodebuff:X<3]: yours on the target; <3 means under 3 seconds left", 0.8, 0.8, 0.8, true)
-		GameTooltip:AddLine("[anydebuff:X]  [noanydebuff:X]: on the target from anyone", 0.8, 0.8, 0.8, true)
-		GameTooltip:AddLine("[cast:X]  [nocast:X>30]: you cast it on this target this fight; >30 means over 30 seconds ago", 0.8, 0.8, 0.8, true)
-		GameTooltip:AddLine("[power>=40]  [hp<35]  [targethp<20]  [combo>=5]", 0.8, 0.8, 0.8, true)
-		GameTooltip:AddLine(("[enemies>=3]: enemies you've hit or that hit you in the last %d seconds, counting your target"):format(RA.Enemies.WINDOW), 0.8, 0.8, 0.8, true)
-		GameTooltip:AddLine("[without:X>=1]: how many of those enemies don't have your X, for spreading a debuff", 0.8, 0.8, 0.8, true)
-		GameTooltip:AddLine("[stacks:X>=5]  [debuffstacks:X<5]  [anydebuffstacks:X<5]: stacks of a buff on you, of your debuff on the target, or of anyone's", 0.8, 0.8, 0.8, true)
-		GameTooltip:AddLine("Commas mean and; [a][b] means a or b.", 0.8, 0.8, 0.8, true)
-		GameTooltip:Show()
-	end)
-	d.trigger:HookScript("OnLeave", function() GameTooltip:Hide() end)
+	guide(d.trigger, "Trigger", TRIGGER_GUIDE)
 	d.spellsLabel = label(d, "Spells")
 	d.spells = S.Input(d, "RotationAssistSeqSpells", inner, "Spells, Comma-Separated", 250)
 	d.spells:SetScript("OnEnterPressed", function(self)

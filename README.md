@@ -112,7 +112,9 @@ on the **Modes** tab, drag a mode by the grip beside its number.
 Select an action to change it. **Off the Global Cooldown** lets a line fire alongside whatever else casts on that
 press, which suits trinkets, racials and cooldowns like Combustion. **Conditions** takes macro conditions; put
 `[@player]` there to cast a spell on yourself, like Power Word: Shield, while you have an enemy targeted. With
-Smart Picks, these also go out of combat with nothing targeted, so you can buff before a pull.
+Smart Picks, these also go out of combat with nothing targeted, so you can buff before a pull. Commas join
+conditions that must all hold: `[mod:shift,@player]` casts on yourself only while you hold Shift, while
+`[mod:shift][@player]` means either one. Hover over the Conditions box in game for the common ones.
 
 ### 2. Choose How a Press Works
 
