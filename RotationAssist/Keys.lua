@@ -1,7 +1,7 @@
 local _, NS = ...
 local RA = NS.RA
 
--- The Rotation and Mode keys (override bindings, per character) and the action bar macros that click the same
+-- The Rotation and Mode keys (override bindings, account-wide) and the action bar macros that click the same
 -- buttons. Bindings can't change in combat, so they're set when the buttons are rebuilt.
 local Keys = {}
 RA.Keys = Keys
@@ -16,7 +16,7 @@ local MODIFIER_KEYS = { LSHIFT = true, RSHIFT = true, LCTRL = true, RCTRL = true
 local MOUSE_KEYS = { MiddleButton = "BUTTON3", Button4 = "BUTTON4", Button5 = "BUTTON5" }
 
 function Keys.Get(which)
-	return RA:BoundKeys()[which]
+	return RA.db.keys[which]
 end
 
 function Keys.Text(which)
@@ -37,7 +37,7 @@ function Keys.Apply()
 end
 
 function Keys.Set(which, key)
-	RA:BoundKeys()[which] = key
+	RA.db.keys[which] = key
 	if not Keys.Apply() then RA.Engine.pending = true end
 	RA:Changed()
 end

@@ -169,26 +169,6 @@ function RA:UnlinkSpec(name, group)
 	self:Changed()
 end
 
--- Keys used to live in the per-character file, which characters sharing a name also share; it's adopted only by
--- the character that stamped it, and then dropped.
-local function adoptFileKeys(guid)
-	local file = RotationAssistCharDB
-	local keys = file and file.guid == guid and file.keys or {}
-	if file and file.guid == guid then RotationAssistCharDB = nil end
-	return keys
-end
-
--- This character's Rotation and Mode keys, keyed by character GUID in the account file.
-function RA:BoundKeys()
-	local guid = UnitGUID("player")
-	local keys = {}
-	if guid then
-		self.db.keys[guid] = self.db.keys[guid] or adoptFileKeys(guid)
-		keys = self.db.keys[guid]
-	end
-	return keys
-end
-
 -- The rotation linked to the active spec, if there is one.
 function RA:ActiveRotation()
 	local name = self:Links()[self:ActiveGroup()]
@@ -212,6 +192,12 @@ frame:SetScript("OnEvent", function(self, _, name)
 		db.rotations = db.rotations or {}
 		db.links = db.links or {}
 		db.keys = db.keys or {}
+		-- keys used to be per character: the first character to log in with one sets it for the account
+		local old = RotationAssistCharDB and RotationAssistCharDB.keys or {}
+		for which, key in pairs(old) do
+			if db.keys[which] == nil then db.keys[which] = key end
+		end
+		RotationAssistCharDB = nil
 		db.button = db.button or { shown = true, locked = true, scale = 1 }
 		-- the hold used to be part of Quiet Errors, so turning that off had turned it off too
 		if db.quiet == false and db.gcdHold == nil then db.gcdHold = false end
