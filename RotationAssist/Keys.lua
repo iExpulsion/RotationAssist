@@ -16,7 +16,7 @@ local MODIFIER_KEYS = { LSHIFT = true, RSHIFT = true, LCTRL = true, RCTRL = true
 local MOUSE_KEYS = { MiddleButton = "BUTTON3", Button4 = "BUTTON4", Button5 = "BUTTON5" }
 
 function Keys.Get(which)
-	return RA.charDB.keys[which]
+	return RA:BoundKeys()[which]
 end
 
 function Keys.Text(which)
@@ -37,7 +37,7 @@ function Keys.Apply()
 end
 
 function Keys.Set(which, key)
-	RA.charDB.keys[which] = key
+	RA:BoundKeys()[which] = key
 	if not Keys.Apply() then RA.Engine.pending = true end
 	RA:Changed()
 end
