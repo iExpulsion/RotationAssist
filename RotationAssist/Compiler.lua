@@ -63,20 +63,26 @@ function Compiler.CompileMode(rotation, mode, env, firstStep)
 	local guard = options.channels and "nochanneling" or nil
 	local smart = options.smart
 	local result = { lines = {}, status = {}, skipped = {}, casts = {}, steps = {}, solo = {}, warnings = {}, smart = smart }
-	local early, late, gates, soloClicks = {}, {}, {}, {}
+	local early, late, gates, earlyGates, soloClicks = {}, {}, {}, {}, {}
 
 	-- Smart Picks gates each GCD line on [exists]: at press time the addon clears the target for every line but
-	-- the one it picked, so only that one can cast
+	-- the one it picked, so only that one can cast. An off-GCD spell with a trigger is gated the same way, unless it
+	-- casts on another unit, which clearing the target can't stop
+	local function gated(action)
+		local triggered = action.kind == "spell" and trim(action.trigger or "") ~= "" and not Compiler.Unit(action.when)
+		return smart and (not action.offGcd or triggered)
+	end
+
 	local function condition(action, when)
 		local cond = Compiler.Merge(when, guard)
-		if smart and not action.offGcd then cond = Compiler.Merge(cond, "exists") end
+		if gated(action) then cond = Compiler.Merge(cond, "exists") end
 		return cond
 	end
 
 	local function emit(action, line, index)
 		local into = action.offGcd and early or late
 		into[#into + 1] = line
-		if not action.offGcd then gates[#late] = index end
+		if index and gated(action) then (action.offGcd and earlyGates or gates)[#into] = index end
 	end
 
 	-- A gated line that casts on another unit ([@player]) can't be stopped by clearing the target, since its
@@ -166,25 +172,32 @@ function Compiler.CompileMode(rotation, mode, env, firstStep)
 	if options.attack then attackLines[#attackLines + 1] = "/startattack [harm,nodead]" end
 	if options.pet then attackLines[#attackLines + 1] = "/petattack [harm,nodead]" end
 	if options.target then lines[#lines + 1] = "/targetenemy [noharm][dead]" end
+	local smartPress = smart and (#late > 0 or next(earlyGates) ~= nil)
 	-- with Smart Picks, clearing the target stops auto-attack, so attacking comes last
-	if not smart then
+	if not smartPress then
 		for _, line in ipairs(attackLines) do lines[#lines + 1] = line end
+		for _, line in ipairs(early) do lines[#lines + 1] = line end
 	end
-	for _, line in ipairs(early) do lines[#lines + 1] = line end
-	if smart and #late > 0 then
-		-- with no target, /targetlasttarget would grab an old one, so the gated lines need a target to start with
-		lines[#lines + 1] = "/run RAPick()"
-		for _, line in ipairs(soloClicks) do lines[#lines + 1] = line end
-		lines[#lines + 1] = "/stopmacro [noexists]"
-		for i, line in ipairs(late) do
-			if gates[i] then
-				lines[#lines + 1] = ("/run RAGate(%d)"):format(gates[i])
+	local function addGated(from, gateOf)
+		for i, line in ipairs(from) do
+			if gateOf[i] then
+				lines[#lines + 1] = ("/run RAGate(%d)"):format(gateOf[i])
 				lines[#lines + 1] = line
 				lines[#lines + 1] = "/targetlasttarget [noexists]"
 			else
 				lines[#lines + 1] = line
 			end
 		end
+	end
+	if smartPress then
+		-- with no target, /targetlasttarget would grab an old one, so the gated lines need a target to start with
+		lines[#lines + 1] = "/run RAPick()"
+		for _, line in ipairs(soloClicks) do lines[#lines + 1] = line end
+		lines[#lines + 1] = "/stopmacro [noexists]"
+		addGated(late, gates)
+		-- off-GCD lines come after every gate, since clearing the target stops auto-attack, and that drops a queued
+		-- next-swing attack like Heroic Strike
+		addGated(early, earlyGates)
 		for _, line in ipairs(attackLines) do lines[#lines + 1] = line end
 	elseif options.cycle and #late > 0 then
 		-- One Spell per Press: the GCD lines go on a step button in GSE's priority order (1, 1 2, 1 2 3, ...), since

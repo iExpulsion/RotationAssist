@@ -24,7 +24,9 @@ in game and a button that shows what the next press casts.
 - **One Spell per Press:** for spells a plain list can't get past, like ones waiting on runes. Each press tries the
   next spell in a cycle that returns to the top ones most often (1, 1 2, 1 2 3...), like GSE's Priority
   sequences, so mashing the key gives every spell its turn.
-- **Off-GCD Lines:** trinkets, racials and cooldowns like Icy Veins or Recklessness fire alongside the main spell.
+- **Off-GCD Lines:** trinkets, racials, cooldowns like Icy Veins or Recklessness, and next-swing attacks like
+  Heroic Strike fire alongside the main spell. With Smart Picks, they follow their triggers too, so Heroic Strike
+  can wait for `[power>=50]`.
 - **Sequences and Steps:** `/castsequence` blocks, and Steps blocks that run one line per press. A sequence
   can be **Once per Reset**: it casts each spell once (a debuff, a mark), then waits until a new target or the
   next fight.
@@ -110,7 +112,8 @@ on the **Modes** tab, drag a mode by the grip beside its number.
 | 4 | Fireball      | The filler                                  |
 
 Select an action to change it. **Off the Global Cooldown** lets a line fire alongside whatever else casts on that
-press, which suits trinkets, racials and cooldowns like Combustion. **Conditions** takes macro conditions; put
+press, which suits trinkets, racials, cooldowns like Combustion, and next-swing attacks like Heroic Strike. With
+Smart Picks, give one a trigger to hold it back: Heroic Strike with `[power>=50]` only queues with rage to spare. **Conditions** takes macro conditions; put
 `[@player]` there to cast a spell on yourself, like Power Word: Shield, while you have an enemy targeted. With
 Smart Picks, these also go out of combat with nothing targeted, so you can buff before a pull. Commas join
 conditions that must all hold: `[mod:shift,@player]` casts on yourself only while you hold Shift, while

@@ -223,7 +223,7 @@ local function createDetail(parent, width, height)
 		"Casts each spell once, then stops until the sequence resets (on a new target, after combat). Without Smart Picks, good for debuffs you keep up all fight; with it, a trigger like [nodebuff:X] recasts them when they fall off.",
 		function(on) edit(function(a) a.once = on or nil end) end)
 	d.offGcd = W.Toggle(d, "Off the Global Cooldown",
-		"Runs before the other lines on every press, alongside whatever casts: trinkets, racials and cooldowns that don't trigger the global cooldown.",
+		"Runs on every press, alongside whatever casts: trinkets, racials, cooldowns that don't trigger the global cooldown, and next-swing attacks like Heroic Strike. With Smart Picks on, it runs after the main spell and follows its trigger, such as [power>=50] to keep rage for the rest.",
 		function(on) edit(function(a) a.offGcd = on or nil end) end)
 	d.moving = W.Toggle(d, "Cast While Moving",
 		"Smart Picks passes over a spell with a cast time while you move. Turn this on for one you can cast on the move anyway, like Pyroblast with a [buff:Hot Streak] trigger.",

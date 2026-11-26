@@ -76,9 +76,14 @@ local function pick()
 	for k in pairs(clears) do clears[k] = nil end
 	local refused, T = RA.RotationButton.Refused, RA.Triggers
 	for _, other in ipairs(casts) do
-		if waiting and not other.offGcd then
+		if other.offGcd then
+			-- its line runs after every gate; a ready one whose trigger isn't met must not cast, and clearing the target
+			-- also drops it if it was queued on the next swing (Heroic Strike below the rage it should keep)
+			local unmet = other.kind == "spell" and T.Has(other.trigger) and not T.Holds(other.trigger)
+			clears[other.index] = unmet and other.unit == nil and not RA.RotationButton.FailsQuietly(other)
+		elseif waiting then
 			clears[other.index] = true
-		elseif not other.offGcd and other ~= cast then
+		elseif other ~= cast then
 			-- with no pick the press runs as a plain list, but a spell the game just refused would end it again and
 			-- a spell whose trigger isn't met mustn't cast, so both are still held back
 			local spell = other.kind == "spell"
