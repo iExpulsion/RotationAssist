@@ -146,7 +146,9 @@ recast while it's still ticking. A trigger fixes that. Select the spell and fill
 | Living Bomb | `[nodebuff:Living Bomb]` | Only when your Living Bomb isn't on the target            |
 
 While a spell's trigger is met, it jumps the queue and the Rotation Button glows. While it isn't, the spell is
-skipped. A spell with no trigger is always a candidate. Some more you can use:
+skipped. A spell with no trigger is always a candidate. To keep a spell where it is in the list and only use the
+trigger to allow it, turn on **Keep Its Place**: Slam with `[buff:Slam!]` then waits below Bloodthirst and
+Whirlwind instead of going first whenever the proc is up. Some more you can use:
 
 - `[nodebuff:X<3]`: your debuff is missing or has under 3 seconds left, to refresh before it falls off
 - `[nobuff:X]`: a self-buff is missing

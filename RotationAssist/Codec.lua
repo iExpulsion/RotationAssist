@@ -8,7 +8,7 @@ local RA = NS.RA
 -- read as a spell name: n= name, c= classes, o= options that are on, w= switch (t:spell or r:rule), x= notes,
 -- then m= a mode's label followed by that mode's a= actions in order:
 --   s:spell:when:trigger:flags   q:spell.spell:reset:when:flags   p:line.line   k:text:flags
--- Flags: g off the global cooldown, o once per reset, m cast while moving.
+-- Flags: g off the global cooldown, o once per reset, m cast while moving, p keeps its place (a trigger only gates).
 local Codec = {}
 RA.Codec = Codec
 
@@ -68,7 +68,7 @@ local function listOut(items, write, sep)
 end
 
 local function flags(action)
-	return (action.offGcd and "g" or "") .. (action.once and "o" or "") .. (action.moving and "m" or "")
+	return (action.offGcd and "g" or "") .. (action.once and "o" or "") .. (action.moving and "m" or "") .. (action.keep and "p" or "")
 end
 
 -- Parts joined by ":", with trailing empty ones left off.
@@ -140,6 +140,7 @@ local function readFlags(action, s)
 	if (s or ""):find("g", 1, true) then action.offGcd = true end
 	if (s or ""):find("o", 1, true) then action.once = true end
 	if (s or ""):find("m", 1, true) then action.moving = true end
+	if (s or ""):find("p", 1, true) then action.keep = true end
 	return action
 end
 

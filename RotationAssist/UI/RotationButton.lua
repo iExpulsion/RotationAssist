@@ -182,20 +182,21 @@ function RB.FailsQuietly(cast)
 end
 
 -- The spell to suggest next, and whether a trigger picked it. A ready spell whose trigger is met comes first,
--- wherever it is in the list. Otherwise it's the first ready GCD spell without a trigger (a spell with a trigger is
--- only suggested while it's met). A Sequence or Steps block stops that search, since which spell it casts isn't
+-- wherever it is in the list. Otherwise it's the first ready GCD spell without a trigger, or with a met one that
+-- keeps its place (a spell with a trigger is only suggested while it's met). A Sequence or Steps block stops that search, since which spell it casts isn't
 -- known; a once-per-reset Sequence is passed over, since most presses find it already done.
 function RB.Predict(casts)
 	casts = casts or {}
 	local T = RA.Triggers
 	for _, cast in ipairs(casts) do
-		local spell = cast.kind == "spell" and not cast.offGcd
+		local spell = cast.kind == "spell" and not cast.offGcd and not cast.keep
 		if spell and T.Has(cast.trigger) and T.Holds(cast.trigger) and looksReady(cast) then return cast, true end
 	end
 	for _, cast in ipairs(casts) do
 		if not cast.offGcd and not cast.once then
 			if cast.kind ~= "spell" then return cast, false end
-			if not T.Has(cast.trigger) and looksReady(cast) then return cast, false end
+			local open = not T.Has(cast.trigger) or (cast.keep and T.Holds(cast.trigger))
+			if open and looksReady(cast) then return cast, false end
 		end
 	end
 	return nil, false

@@ -225,6 +225,9 @@ local function createDetail(parent, width, height)
 	d.offGcd = W.Toggle(d, "Off the Global Cooldown",
 		"Runs on every press, alongside whatever casts: trinkets, racials, cooldowns that don't trigger the global cooldown, and next-swing attacks like Heroic Strike. With Smart Picks on, it runs after the main spell and follows its trigger, such as [power>=50] to keep rage for the rest.",
 		function(on) edit(function(a) a.offGcd = on or nil end) end)
+	d.keep = W.Toggle(d, "Keep Its Place",
+		"The trigger only decides whether the spell can cast; it doesn't move it ahead of the spells above it. For a spell that belongs low in the list, like Slam with a [buff:Slam!] trigger.",
+		function(on) edit(function(a) a.keep = on or nil end) end)
 	d.moving = W.Toggle(d, "Cast While Moving",
 		"Smart Picks passes over a spell with a cast time while you move. Turn this on for one you can cast on the move anyway, like Pyroblast with a [buff:Hot Streak] trigger.",
 		function(on) edit(function(a) a.moving = on or nil end) end)
@@ -260,6 +263,7 @@ local function layoutDetail(d, kind)
 		{ d.resetLabel, d.reset, show = kind == "sequence" },
 		{ d.once, show = kind == "sequence" },
 		{ d.offGcd, show = kind == "spell" or kind == "macro" },
+		{ d.keep, show = kind == "spell" },
 		{ d.moving, show = kind == "spell" },
 		{ d.textLabel, d.text, show = kind == "steps" or kind == "macro" },
 	}
@@ -347,6 +351,7 @@ local function subText(action)
 	if action.kind == "sequence" and RA.Spells.Trim(action.reset) ~= "" then parts[#parts + 1] = "reset=" .. action.reset end
 	if action.kind == "sequence" and action.once then parts[#parts + 1] = "Once" end
 	if action.kind == "spell" and RA.Triggers.Has(action.trigger) then parts[#parts + 1] = "Trigger " .. RA.Spells.Trim(action.trigger) end
+	if action.kind == "spell" and action.keep then parts[#parts + 1] = "Keeps Its Place" end
 	if action.offGcd then parts[#parts + 1] = "Off-GCD" end
 	if action.kind == "spell" and action.moving then parts[#parts + 1] = "While Moving" end
 	return #parts > 0 and table.concat(parts, "  ") or nil
@@ -373,6 +378,7 @@ local function renderDetail(rotation, state, compiled)
 		setText(d.spells, RA.Spells.ListText(action.spells))
 		setText(d.reset, action.reset)
 		d.offGcd:SetChecked(action.offGcd)
+		d.keep:SetChecked(action.keep)
 		d.moving:SetChecked(action.moving)
 		d.once:SetChecked(action.once)
 		d.text:SetValue(action.kind == "steps" and table.concat(action.steps or {}, "\n") or action.text)
