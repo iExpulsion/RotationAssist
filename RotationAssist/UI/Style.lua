@@ -1,4 +1,4 @@
--- Vendored from MaterialCraftUI v1.8.1-4-gc355004. Change it there, then run tools/sync_style.py.
+-- Vendored from MaterialCraftUI v1.8.1-5-g7a40edb. Change it there, then run tools/sync_style.py.
 -- MIT License, Copyright (c) 2026 Expulsion: https://github.com/iExpulsion/MaterialCraftUI
 -- MaterialCraftUI: a flat dark style kit for WoW 3.3.5 addons on Material 3 color roles: one accent color, 1px
 -- borders, state layers and a few button kinds. Each addon ships its own copy, listed in its .toc, and reads it
@@ -2412,12 +2412,17 @@ function S.Suggest(input, opts)
 			escape(self)
 		end
 	end)
-	input:HookScript("OnArrowPressed", function(_, key)
-		if popup:IsShown() and (key == "UP" or key == "DOWN") then
-			selected = (selected + (key == "UP" and -2 or 0)) % #matches + 1
-			paint()
-		end
-	end)
+	-- the 3.3.5 client's edit boxes have no OnArrowPressed (hooking it raises an error), so Up and Down go through
+	-- whichever key script the client gives the box; with neither, the mouse still moves the highlight
+	local arrows = (input:HasScript("OnArrowPressed") and "OnArrowPressed") or (input:HasScript("OnKeyDown") and "OnKeyDown")
+	if arrows then
+		input:HookScript(arrows, function(_, key)
+			if popup:IsShown() and (key == "UP" or key == "DOWN") then
+				selected = (selected + (key == "UP" and -2 or 0)) % #matches + 1
+				paint()
+			end
+		end)
+	end
 	input:HookScript("OnHide", function() popup:Hide() end)
 	return popup
 end
