@@ -377,7 +377,7 @@ local function createSidebar(f, edge)
 
 	local listTop = PAD + CONTROL_H + GAP
 	f.list = S.List.New(side, "RotationAssistListScroll", SIDEBAR_W - 14 - 2 * inset, H - TITLE_H - listTop - FOOTER_H,
-		"sidebar")
+		"sidebar", 14)
 	f.list.scroll:SetPoint("TOPLEFT", inset, -listTop)
 	f.noMatches = S.Text(side, "small", C.muted)
 	f.noMatches:SetPoint("TOP", 0, -(listTop + PAD))

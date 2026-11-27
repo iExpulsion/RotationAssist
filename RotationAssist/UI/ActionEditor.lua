@@ -950,7 +950,7 @@ function Editor.Create(parent, width, height)
 	S.Well(well)
 	-- the rows sit inside the well's frame, however thick the theme draws it
 	local wi = 1 + S.metrics.wellInset
-	f.list = S.List.New(well, "RotationAssistActionList", LIST_W - 14 - 2 * (wi - 1), listH - 2 * wi, "content")
+	f.list = S.List.New(well, "RotationAssistActionList", LIST_W - 14 - 2 * (wi - 1), listH - 2 * wi, "content", 14)
 	f.list.scroll:SetPoint("TOPLEFT", wi, -wi)
 	f.list:SetReorder(move)
 	-- dropping a spell on the empty part of the list adds it at the end
