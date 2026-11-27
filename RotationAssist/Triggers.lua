@@ -324,17 +324,47 @@ local function capital(s)
 	return s:sub(1, 1):upper() .. s:sub(2)
 end
 
+-- "A", "A and B", "A, B and C", with "or" in place of "and" when asked.
+local function list(items, word)
+	local text = items[#items]
+	if #items > 1 then text = table.concat(items, ", ", 1, #items - 1) .. " " .. (word or "and") .. " " .. items[#items] end
+	return text
+end
+
+-- A group's terms in plain English. Untimed aura terms of the same kind in a row are said once with their names
+-- listed ("the target has your Frost Fever and Blood Plague"; "doesn't have your X or Y" when missing, as it's
+-- neither), and then the terms are set apart with commas so the lists inside them still read.
+local function describeGroup(group)
+	local terms, parts, merged = {}, {}, false
+	for _, p in ipairs(group) do
+		if Triggers.Complete(p) then terms[#terms + 1] = p end
+	end
+	local i = 1
+	while i <= #terms do
+		local p = terms[i]
+		local names, j = { p.name }, i + 1
+		local joins = SHAPES[p.kind] == "aura" and not p.op
+		while joins and terms[j] and terms[j].kind == p.kind and not terms[j].op and (terms[j].no or false) == (p.no or false) do
+			names[#names + 1] = terms[j].name
+			j = j + 1
+		end
+		merged = merged or #names > 1
+		parts[#parts + 1] = Triggers.DescribeTerm(#names > 1 and { kind = p.kind, no = p.no, name = list(names, p.no and "or" or "and") } or p)
+		i = j
+	end
+	local text = table.concat(parts, " and ")
+	if merged and #parts > 1 then text = table.concat(parts, ", ", 1, #parts - 1) .. ", and " .. parts[#parts] end
+	return #parts > 0 and text or nil
+end
+
 -- A trigger in plain English, from its text or its groups: one sentence, or a line per group when any of several
 -- will do (compact: one paragraph instead, for a small space). nil when there's no trigger or it can't be read.
 function Triggers.Describe(trigger, compact)
 	local groups = type(trigger) == "table" and trigger or Triggers.Read(trigger)
 	local lines = {}
 	for _, group in ipairs(groups or {}) do
-		local terms = {}
-		for _, p in ipairs(group) do
-			if Triggers.Complete(p) then terms[#terms + 1] = Triggers.DescribeTerm(p) end
-		end
-		if #terms > 0 then lines[#lines + 1] = table.concat(terms, " and ") end
+		local said = describeGroup(group)
+		if said then lines[#lines + 1] = said end
 	end
 	local text
 	if #lines == 1 then

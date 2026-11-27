@@ -226,15 +226,15 @@ local function createDetail(parent, width, height)
 	d.status:SetPoint("TOPLEFT", d.title, "BOTTOMLEFT", 0, -4)
 	d.status:SetWidth(inner)
 
-	-- a readback that opens its sheet when clicked; hovering shows all of it (b.full) when it's too long to fit
-	local function readback(lines, title, open)
+	-- a readback that opens its sheet when clicked, as tall as its wrapped text (Editor.FitReadbacks); hovering shows
+	-- it a line per group (b.full)
+	local function readback(title, open)
 		local b = CreateFrame("Button", nil, d)
-		b:SetSize(inner, lines * 14)
-		b.text = S.Text(b, "small")
+		b:SetSize(inner, 14)
+		b.text = S.Wrapped(b, "small")
 		b.text:SetPoint("TOPLEFT")
-		b.text:SetPoint("BOTTOMRIGHT")
+		b.text:SetWidth(inner)
 		b.text:SetJustifyH("LEFT")
-		b.text:SetJustifyV("TOP")
 		b:SetScript("OnClick", open)
 		b:SetScript("OnEnter", function(self)
 			if self.full then
@@ -249,11 +249,11 @@ local function createDetail(parent, width, height)
 		return b
 	end
 	d.whenLabel = label(d, "Conditions")
-	d.whenReadback = readback(2, "Conditions", function() Editor.OpenConditions() end)
+	d.whenReadback = readback("Conditions", function() Editor.OpenConditions() end)
 	d.editWhen = S.Button(d, "Edit Conditions", "secondary", 130, function() Editor.OpenConditions() end,
 		"Where the spell is cast and when the game lets this line run: the target, modifier keys, stance and more.")
 	d.triggerLabel = label(d, "Trigger")
-	d.readback = readback(3, "Trigger", function() Editor.OpenTrigger() end)
+	d.readback = readback("Trigger", function() Editor.OpenTrigger() end)
 	d.triggerRow = CreateFrame("Frame", nil, d)
 	d.triggerRow:SetSize(inner, CONTROL_H)
 	d.editTrigger = S.Button(d.triggerRow, "Edit Trigger", "secondary", 110, function() Editor.OpenTrigger() end,
@@ -782,10 +782,9 @@ local function createSheet()
 	guide(f.text, function() return f.def.guide[1], f.def.guide[2] end)
 
 	f.readLabel = label(f, "Reads As")
-	f.readback = S.Text(f, "small")
+	f.readback = S.Wrapped(f, "small")
 	f.readback:SetWidth(ROW_W)
 	f.readback:SetJustifyH("LEFT")
-	f.readback:SetJustifyV("TOP")
 
 	f.note = S.Text(f, "small", C.muted)
 	f.note:SetWidth(ROW_W - 2 * (90 + GAP))
@@ -872,8 +871,14 @@ sheetRender = function()
 	local lines = said and select(2, said:gsub("\n", "\n")) + 1 or 1
 	place(f.readLabel, 12 + 4)
 	f.readback:SetText(said or S.Hex(C.muted, text ~= "" and "It can't be read back as it is; fix it as text." or def.empty))
-	f.readback:SetHeight(lines * 14)
-	place(f.readback, lines * 14 + PAD)
+	-- wrapped lines are only measured once the client has drawn the text, so until then it's a line per line break
+	local measured = f.readback:Measure()
+	f.readbackMeasured = measured
+	place(f.readback, math.max(measured, lines * 14) + PAD)
+	f:SetScript("OnUpdate", function(self)
+		self:SetScript("OnUpdate", nil)
+		if self.readback:Measure() ~= self.readbackMeasured then sheetRender() end
+	end)
 
 	local problems = def.problems(text)
 	local incomplete = 0
@@ -999,6 +1004,19 @@ local function subText(action)
 	return #parts > 0 and table.concat(parts, "  ") or nil
 end
 
+-- Sizes the detail pane's readbacks to their wrapped text; true when one changed.
+function Editor.FitReadbacks(d)
+	local changed = false
+	for _, b in ipairs({ d.whenReadback, d.readback }) do
+		local height = math.max(14, b.text:Measure())
+		if height ~= b:GetHeight() then
+			b:SetHeight(height)
+			changed = true
+		end
+	end
+	return changed
+end
+
 local function renderDetail(rotation, state, compiled)
 	local d = frame.detail
 	local action, mode = selectedAction(rotation, state)
@@ -1008,7 +1026,6 @@ local function renderDetail(rotation, state, compiled)
 		d.none:Hide()
 		local triggered = action.kind == "spell" and RA.Triggers.Has(action.trigger)
 		local placed = triggered and not action.offGcd
-		layoutDetail(d, action.kind, placed)
 		d.readback.text:SetText(triggered and (RA.Triggers.Describe(action.trigger, true) or S.Hex(C.accent, RA.Spells.Trim(action.trigger)))
 			or S.Hex(C.muted, "None: the spell is tried in its place on every press."))
 		d.readback.full = triggered and (RA.Triggers.Describe(action.trigger) or RA.Spells.Trim(action.trigger)) or nil
@@ -1031,6 +1048,13 @@ local function renderDetail(rotation, state, compiled)
 		d.whenReadback.text:SetText(when == "" and S.Hex(C.muted, "None: the line always runs, on your target.")
 			or RA.Conditions.Describe(when, true) or S.Hex(C.accent, when))
 		d.whenReadback.full = when ~= "" and (RA.Conditions.Describe(when) or when) or nil
+		Editor.FitReadbacks(d)
+		layoutDetail(d, action.kind, placed)
+		-- wrapped text is measured once the client has drawn it, so the pane lays out again on the next frame
+		d:SetScript("OnUpdate", function(self)
+			self:SetScript("OnUpdate", nil)
+			if Editor.FitReadbacks(self) then layoutDetail(self, action.kind, placed) end
+		end)
 		setText(d.spells, RA.Spells.ListText(action.spells))
 		setText(d.reset, action.reset)
 		d.offGcd:SetChecked(action.offGcd)
