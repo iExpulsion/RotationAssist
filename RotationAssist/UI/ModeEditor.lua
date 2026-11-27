@@ -19,21 +19,21 @@ local frame
 
 local SWITCHES = {
 	{ value = "none", text = "No Switching", tooltip = "The button always runs mode 1." },
-	{ value = "toggle", text = "Mode Key", tooltip = "Each press of the Mode key (or the small button) goes to the next mode, in or out of combat. It can cast a spell on the way, like a form." },
-	{ value = "rule", text = "Condition Rule", tooltip = "Modes switch by themselves, in combat too, on anything a macro condition can see: forms, stances, modifier keys, the target." },
+	{ value = "toggle", text = "Mode Key", tooltip = "The Mode key (or the small button) goes to the next mode, in or out of combat, and can cast a spell on the way." },
+	{ value = "rule", text = "Condition Rule", tooltip = "Modes switch by themselves, in combat too, on what macro conditions see: stances, forms, modifier keys, the target." },
 }
 local SWITCH_HELP = {
 	none = "Add a second mode to switch between them.",
-	toggle = "Without a spell the Mode key only cycles modes. With one, mode 2 casts it and mode 1 cancels it, so mode 1 is without it and mode 2 with it. Out of combat the mode follows the buff.",
-	rule = "Conditions, then the mode number, like [form:4] 2; 1 for a form on the fourth stance button. Macro conditions can't see buffs or procs; use triggers for those.",
+	toggle = "Without a spell, the Mode key only cycles modes. With one, mode 2 casts it and mode 1 cancels it; out of combat the mode follows its buff.",
+	rule = "Conditions, then the mode number, like [mod:shift] 2; 1. Macro conditions can't see buffs or procs; use triggers for those.",
 }
 local OPTIONS = {
-	{ key = "target", label = "Target the Nearest Enemy", note = "When you have no target, or a dead one.", tip = "When you have no target (or a dead one), the press targets the nearest enemy first." },
-	{ key = "attack", label = "Start Auto-Attack", note = "Melee or ranged, on a living enemy.", tip = "Each press starts melee or ranged auto-attack on a living enemy." },
+	{ key = "target", label = "Target the Nearest Enemy", note = "When you have no target, or a dead one.", tip = "With no target, or a dead one, a press targets the nearest enemy first." },
+	{ key = "attack", label = "Start Auto-Attack", note = "Melee or ranged, on a living enemy.", tip = "Each press starts auto-attack on a living enemy." },
 	{ key = "pet", label = "Send the Pet to Attack", note = "At your target.", tip = "Each press sends your pet at your target." },
-	{ key = "channels", label = "Don't Interrupt Channels", note = "Mashing can't cut a spell like Blizzard short.", tip = "Presses do nothing while you channel a spell like Blizzard, so mashing can't cut it short." },
-	{ key = "cycle", label = "One Spell per Press", note = "One GCD spell a press, top ones most often.", tip = "Each press tries only the next spell on the global cooldown, in GSE's priority order (1, 1 2, 1 2 3...), so the top ones come up most. Off-GCD lines still fire every press. Without Smart Picks, a spell waiting on something the macro can't see (like runes) stops the rest of a press, so a plain list never gets past it." },
-	{ key = "smart", label = "Smart Picks", note = "Skips what isn't ready; a met trigger goes first.", tip = "Each press casts the spell the Rotation Button shows: the first one that's really ready (cooldowns, runes, power, combo points, range, and no cast times while you move), except that a ready spell whose trigger is met goes first. It works by clearing your target for an instant before a line that could cast instead, so target frames can flicker while you mash. It needs a target to cast, so it doesn't suit healing or buffing friends: use One Spell per Press or a plain list there. Replaces One Spell per Press." },
+	{ key = "channels", label = "Don't Interrupt Channels", note = "Mashing can't cut a channel short.", tip = "Presses do nothing while you channel, so mashing can't cut it short." },
+	{ key = "cycle", label = "One Spell per Press", note = "One GCD spell a press, top ones most often.", tip = "Each press tries one spell on the global cooldown in priority order (1, 1 2, 1 2 3...), so the top ones come up most. For lists a plain macro stalls on." },
+	{ key = "smart", label = "Smart Picks", note = "Skips what isn't ready; a met trigger goes first.", tip = "Each press casts the spell the Rotation Button shows. Needs an enemy target, so it doesn't suit healing; target frames may flicker while you mash. Overrides One Spell per Press." },
 }
 
 local function edit(fn)
@@ -209,7 +209,7 @@ function Editor.Render(rotation)
 	local hasValue = kind == "toggle" or kind == "rule"
 	if hasValue then
 		frame.valueLabel:SetText(kind == "toggle" and "Spell the Mode Key Casts" or "Rule")
-		frame.value.placeholder:SetText(kind == "toggle" and "None: Only Switch Modes" or "[form:3] 2; 1")
+		frame.value.placeholder:SetText(kind == "toggle" and "None: Only Switch Modes" or "[mod:shift] 2; 1")
 		setText(frame.value, kind == "toggle" and (switch.spell and RA.Spells.Name(switch.spell) or "") or switch.rule)
 		frame.valueLabel:Show()
 		frame.value:Show()

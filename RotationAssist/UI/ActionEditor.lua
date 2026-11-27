@@ -23,12 +23,12 @@ local PLACEHOLDERS = {
 -- Field guides shown on hover: a string is a paragraph (or a heading when it starts with "#"), a pair is the syntax
 -- and what it means.
 local CONDITIONS_GUIDE = {
-	"Macro conditions the game checks as you press. When they don't hold, the line is skipped, and Smart Picks passes the spell over. A unit after @ casts the spell there instead of on your target.",
+	"Macro conditions the game checks as you press. When they don't hold, the line is skipped. A unit after @ casts there instead of on your target.",
 	"#Target",
 	{ "[harm]  [help]", "an enemy or a friend" },
 	{ "[exists]  [dead]", "you have a target; it's dead" },
 	{ "[@player]  [@focus]  [@mouseover]", "cast on that unit" },
-	{ "[@playerlocation]  [@cursor]  [@targetlocation]", "a ground spell where you stand, at the mouse or at your target, with a client mod that adds them (short: ploc, cur, tloc)" },
+	{ "[@playerlocation]  [@cursor]  [@targetlocation]", "a ground spell at your feet, the mouse or your target; needs a client mod (short: ploc, cur, tloc)" },
 	"#You",
 	{ "[mod:shift]  [mod:ctrl]  [mod:alt]", "while you hold that key" },
 	{ "[combat]", "in combat" },
@@ -41,7 +41,7 @@ local CONDITIONS_GUIDE = {
 }
 
 local TRIGGER_GUIDE = {
-	"Checked by Rotation Assist. While the trigger is met and the spell is ready, it goes first, wherever it is in the list, and the Rotation Button glows; with When Met set to Stay in Place, it's only allowed and keeps its place. While it isn't met, the spell is passed over. With Smart Picks on, that's what a press casts; without it, only the button changes.",
+	"Checked by Rotation Assist as you press. While it's met, a ready spell goes first (or, set to Stay in Place, may cast in its turn) and the Rotation Button glows. While it isn't, the spell is skipped. Smart Picks makes this decide what casts.",
 	"#On You",
 	{ "[buff:X]  [nobuff:X]", "a buff on you" },
 	{ "[selfdebuff:X]  [noselfdebuff:X]", "a debuff on you" },
@@ -57,16 +57,16 @@ local TRIGGER_GUIDE = {
 	{ "[hp<35]  [targethp<20]", "your health or the target's, in percent" },
 	{ "[combo>=5]", "combo points on the target" },
 	{ "[enemies>=3]", ("enemies you've hit or that hit you in the last %d seconds, your target included"):format(RA.Enemies.WINDOW) },
-	{ "[without:X>=1]", "how many of those enemies don't have your X, for spreading it" },
+	{ "[without:X>=1]", "those enemies missing your X, for spreading it" },
 	"#Combining",
 	"Compare with < <= > >= or =. Commas mean and; separate brackets mean or: [a][b].",
 }
 
 local PLACES = {
 	{ value = "jump", text = "When Met: Jump Ahead",
-		tooltip = "While the trigger is met, the spell is tried before everything else in the list. For procs and short windows, like Slam with [buff:Slam!]." },
+		tooltip = "While the trigger is met, the spell is tried before everything else. For procs and short windows." },
 	{ value = "keep", text = "When Met: Stay in Place",
-		tooltip = "The trigger only allows the spell; it's tried in its place in the list, after the spells above it. For fillers, like a Sunder Armor that only stacks when nothing above it is ready." },
+		tooltip = "The trigger only allows the spell; it waits its turn in the list. For fillers." },
 }
 
 -- Names of what a spell with a met trigger goes ahead of: the actions above it the pick would otherwise try first
@@ -285,11 +285,11 @@ local function createDetail(parent, width, height)
 		return b
 	end
 	d.whenHead = section(d, inner, "Conditions", "Edit", function() Editor.OpenConditions() end,
-		"Where the spell is cast and when the game lets this line run: the target, modifier keys, stance and more.")
+		"Where the spell is cast and when the line may run.")
 	d.editWhen = d.whenHead.button
 	d.whenReadback = readback("Conditions", function() Editor.OpenConditions() end)
 	d.triggerHead = section(d, inner, "Trigger", "Edit", function() Editor.OpenTrigger() end,
-		"Build the trigger from conditions, or type it.")
+		"When Rotation Assist picks the spell.")
 	d.editTrigger = d.triggerHead.button
 	d.readback = readback("Trigger", function() Editor.OpenTrigger() end)
 	d.place = S.Dropdown(d, 200, function(value)
@@ -318,13 +318,13 @@ local function createDetail(parent, width, height)
 		if userInput then edit(function(a) a.reset = self:GetText() end) end
 	end)
 	d.once = W.Toggle(d, "Once per Reset",
-		"Casts each spell once, then stops until the sequence resets (on a new target, after combat). Without Smart Picks, good for debuffs you keep up all fight; with it, a trigger like [nodebuff:X] recasts them when they fall off.",
+		"Casts each spell once, then waits until the sequence resets (a new target, the end of combat).",
 		function(on) edit(function(a) a.once = on or nil end) end)
 	d.offGcd = W.Toggle(d, "Off the Global Cooldown",
-		"Runs on every press, alongside whatever casts: trinkets, racials, cooldowns that don't trigger the global cooldown, and next-swing attacks like Heroic Strike. With Smart Picks on, it runs after the main spell and follows its trigger, such as [power>=50] to keep rage for the rest.",
+		"Runs on every press alongside the main spell: trinkets, racials and spells off the global cooldown. With Smart Picks, it follows its trigger, like [power>=50].",
 		function(on) edit(function(a) a.offGcd = on or nil end) end)
 	d.moving = W.Toggle(d, "Cast While Moving",
-		"Smart Picks passes over a spell with a cast time while you move. Turn this on for one you can cast on the move anyway, like Pyroblast with a [buff:Hot Streak] trigger.",
+		"Smart Picks skips spells with a cast time while you move. Turn this on for one you can cast on the move, such as after a proc makes it instant.",
 		function(on) edit(function(a) a.moving = on or nil end) end)
 	d.textLabel = label(d, "Lines")
 	d.text = S.TextArea(d, "RotationAssistActionText", inner, 110, { onInput = function(text)
@@ -345,7 +345,7 @@ local function createDetail(parent, width, height)
 	d.none = S.Text(d, "small", C.muted)
 	d.none:SetPoint("TOPLEFT", pad, -pad)
 	d.none:SetWidth(inner)
-	d.none:SetText("Pick an action to change it.\n\nThe button tries actions from the top down on every press and casts the first one that's ready, so put what matters most first. Drag an action up or down the list to change its place.\n\nDrag spells here from your spellbook, or type a name above.")
+	d.none:SetText("Pick an action to change it.\n\nEach press tries the list from the top and casts the first ready spell, so put what matters most first. Drag actions to reorder them.\n\nDrag spells here from your spellbook, or type a name above.")
 	return d
 end
 
@@ -526,7 +526,7 @@ local function pickerSpec(term)
 		placeholder = "Search, or Type Any Name",
 		search = function(q)
 			local typed, lower, items = RA.Spells.Trim(q), q:lower(), {}
-			if typed ~= "" then items[1] = { value = typed, text = ("Use \"%s\""):format(typed), tooltip = "The name as typed, for an aura that isn't up now." } end
+			if typed ~= "" then items[1] = { value = typed, text = ("Use \"%s\""):format(typed), tooltip = "As typed, for an aura that isn't up now." } end
 			for _, item in ipairs(names) do
 				if #items < 200 and (lower == "" or item.text:lower():find(lower, 1, true)) then items[#items + 1] = item end
 			end
@@ -683,13 +683,13 @@ local SHEETS = {
 	trigger = {
 		field = "trigger",
 		title = "Trigger for %s",
-		intro = "Rotation Assist checks these as you press. While they hold and the spell is ready, the spell can be picked.",
+		intro = "Checked as you press. While these hold and the spell is ready, it can be picked.",
 		orWord = "or",
-		orTip = "Add a group of conditions that will do instead of the ones above.",
+		orTip = "Add a group that will do instead.",
 		placeholder = "None, or Like [buff:Clearcasting]",
 		guide = { "Trigger", TRIGGER_GUIDE },
 		empty = "Nothing yet: the spell is tried on every press.",
-		clearTip = "Remove the trigger: the spell is tried in its place on every press.",
+		clearTip = "Remove the trigger.",
 		read = RA.Triggers.Read, write = RA.Triggers.Write, describe = RA.Triggers.Describe,
 		complete = RA.Triggers.Complete, problems = RA.Triggers.Problems,
 		newTerm = newTrigger, fill = fillTrigger,
@@ -705,13 +705,13 @@ local SHEETS = {
 	conditions = {
 		field = "when",
 		title = "Conditions for %s",
-		intro = "The game checks these as you press. The first group that holds runs the line, on its unit; when none holds, the line is skipped.",
+		intro = "Checked by the game as you press. The first group that holds runs the line; if none does, it's skipped.",
 		orWord = "otherwise",
-		orTip = "Add a group the game tries when the ones above don't hold, such as one that casts on you instead.",
+		orTip = "Add a group to try when the ones above don't hold.",
 		placeholder = "Always, or Like [harm] or [mod:shift]",
 		guide = { "Conditions", CONDITIONS_GUIDE },
 		empty = "None: the line always runs, on your target.",
-		clearTip = "Remove the conditions: the line always runs, on your target.",
+		clearTip = "Remove the conditions.",
 		read = RA.Conditions.Read, write = RA.Conditions.Write, describe = RA.Conditions.Describe,
 		complete = RA.Conditions.Complete, problems = function() return {} end,
 		newTerm = newCondition, fill = fillCondition,
@@ -875,7 +875,7 @@ sheetRender = function()
 			local g = f.groups[gi]
 			g[#g + 1] = newTerm(g[#g])
 			sheetRender()
-		end, "Add a condition that must hold as well.")
+		end, "Add a condition that must also hold.")
 		f.heads[gi] = head
 		if full then head.button:Disable() else head.button:Enable() end
 		place(head, CONTROL_H + 4)

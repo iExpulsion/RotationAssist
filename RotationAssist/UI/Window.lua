@@ -114,7 +114,7 @@ local function renderSidebar()
 			end,
 			tooltip = function(tt)
 				tt:AddLine("Your Specs", 1, 1, 1)
-				tt:AddLine("Rotations linked to this character's talent specs. The active spec's rotation is the one the button runs.", 0.8, 0.8, 0.8, true)
+				tt:AddLine("Rotations linked to this character's specs. The active spec's one runs on the button.", 0.8, 0.8, 0.8, true)
 			end,
 		})
 		for _, row in ipairs(specs) do
@@ -478,7 +478,7 @@ local function createHeader(main)
 		Window.Render()
 	end)
 	f.specLink:SetPoint("RIGHT", row2, "RIGHT", 0, 0)
-	f.specLink.tooltipText = "The talent specs on this character that run this rotation. Click a spec to link or unlink it."
+	f.specLink.tooltipText = "The specs on this character that run this rotation. Click one to link or unlink it."
 	local linkLabel = S.Text(main, "small", C.muted)
 	linkLabel:SetPoint("RIGHT", f.specLink, "LEFT", -GAP, 0)
 	linkLabel:SetText("Linked to")
@@ -488,7 +488,7 @@ local function createHeader(main)
 	f.duplicate = S.Button(main, "Duplicate", "secondary", 80, function()
 		local rotation = Window.Selected()
 		if rotation then Window.Select(RA.Rotation.Duplicate(rotation).name) end
-	end, "Make a copy of this rotation to try changes on. The copy isn't linked to a spec.")
+	end, "Copy this rotation to try changes on. The copy isn't linked to a spec.")
 	f.export = S.Button(main, "Export", "secondary", 70, function()
 		local rotation = Window.Selected()
 		if rotation then RA.Dialogs.ShowExport(rotation) end

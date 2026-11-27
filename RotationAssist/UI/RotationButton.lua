@@ -87,8 +87,8 @@ local function tooltip(self)
 	if self == toggle then
 		GameTooltip:AddLine("Click or press the Mode key to go to the next mode.", 0.8, 0.8, 0.8, true)
 	else
-		GameTooltip:AddLine("Click or press the Rotation key to cast the first ready spell. The icon is the likely next one; a glow means a trigger picked it, such as a proc.", 0.8, 0.8, 0.8, true)
-		GameTooltip:AddLine("The green dot shows while presses keep coming, from the key, clicks or a mouse macro, and goes out a second after the last one.", 0.8, 0.8, 0.8, true)
+		GameTooltip:AddLine("Click or press the Rotation key to cast the first ready spell. The icon is the likely next one; a glow means a trigger picked it.", 0.8, 0.8, 0.8, true)
+		GameTooltip:AddLine("The green dot shows while presses keep coming.", 0.8, 0.8, 0.8, true)
 	end
 	GameTooltip:Show()
 end

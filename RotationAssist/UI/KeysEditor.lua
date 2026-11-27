@@ -63,18 +63,18 @@ function Editor.Create(parent, width, height)
 	local note = S.Text(f, "small", C.muted)
 	note:SetPoint("TOPLEFT", 0, -(16 + #KEYS * ROW_H + 2))
 	note:SetWidth(width)
-	note:SetText("These keys take over whatever they're normally bound to while the addon is loaded. Each press casts at most one spell on the global cooldown, so press again for the next one.")
+	note:SetText("These keys override their usual bindings while the addon is loaded. Each press casts at most one global cooldown spell; press again for the next.")
 	f.macros = S.Button(f, "Make Action Bar Macros", "secondary", 170, function()
 		RA.Window.Message(S.Hex(C.muted, RA.Keys.MakeMacros()))
-	end, "Makes RA Rotation and RA Mode general macros that click the same buttons, and puts RA Rotation on your cursor to drop on a bar.")
+	end, "Makes RA Rotation and RA Mode macros and puts RA Rotation on your cursor, ready for a bar.")
 	f.macros:SetPoint("TOPLEFT", note, "BOTTOMLEFT", 0, -GAP)
 
 	local buttonHeading = W.Heading(f, "Rotation Button")
 	buttonHeading:SetPoint("TOPLEFT", f.macros, "BOTTOMLEFT", 0, -2 * GAP)
-	f.showButton = W.Toggle(f, "Show the Rotation Button", "A large button on screen with the likely next spell, the mode and the key. Clicking it is the same as pressing the Rotation key.",
+	f.showButton = W.Toggle(f, "Show the Rotation Button", "An on-screen button with the likely next spell, the mode and the key. Clicking it presses the Rotation key.",
 		function(on) RA.RotationButton.SetShown(on) RA.Window.Render() end)
 	f.showButton:SetPoint("TOPLEFT", buttonHeading, "BOTTOMLEFT", 0, -4)
-	f.lockButton = W.Toggle(f, "Lock Its Position", "Unlocked, the button can be dragged out of combat; clicks only cast when it's locked.",
+	f.lockButton = W.Toggle(f, "Lock Its Position", "Unlocked, it can be dragged out of combat; it only casts when locked.",
 		function(on) RA.RotationButton.SetLocked(on) RA.Window.Render() end)
 	f.lockButton:SetPoint("TOPLEFT", f.showButton, "BOTTOMLEFT", 0, 0)
 	local scaleLabel = S.Text(f, "small")
@@ -91,10 +91,10 @@ function Editor.Create(parent, width, height)
 
 	local errorHeading = W.Heading(f, "Errors")
 	errorHeading:SetPoint("TOPLEFT", scaleLabel, "BOTTOMLEFT", 0, -3 * GAP)
-	f.quiet = W.Toggle(f, "Quiet Errors", "Hides the red error text for a moment after each press, and turns off the spoken errors. Lines that can't cast yet fail on purpose, so without this every press shows \"Not ready yet\".",
+	f.quiet = W.Toggle(f, "Quiet Errors", "Hides red error text and spoken errors for a moment after each press. Lines fail on purpose, so without this most presses show an error.",
 		function(on) RA.Quiet.Set(on) RA.Window.Render() end)
 	f.quiet:SetPoint("TOPLEFT", errorHeading, "BOTTOMLEFT", 0, -4)
-	f.gcdHold = W.Toggle(f, "Hold Presses During the Global Cooldown", "With Smart Picks, presses during the global cooldown try nothing, so failed casts don't play their fizzle sound. It does this by clearing and restoring your target around every line, many times a second while you mash. Some servers disconnect you for that, so a server module may turn it off.",
+	f.gcdHold = W.Toggle(f, "Hold Presses During the Global Cooldown", "With Smart Picks, presses during the global cooldown try nothing, so failed casts don't fizzle. It clears and restores your target around each line; some servers disconnect for that, so a server module may turn it off.",
 		function(on) RA.db.gcdHold = on and true or false RA.Window.Render() end)
 	f.gcdHold:SetPoint("TOPLEFT", f.quiet, "BOTTOMLEFT", 0, -4)
 	return f
