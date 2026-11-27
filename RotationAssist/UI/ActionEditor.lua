@@ -310,6 +310,7 @@ local function createDetail(parent, width, height)
 	d.spells:HookScript("OnEditFocusLost", function(self)
 		edit(function(a) a.spells = RA.Spells.ListFromText(self:GetText()) end)
 	end)
+	d.spellsSuggest = S.Suggest(d.spells, { list = RA.Spells.Book, separator = "," })
 	d.resetLabel = label(d, "Reset")
 	d.reset = S.Input(d, "RotationAssistSeqReset", inner, "Never, or Like target or combat/30", 60)
 	d.reset:SetScript("OnTextChanged", function(self, userInput)
@@ -387,7 +388,6 @@ end
 local MAX_TERMS = 8
 local COL = { what = 176, has = 96, name = 150, op = 100, value = 48, remove = 28 }
 local ROW_W = COL.what + COL.has + COL.name + COL.op + COL.value + COL.remove + 5 * GAP
-local SHEET_W = ROW_W + 2 * PAD
 
 -- A kind menu: each group's heading over its kinds, by their short names. The closed dropdown shows the full label,
 -- so the menu's options go with a list of { value, text = label } for showing the choice.
@@ -516,13 +516,7 @@ local function auraNames()
 			end
 		end
 	end
-	local i = 1
-	local name = GetSpellName and GetSpellName(i, BOOKTYPE_SPELL)
-	while name do
-		add(name, GetSpellTexture and GetSpellTexture(i, BOOKTYPE_SPELL), "In your spellbook.")
-		i = i + 1
-		name = GetSpellName(i, BOOKTYPE_SPELL)
-	end
+	for _, spell in ipairs(RA.Spells.Book()) do add(spell.text, spell.icon, "In your spellbook.") end
 	return items
 end
 
@@ -1007,6 +1001,11 @@ function Editor.Create(parent, width, height)
 	f.input = S.Input(f, "RotationAssistAddInput", 150, PLACEHOLDERS.spell, 250)
 	f.input:SetPoint("RIGHT", f.add, "LEFT", -GAP, 0)
 	f.input:SetScript("OnEnterPressed", addTyped)
+	-- spell names from the spellbook while adding a Spell or a Sequence (whose box is a comma-separated list); Steps
+	-- and Macro take macro lines
+	f.suggest = S.Suggest(f.input, { list = RA.Spells.Book, separator = ",", enabled = function()
+		return f.kind.value == "spell" or f.kind.value == "sequence"
+	end })
 	f.kind = S.Dropdown(f, 90, function(value)
 		f.kind.value = value
 		f.input.placeholder:SetText(PLACEHOLDERS[value])

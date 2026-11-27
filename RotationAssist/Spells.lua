@@ -85,6 +85,31 @@ function Spells.FromCursor(kind, slot, book)
 	return spell
 end
 
+-- The spellbook's spells by name, each once (the book lists every rank), with icons: { { text, icon } }, for the
+-- name suggestions and pickers. Kept until the spellbook changes.
+local book
+function Spells.Book()
+	if not book then
+		book = {}
+		local seen, i = {}, 1
+		local name = GetSpellName(i, BOOKTYPE_SPELL)
+		while name do
+			if not seen[name] then
+				seen[name] = true
+				book[#book + 1] = { text = name, icon = GetSpellTexture(i, BOOKTYPE_SPELL) }
+			end
+			i = i + 1
+			name = GetSpellName(i, BOOKTYPE_SPELL)
+		end
+	end
+	return book
+end
+
+local bookWatch = CreateFrame("Frame")
+bookWatch:RegisterEvent("SPELLS_CHANGED")
+bookWatch:RegisterEvent("LEARNED_SPELL_IN_TAB")
+bookWatch:SetScript("OnEvent", function() book = nil end)
+
 -- Comma-separated spell text to a list of stored spells.
 function Spells.ListFromText(text)
 	local list = {}

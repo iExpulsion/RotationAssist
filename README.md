@@ -100,7 +100,8 @@ rotations.
 ### 1. List Your Spells, Most Important First
 
 Click **New Rotation**, name it, and add your spells on the **Actions** tab. Drag them from your spellbook, or
-type a name and click **Add**. Put them in the order you'd want them if everything were ready at once: big
+start typing a name: spells from your spellbook show under the box, and **Tab** or **Enter** takes the highlighted
+one (Enter adds it too). A Sequence's spell list completes the same way, one spell at a time. Put them in the order you'd want them if everything were ready at once: big
 cooldowns and procs near the top, your filler spell last. Drag an action up or down the list to change its place;
 on the **Modes** tab, drag a mode by the grip beside its number.
 
