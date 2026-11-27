@@ -303,11 +303,17 @@ local VALUE_SAYS = {
 -- values given in percent, the sign going on the number ("50% or less")
 local PERCENT = { hp = true, targethp = true }
 
+-- A name as the game spells it, given to paint(name, found) when there is one, to color it.
+local function spell(name, paint)
+	local proper, found = RA.Spells.Proper(name)
+	return paint and paint(proper, found) or proper
+end
+
 -- One term in plain English, starting in lower case, with names as the game spells them (p.spelled: already done,
 -- for a list of names joined into one).
-function Triggers.DescribeTerm(p)
+function Triggers.DescribeTerm(p, paint)
 	local shape, text = SHAPES[p.kind], nil
-	local name = p.name and (p.spelled and p.name or RA.Spells.Proper(p.name))
+	local name = p.name and (p.spelled and p.name or spell(p.name, paint))
 	if shape == "aura" then
 		local time = p.op and TIME_WORDS[p.op]:format(number(p.value))
 		text = AURA_SAYS[p.kind][p.no and 2 or 1]:format(name)
@@ -338,7 +344,7 @@ end
 -- A group's terms in plain English. Untimed aura terms of the same kind in a row are said once with their names
 -- listed ("the target has your Frost Fever and Blood Plague"; "doesn't have your X or Y" when missing, as it's
 -- neither), and then the terms are set apart with commas so the lists inside them still read.
-local function describeGroup(group)
+local function describeGroup(group, paint)
 	local terms, parts, merged = {}, {}, false
 	for _, p in ipairs(group) do
 		if Triggers.Complete(p) then terms[#terms + 1] = p end
@@ -346,15 +352,15 @@ local function describeGroup(group)
 	local i = 1
 	while i <= #terms do
 		local p = terms[i]
-		local names, j = { RA.Spells.Proper(p.name) }, i + 1
+		local names, j = { p.name and spell(p.name, paint) }, i + 1
 		local joins = SHAPES[p.kind] == "aura" and not p.op
 		while joins and terms[j] and terms[j].kind == p.kind and not terms[j].op and (terms[j].no or false) == (p.no or false) do
-			names[#names + 1] = RA.Spells.Proper(terms[j].name)
+			names[#names + 1] = spell(terms[j].name, paint)
 			j = j + 1
 		end
 		merged = merged or #names > 1
 		parts[#parts + 1] = Triggers.DescribeTerm(#names > 1
-			and { kind = p.kind, no = p.no, name = list(names, p.no and "or" or "and"), spelled = true } or p)
+			and { kind = p.kind, no = p.no, name = list(names, p.no and "or" or "and"), spelled = true } or p, paint)
 		i = j
 	end
 	local text = table.concat(parts, " and ")
@@ -364,11 +370,12 @@ end
 
 -- A trigger in plain English, from its text or its groups: one sentence, or a line per group when any of several
 -- will do (compact: one paragraph instead, for a small space). nil when there's no trigger or it can't be read.
-function Triggers.Describe(trigger, compact)
+-- paint(name, found) can color each name.
+function Triggers.Describe(trigger, compact, paint)
 	local groups = type(trigger) == "table" and trigger or Triggers.Read(trigger)
 	local lines = {}
 	for _, group in ipairs(groups or {}) do
-		local said = describeGroup(group)
+		local said = describeGroup(group, paint)
 		if said then lines[#lines + 1] = said end
 	end
 	local text

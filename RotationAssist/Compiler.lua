@@ -432,7 +432,7 @@ function Conditions.Write(groups)
 end
 
 -- One term in plain English, starting in lower case; unit is the unit the group casts on.
-function Conditions.DescribeTerm(p, unit)
+function Conditions.DescribeTerm(p, unit, paint)
 	local def, arg = DEFS[p.kind], trim(p.arg)
 	local text
 	if p.kind == "other" then
@@ -442,7 +442,11 @@ function Conditions.DescribeTerm(p, unit)
 	elseif arg == "" and def.anyYes then
 		text = p.no and def.anyNo or def.anyYes
 	elseif def.arg then
-		local shown = p.kind == "channeling" and RA.Spells.Proper(arg) or arg
+		local shown = arg
+		if p.kind == "channeling" then
+			local proper, found = RA.Spells.Proper(arg)
+			shown = paint and paint(proper, found) or proper
+		end
 		for _, c in ipairs(def.choices or {}) do
 			if c.value ~= "" and c.value == arg:lower() then shown = c.text end
 		end
@@ -453,13 +457,13 @@ function Conditions.DescribeTerm(p, unit)
 	return text
 end
 
-local function describeGroup(group)
+local function describeGroup(group, paint)
 	local unit, named, terms = "target", false, {}
 	for _, p in ipairs(group) do
 		if p.kind == "unit" and Conditions.Complete(p) then unit, named = Conditions.Unit(p.arg), true end
 	end
 	for _, p in ipairs(group) do
-		if p.kind ~= "unit" and p.kind ~= "always" and Conditions.Complete(p) then terms[#terms + 1] = Conditions.DescribeTerm(p, unit) end
+		if p.kind ~= "unit" and p.kind ~= "always" and Conditions.Complete(p) then terms[#terms + 1] = Conditions.DescribeTerm(p, unit, paint) end
 	end
 	local on = named and ("on " .. (UNIT_SAYS[unit] or unit)) or nil
 	local when = #terms > 0 and ("when " .. table.concat(terms, " and ")) or nil
@@ -471,12 +475,12 @@ local function capital(s)
 end
 
 -- Conditions in plain English, from their text or groups; nil when they can't be read. No conditions always hold.
--- compact: one paragraph instead of a line per group, for a small space.
-function Conditions.Describe(conditions, compact)
+-- compact: one paragraph instead of a line per group, for a small space. paint(name, found) can color spell names.
+function Conditions.Describe(conditions, compact, paint)
 	local groups = conditions
 	if type(conditions) ~= "table" then groups = Conditions.Read(conditions) end
 	local lines = {}
-	for _, group in ipairs(groups or {}) do lines[#lines + 1] = describeGroup(group) end
+	for _, group in ipairs(groups or {}) do lines[#lines + 1] = describeGroup(group, paint) end
 	local text
 	if groups and #lines == 0 then
 		text = "Always, on your target."

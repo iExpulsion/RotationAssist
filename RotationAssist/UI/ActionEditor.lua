@@ -13,6 +13,12 @@ local PAD, GAP, CONTROL_H = S.PAD, S.GAP, S.CONTROL_H
 local LIST_W = 250
 
 local frame
+
+-- Readbacks color the names the game knows; one it doesn't (often a typo) stays plain.
+local function paintName(name, found)
+	return found and S.Hex(C.accent, name) or name
+end
+
 local PLACEHOLDERS = {
 	spell = "Spell Name or ID",
 	sequence = "Spells, Comma-Separated",
@@ -922,7 +928,7 @@ sheetRender = function()
 	end
 
 	local text = RA.Spells.Trim(action and action[def.field])
-	local said = text ~= "" and def.describe(text) or nil
+	local said = text ~= "" and def.describe(text, false, paintName) or nil
 	local lines = said and select(2, said:gsub("\n", "\n")) + 1 or 1
 	place(f.readLabel, 12 + 4)
 	f.readback:SetText(said or S.Hex(C.muted, text ~= "" and "It can't be read back as it is; fix it as text." or def.empty))
@@ -1086,9 +1092,9 @@ local function renderDetail(rotation, state, compiled)
 		d.none:Hide()
 		local triggered = action.kind == "spell" and RA.Triggers.Has(action.trigger)
 		local placed = triggered and not action.offGcd
-		d.readback.text:SetText(triggered and (RA.Triggers.Describe(action.trigger, true) or S.Hex(C.accent, RA.Spells.Trim(action.trigger)))
+		d.readback.text:SetText(triggered and (RA.Triggers.Describe(action.trigger, true, paintName) or S.Hex(C.accent, RA.Spells.Trim(action.trigger)))
 			or S.Hex(C.muted, "None: the spell is tried in its place on every press."))
-		d.readback.full = triggered and (RA.Triggers.Describe(action.trigger) or RA.Spells.Trim(action.trigger)) or nil
+		d.readback.full = triggered and (RA.Triggers.Describe(action.trigger, false, paintName) or RA.Spells.Trim(action.trigger)) or nil
 		d.editTrigger.label:SetText(triggered and "Edit" or "Add")
 		d.editWhen.label:SetText(RA.Spells.Trim(action.when) ~= "" and "Edit" or "Add")
 		d.place:SetText(PLACES[action.keep and 2 or 1].text)
@@ -1106,8 +1112,8 @@ local function renderDetail(rotation, state, compiled)
 			.. (#problems > 0 and ("  " .. S.Hex(C.warn, problems[1])) or ""))
 		local when = RA.Spells.Trim(action.when)
 		d.whenReadback.text:SetText(when == "" and S.Hex(C.muted, "None: the line always runs, on your target.")
-			or RA.Conditions.Describe(when, true) or S.Hex(C.accent, when))
-		d.whenReadback.full = when ~= "" and (RA.Conditions.Describe(when) or when) or nil
+			or RA.Conditions.Describe(when, true, paintName) or S.Hex(C.accent, when))
+		d.whenReadback.full = when ~= "" and (RA.Conditions.Describe(when, false, paintName) or when) or nil
 		Editor.FitReadbacks(d)
 		layoutDetail(d, action.kind, placed)
 		-- wrapped text is measured once the client has drawn it, so the pane lays out again on the next frame

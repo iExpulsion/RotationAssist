@@ -128,7 +128,8 @@ local function auraNamed(key)
 end
 
 -- A name as the game spells it, for readbacks: from the spellbook, the client's spell lookup, or an aura on the
--- player or target now; else as given. Triggers ignore capitals, so "berserker rage" reads "Berserker Rage".
+-- player or target now; else as given. Triggers ignore capitals, so "berserker rage" reads "Berserker Rage". The
+-- second return is whether it was found, which a typo never is.
 function Spells.Proper(name)
 	local typed = trim(name)
 	local key = lower[typed]
@@ -138,7 +139,7 @@ function Spells.Proper(name)
 	end
 	local found = bookNames[key] or GetSpellInfo(typed)
 	if not (found and lower[found] == key) then found = auraNamed(key) end
-	return found or typed
+	return found or typed, found ~= nil
 end
 
 -- Comma-separated spell text to a list of stored spells.
