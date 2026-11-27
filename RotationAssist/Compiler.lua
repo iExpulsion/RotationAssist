@@ -292,9 +292,18 @@ local UNITS = {
 	{ value = "pet", text = "Your Pet", says = "your pet" },
 	{ value = "playerlocation", text = "Ground at Your Feet", says = "the ground where you stand" },
 	{ value = "cursor", text = "Ground at the Mouse", says = "the ground at the mouse" },
+	{ value = "targetlocation", text = "Ground at Your Target", says = "the ground at your target" },
 }
 local UNIT_SAYS = {}
 for _, u in ipairs(UNITS) do UNIT_SAYS[u.value] = u.says end
+-- the ground units' short forms, which client mods that add them accept too; kept as written
+local UNIT_SHORT = { ploc = "playerlocation", cur = "cursor", tloc = "targetlocation" }
+
+-- A unit as the builder lists it: a short form becomes its full name.
+function Conditions.Unit(arg)
+	local unit = trim(arg):lower()
+	return UNIT_SHORT[unit] or unit
+end
 
 -- The builder's rows, in its order. arg: nil (none), "choice" (one of choices), "text" (optional) or "required".
 -- yes/no say the term, with %s the unit for unit terms, else the arg; anyYes/anyNo say it with no arg. fixed: can't
@@ -442,7 +451,7 @@ end
 local function describeGroup(group)
 	local unit, named, terms = "target", false, {}
 	for _, p in ipairs(group) do
-		if p.kind == "unit" and Conditions.Complete(p) then unit, named = trim(p.arg):lower(), true end
+		if p.kind == "unit" and Conditions.Complete(p) then unit, named = Conditions.Unit(p.arg), true end
 	end
 	for _, p in ipairs(group) do
 		if p.kind ~= "unit" and p.kind ~= "always" and Conditions.Complete(p) then terms[#terms + 1] = Conditions.DescribeTerm(p, unit) end

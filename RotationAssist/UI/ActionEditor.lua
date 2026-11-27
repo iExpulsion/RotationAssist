@@ -28,7 +28,7 @@ local CONDITIONS_GUIDE = {
 	{ "[harm]  [help]", "an enemy or a friend" },
 	{ "[exists]  [dead]", "you have a target; it's dead" },
 	{ "[@player]  [@focus]  [@mouseover]", "cast on that unit" },
-	{ "[@playerlocation]  [@cursor]", "a ground spell where you stand or at the mouse, with a client mod that adds them" },
+	{ "[@playerlocation]  [@cursor]  [@targetlocation]", "a ground spell where you stand, at the mouse or at your target, with a client mod that adds them (short: ploc, cur, tloc)" },
 	"#You",
 	{ "[mod:shift]  [mod:ctrl]  [mod:alt]", "while you hold that key" },
 	{ "[combat]", "in combat" },
@@ -586,7 +586,7 @@ local function fillCondition(row, term)
 	row.has:SetOptions(YES_OPTIONS)
 	row.has:SetText(optionText(YES_OPTIONS, term.no and "no" or "has"))
 	if def.arg == "choice" then
-		local arg = (term.arg or ""):lower()
+		local arg = term.kind == "unit" and RA.Conditions.Unit(term.arg) or (term.arg or ""):lower()
 		local listed = false
 		for _, c in ipairs(def.choices) do listed = listed or c.value == arg end
 		row.choice:SetOptions(def.choices)
