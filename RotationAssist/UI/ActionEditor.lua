@@ -735,7 +735,8 @@ local function createSheet()
 	f.pad = pad
 
 	f.title = S.Text(f, "large")
-	f.title:SetPoint("TOPLEFT", pad, -pad)
+	-- centered on the Edit as Text button beside it, so the two read as one header row
+	f.title:SetPoint("LEFT", f, "TOPLEFT", pad, -(pad + CONTROL_H / 2))
 	f.title:SetWidth(ROW_W - 130)
 	f.title:SetWordWrap(false)
 	f.mode = S.Button(f, "Edit as Text", "secondary", 120, function() setTextMode(not f.textMode) end,
@@ -811,7 +812,7 @@ sheetRender = function()
 	end
 	local def = f.def
 	f.title:SetText(def.title:format(action and RA.Rotation.ActionText(action) or "?"))
-	y = y + 24
+	y = y + CONTROL_H + GAP
 	f.intro:SetText(def.intro)
 	place(f.intro, 2 * 14)
 	y = y + PAD
