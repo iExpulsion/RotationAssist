@@ -303,19 +303,21 @@ local VALUE_SAYS = {
 -- values given in percent, the sign going on the number ("50% or less")
 local PERCENT = { hp = true, targethp = true }
 
--- One term in plain English, starting in lower case.
+-- One term in plain English, starting in lower case, with names as the game spells them (p.spelled: already done,
+-- for a list of names joined into one).
 function Triggers.DescribeTerm(p)
 	local shape, text = SHAPES[p.kind], nil
+	local name = p.name and (p.spelled and p.name or RA.Spells.Proper(p.name))
 	if shape == "aura" then
 		local time = p.op and TIME_WORDS[p.op]:format(number(p.value))
-		text = AURA_SAYS[p.kind][p.no and 2 or 1]:format(p.name)
+		text = AURA_SAYS[p.kind][p.no and 2 or 1]:format(name)
 		if time and p.kind == "cast" then
 			text = text .. (p.no and (", or did " .. time .. " ago") or (", " .. time .. " ago"))
 		elseif time then
 			text = text .. (p.no and (", or it has " .. time .. " left") or (" with " .. time .. " left"))
 		end
 	elseif shape == "count" then
-		text = COUNT_SAYS[p.kind]:format(COUNT_WORDS[p.op]:format(number(p.value)), p.name)
+		text = COUNT_SAYS[p.kind]:format(COUNT_WORDS[p.op]:format(number(p.value)), name)
 	else
 		text = VALUE_SAYS[p.kind]:format(VALUE_WORDS[p.op]:format(number(p.value) .. (PERCENT[p.kind] and "%" or "")))
 	end
@@ -344,14 +346,15 @@ local function describeGroup(group)
 	local i = 1
 	while i <= #terms do
 		local p = terms[i]
-		local names, j = { p.name }, i + 1
+		local names, j = { RA.Spells.Proper(p.name) }, i + 1
 		local joins = SHAPES[p.kind] == "aura" and not p.op
 		while joins and terms[j] and terms[j].kind == p.kind and not terms[j].op and (terms[j].no or false) == (p.no or false) do
-			names[#names + 1] = terms[j].name
+			names[#names + 1] = RA.Spells.Proper(terms[j].name)
 			j = j + 1
 		end
 		merged = merged or #names > 1
-		parts[#parts + 1] = Triggers.DescribeTerm(#names > 1 and { kind = p.kind, no = p.no, name = list(names, p.no and "or" or "and") } or p)
+		parts[#parts + 1] = Triggers.DescribeTerm(#names > 1
+			and { kind = p.kind, no = p.no, name = list(names, p.no and "or" or "and"), spelled = true } or p)
 		i = j
 	end
 	local text = table.concat(parts, " and ")

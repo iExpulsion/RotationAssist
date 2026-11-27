@@ -442,7 +442,7 @@ function Conditions.DescribeTerm(p, unit)
 	elseif arg == "" and def.anyYes then
 		text = p.no and def.anyNo or def.anyYes
 	elseif def.arg then
-		local shown = arg
+		local shown = p.kind == "channeling" and RA.Spells.Proper(arg) or arg
 		for _, c in ipairs(def.choices or {}) do
 			if c.value ~= "" and c.value == arg:lower() then shown = c.text end
 		end

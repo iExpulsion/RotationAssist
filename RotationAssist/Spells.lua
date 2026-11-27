@@ -105,10 +105,41 @@ function Spells.Book()
 	return book
 end
 
+local bookNames
 local bookWatch = CreateFrame("Frame")
 bookWatch:RegisterEvent("SPELLS_CHANGED")
 bookWatch:RegisterEvent("LEARNED_SPELL_IN_TAB")
-bookWatch:SetScript("OnEvent", function() book = nil end)
+bookWatch:SetScript("OnEvent", function()
+	book = nil
+	bookNames = nil
+end)
+
+-- An aura on the player or the target now by this name, any capitals, as the game spells it.
+local function auraNamed(key)
+	for _, unit in ipairs({ "player", "target" }) do
+		for _, filter in ipairs({ "HELPFUL", "HARMFUL" }) do
+			for i = 1, 40 do
+				local name = UnitAura(unit, i, filter)
+				if not name then break end
+				if lower[name] == key then return name end
+			end
+		end
+	end
+end
+
+-- A name as the game spells it, for readbacks: from the spellbook, the client's spell lookup, or an aura on the
+-- player or target now; else as given. Triggers ignore capitals, so "berserker rage" reads "Berserker Rage".
+function Spells.Proper(name)
+	local typed = trim(name)
+	local key = lower[typed]
+	if not bookNames then
+		bookNames = {}
+		for _, spell in ipairs(Spells.Book()) do bookNames[lower[spell.text]] = spell.text end
+	end
+	local found = bookNames[key] or GetSpellInfo(typed)
+	if not (found and lower[found] == key) then found = auraNamed(key) end
+	return found or typed
+end
 
 -- Comma-separated spell text to a list of stored spells.
 function Spells.ListFromText(text)
