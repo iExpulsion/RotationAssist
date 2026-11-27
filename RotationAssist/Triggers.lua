@@ -324,8 +324,8 @@ local function capital(s)
 end
 
 -- A trigger in plain English, from its text or its groups: one sentence, or a line per group when any of several
--- will do. nil when there's no trigger or it can't be read.
-function Triggers.Describe(trigger)
+-- will do (compact: one paragraph instead, for a small space). nil when there's no trigger or it can't be read.
+function Triggers.Describe(trigger, compact)
 	local groups = type(trigger) == "table" and trigger or Triggers.Read(trigger)
 	local lines = {}
 	for _, group in ipairs(groups or {}) do
@@ -338,6 +338,8 @@ function Triggers.Describe(trigger)
 	local text
 	if #lines == 1 then
 		text = "When " .. lines[1] .. "."
+	elseif #lines > 1 and compact then
+		text = "When " .. table.concat(lines, "; or when ") .. "."
 	elseif #lines > 1 then
 		for i, line in ipairs(lines) do lines[i] = "- " .. capital(line) end
 		text = "When any of these holds:\n" .. table.concat(lines, "\n")

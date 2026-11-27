@@ -457,7 +457,8 @@ local function capital(s)
 end
 
 -- Conditions in plain English, from their text or groups; nil when they can't be read. No conditions always hold.
-function Conditions.Describe(conditions)
+-- compact: one paragraph instead of a line per group, for a small space.
+function Conditions.Describe(conditions, compact)
 	local groups = conditions
 	if type(conditions) ~= "table" then groups = Conditions.Read(conditions) end
 	local lines = {}
@@ -467,6 +468,9 @@ function Conditions.Describe(conditions)
 		text = "Always, on your target."
 	elseif #lines == 1 then
 		text = capital(lines[1]) .. "."
+	elseif #lines > 1 and compact then
+		for i = 2, #lines do lines[i] = lines[i] == "otherwise" and "otherwise always" or ("otherwise " .. lines[i]) end
+		text = capital(table.concat(lines, "; ")) .. "."
 	elseif #lines > 1 then
 		for i, line in ipairs(lines) do lines[i] = "- " .. capital(line) end
 		text = "The first of these that holds:\n" .. table.concat(lines, "\n")

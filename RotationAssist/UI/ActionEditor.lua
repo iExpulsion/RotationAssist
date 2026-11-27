@@ -226,24 +226,34 @@ local function createDetail(parent, width, height)
 	d.status:SetPoint("TOPLEFT", d.title, "BOTTOMLEFT", 0, -4)
 	d.status:SetWidth(inner)
 
-	-- a readback that opens its sheet when clicked
-	local function readback(open)
+	-- a readback that opens its sheet when clicked; hovering shows all of it (b.full) when it's too long to fit
+	local function readback(lines, title, open)
 		local b = CreateFrame("Button", nil, d)
-		b:SetSize(inner, 2 * 14)
+		b:SetSize(inner, lines * 14)
 		b.text = S.Text(b, "small")
 		b.text:SetPoint("TOPLEFT")
 		b.text:SetPoint("BOTTOMRIGHT")
 		b.text:SetJustifyH("LEFT")
 		b.text:SetJustifyV("TOP")
 		b:SetScript("OnClick", open)
+		b:SetScript("OnEnter", function(self)
+			if self.full then
+				GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+				GameTooltip:AddLine(title, 1, 1, 1)
+				GameTooltip:AddLine(self.full, 0.8, 0.8, 0.8, true)
+				GameTooltip:AddLine("Click to edit.", 0.5, 0.5, 0.5)
+				GameTooltip:Show()
+			end
+		end)
+		b:SetScript("OnLeave", function() GameTooltip:Hide() end)
 		return b
 	end
 	d.whenLabel = label(d, "Conditions")
-	d.whenReadback = readback(function() Editor.OpenConditions() end)
+	d.whenReadback = readback(2, "Conditions", function() Editor.OpenConditions() end)
 	d.editWhen = S.Button(d, "Edit Conditions", "secondary", 130, function() Editor.OpenConditions() end,
 		"Where the spell is cast and when the game lets this line run: the target, modifier keys, stance and more.")
 	d.triggerLabel = label(d, "Trigger")
-	d.readback = readback(function() Editor.OpenTrigger() end)
+	d.readback = readback(3, "Trigger", function() Editor.OpenTrigger() end)
 	d.triggerRow = CreateFrame("Frame", nil, d)
 	d.triggerRow:SetSize(inner, CONTROL_H)
 	d.editTrigger = S.Button(d.triggerRow, "Edit Trigger", "secondary", 110, function() Editor.OpenTrigger() end,
@@ -989,8 +999,9 @@ local function renderDetail(rotation, state, compiled)
 		local triggered = action.kind == "spell" and RA.Triggers.Has(action.trigger)
 		local placed = triggered and not action.offGcd
 		layoutDetail(d, action.kind, placed)
-		d.readback.text:SetText(triggered and (RA.Triggers.Describe(action.trigger) or S.Hex(C.accent, RA.Spells.Trim(action.trigger)))
+		d.readback.text:SetText(triggered and (RA.Triggers.Describe(action.trigger, true) or S.Hex(C.accent, RA.Spells.Trim(action.trigger)))
 			or S.Hex(C.muted, "None: the spell is tried in its place on every press."))
+		d.readback.full = triggered and (RA.Triggers.Describe(action.trigger) or RA.Spells.Trim(action.trigger)) or nil
 		d.editTrigger.label:SetText(triggered and "Edit Trigger" or "Add Trigger")
 		if placed then d.place:Show() else d.place:Hide() end
 		d.place:SetText(PLACES[action.keep and 2 or 1].text)
@@ -1008,7 +1019,8 @@ local function renderDetail(rotation, state, compiled)
 			.. (#problems > 0 and ("  " .. S.Hex(C.warn, problems[1])) or ""))
 		local when = RA.Spells.Trim(action.when)
 		d.whenReadback.text:SetText(when == "" and S.Hex(C.muted, "None: the line always runs, on your target.")
-			or RA.Conditions.Describe(when) or S.Hex(C.accent, when))
+			or RA.Conditions.Describe(when, true) or S.Hex(C.accent, when))
+		d.whenReadback.full = when ~= "" and (RA.Conditions.Describe(when) or when) or nil
 		setText(d.spells, RA.Spells.ListText(action.spells))
 		setText(d.reset, action.reset)
 		d.offGcd:SetChecked(action.offGcd)
