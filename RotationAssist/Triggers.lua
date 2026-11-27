@@ -295,11 +295,13 @@ local COUNT_SAYS = {
 }
 local VALUE_SAYS = {
 	power = "your power is %s",
-	hp = "your health is %s%%",
-	targethp = "the target's health is %s%%",
+	hp = "your health is %s",
+	targethp = "the target's health is %s",
 	combo = "you have %s combo points",
 	enemies = "%s enemies are in the fight",
 }
+-- values given in percent, the sign going on the number ("50% or less")
+local PERCENT = { hp = true, targethp = true }
 
 -- One term in plain English, starting in lower case.
 function Triggers.DescribeTerm(p)
@@ -315,7 +317,7 @@ function Triggers.DescribeTerm(p)
 	elseif shape == "count" then
 		text = COUNT_SAYS[p.kind]:format(COUNT_WORDS[p.op]:format(number(p.value)), p.name)
 	else
-		text = VALUE_SAYS[p.kind]:format(VALUE_WORDS[p.op]:format(number(p.value)))
+		text = VALUE_SAYS[p.kind]:format(VALUE_WORDS[p.op]:format(number(p.value) .. (PERCENT[p.kind] and "%" or "")))
 	end
 	return text
 end

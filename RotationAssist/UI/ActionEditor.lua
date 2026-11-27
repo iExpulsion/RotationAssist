@@ -229,6 +229,7 @@ end
 local function section(parent, width, text, button, onClick, tooltip)
 	local h = CreateFrame("Frame", nil, parent)
 	h:SetSize(width, button and CONTROL_H or 16)
+	h.isSection = true
 	h.label = W.Heading(h, text)
 	h.label:SetPoint("LEFT")
 	local rule, thickness = S.Divider(h, "heading")
@@ -371,7 +372,8 @@ local function layoutDetail(d, kind, placed)
 				w:ClearAllPoints()
 				w:SetPoint("TOPLEFT", d.pad, -y)
 				w:Show()
-				y = y + (w.GetHeight and w:GetHeight() or 12) + 4
+				-- a section heading gets a full gap under it, so its button doesn't crowd the text below
+				y = y + (w.GetHeight and w:GetHeight() or 12) + (w.isSection and GAP or 4)
 			else
 				w:Hide()
 			end
