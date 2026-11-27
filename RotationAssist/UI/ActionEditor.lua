@@ -209,6 +209,42 @@ local function label(parent, text)
 	return fs
 end
 
+-- A divider `width` wide with a word in the middle (d.text), rules running out to both edges: "or" between groups.
+function Editor.Divider(parent, width)
+	local d = CreateFrame("Frame", nil, parent)
+	d:SetSize(width, 16)
+	d.text = S.Text(d, "small", C.muted)
+	d.text:SetPoint("CENTER")
+	for _, side in ipairs({ "LEFT", "RIGHT" }) do
+		local rule, thickness = S.Divider(d, "heading")
+		rule:SetHeight(thickness)
+		rule:SetPoint(side, d, side, 0, 0)
+		rule:SetPoint(side == "LEFT" and "RIGHT" or "LEFT", d.text, side, side == "LEFT" and -8 or 8, 0)
+	end
+	return d
+end
+
+-- A section heading `width` wide: the label in the heading color and a rule running to the right edge, or to a
+-- button at the right end (h.button) when given its label. h.label, h.rule.
+local function section(parent, width, text, button, onClick, tooltip)
+	local h = CreateFrame("Frame", nil, parent)
+	h:SetSize(width, button and CONTROL_H or 16)
+	h.label = W.Heading(h, text)
+	h.label:SetPoint("LEFT")
+	local rule, thickness = S.Divider(h, "heading")
+	rule:SetHeight(thickness)
+	rule:SetPoint("LEFT", h.label, "RIGHT", 6, 0)
+	if button then
+		h.button = S.Button(h, button, "secondary", 70, onClick, tooltip)
+		h.button:SetPoint("RIGHT")
+		rule:SetPoint("RIGHT", h.button, "LEFT", -6, 0)
+	else
+		rule:SetPoint("RIGHT")
+	end
+	h.rule = rule
+	return h
+end
+
 local function createDetail(parent, width, height)
 	local d = CreateFrame("Frame", nil, parent)
 	d:SetSize(width, height)
@@ -248,22 +284,19 @@ local function createDetail(parent, width, height)
 		b:SetScript("OnLeave", function() GameTooltip:Hide() end)
 		return b
 	end
-	d.whenLabel = label(d, "Conditions")
-	d.whenReadback = readback("Conditions", function() Editor.OpenConditions() end)
-	d.editWhen = S.Button(d, "Edit Conditions", "secondary", 130, function() Editor.OpenConditions() end,
+	d.whenHead = section(d, inner, "Conditions", "Edit", function() Editor.OpenConditions() end,
 		"Where the spell is cast and when the game lets this line run: the target, modifier keys, stance and more.")
-	d.triggerLabel = label(d, "Trigger")
-	d.readback = readback("Trigger", function() Editor.OpenTrigger() end)
-	d.triggerRow = CreateFrame("Frame", nil, d)
-	d.triggerRow:SetSize(inner, CONTROL_H)
-	d.editTrigger = S.Button(d.triggerRow, "Edit Trigger", "secondary", 110, function() Editor.OpenTrigger() end,
+	d.editWhen = d.whenHead.button
+	d.whenReadback = readback("Conditions", function() Editor.OpenConditions() end)
+	d.triggerHead = section(d, inner, "Trigger", "Edit", function() Editor.OpenTrigger() end,
 		"Build the trigger from conditions, or type it.")
-	d.editTrigger:SetPoint("LEFT")
-	d.place = S.Dropdown(d.triggerRow, inner - 110 - GAP, function(value)
+	d.editTrigger = d.triggerHead.button
+	d.readback = readback("Trigger", function() Editor.OpenTrigger() end)
+	d.place = S.Dropdown(d, 200, function(value)
 		edit(function(a) a.keep = value == "keep" or nil end)
 	end)
-	d.place:SetPoint("LEFT", d.editTrigger, "RIGHT", GAP, 0)
 	d.place:SetOptions(PLACES)
+	d.optionsHead = section(d, inner, "Options")
 	d.jumps = S.Text(d, "small", C.muted)
 	d.jumps:SetWidth(inner)
 	d.jumps:SetHeight(14)
@@ -319,15 +352,16 @@ end
 -- whose When Met choice matters (not off the global cooldown).
 local function layoutDetail(d, kind, placed)
 	local controls = {
-		{ d.whenLabel, d.whenReadback, d.editWhen, show = kind == "spell" or kind == "sequence" },
-		{ d.triggerLabel, d.readback, d.triggerRow, show = kind == "spell" },
-		{ d.jumps, show = kind == "spell" and placed },
+		{ d.whenHead, d.whenReadback, show = kind == "spell" or kind == "sequence" },
+		{ d.triggerHead, d.readback, show = kind == "spell" },
+		{ d.place, d.jumps, show = kind == "spell" and placed },
 		{ d.spellsLabel, d.spells, show = kind == "sequence" },
 		{ d.resetLabel, d.reset, show = kind == "sequence" },
+		{ d.textLabel, d.text, show = kind == "steps" or kind == "macro" },
+		{ d.optionsHead, show = kind ~= "steps" and kind ~= "none" },
 		{ d.once, show = kind == "sequence" },
 		{ d.offGcd, show = kind == "spell" or kind == "macro" },
 		{ d.moving, show = kind == "spell" },
-		{ d.textLabel, d.text, show = kind == "steps" or kind == "macro" },
 	}
 	local y = d.pad + 16 + 4 + 12 + PAD
 	for _, group in ipairs(controls) do
@@ -578,12 +612,13 @@ local function fillTrigger(row, term)
 	row.op:SetOptions(opOptions)
 	row.op:SetText(optionText(opOptions, term.op or ""))
 	setInput(row.value, term.value and tostring(term.value) or "")
+	-- the number keeps its column when unused, so every row's comparison lines up
 	return {
 		{ row.what, true },
 		{ row.has, shape == "aura" },
 		{ row.name, shape ~= "value", true },
 		{ row.op, true },
-		{ row.value, term.op ~= nil },
+		{ row.value, term.op ~= nil, false, true },
 	}
 end
 
@@ -612,7 +647,8 @@ local function fillCondition(row, term)
 	}
 end
 
--- Lays a row's controls left to right, showing only the ones its kind of term uses.
+-- Lays a row's controls left to right, showing only the ones its kind of term uses. Each control is { widget,
+-- shown, stretch, keep }: stretch takes the spare width; keep holds the control's place while it's hidden.
 local function fillRow(row, term)
 	row.term = term
 	local controls = sheet.def.fill(row, term)
@@ -621,7 +657,7 @@ local function fillRow(row, term)
 	local spare = ROW_W - COL.remove - GAP
 	for _, c in ipairs(controls) do
 		shown[c[1]] = c[2]
-		if c[2] and not c[3] then spare = spare - c[1]:GetWidth() - GAP end
+		if (c[2] or c[4]) and not c[3] then spare = spare - c[1]:GetWidth() - GAP end
 	end
 	for _, c in ipairs(controls) do
 		if c[3] then
@@ -638,10 +674,10 @@ local function fillRow(row, term)
 		if c[2] then
 			c[1]:SetPoint("LEFT", row, "LEFT", x, 0)
 			c[1]:Show()
-			x = x + c[1]:GetWidth() + GAP
 		else
 			c[1]:Hide()
 		end
+		if c[2] or c[4] then x = x + c[1]:GetWidth() + GAP end
 	end
 	row.remove:ClearAllPoints()
 	row.remove:SetPoint("RIGHT")
@@ -654,7 +690,7 @@ local SHEETS = {
 		field = "trigger",
 		title = "Trigger for %s",
 		intro = "Rotation Assist checks these as you press. While they hold and the spell is ready, the spell can be picked.",
-		orHeading = "Or All of These",
+		orWord = "or",
 		orTip = "Add a group of conditions that will do instead of the ones above.",
 		placeholder = "None, or Like [buff:Clearcasting]",
 		guide = { "Trigger", TRIGGER_GUIDE },
@@ -676,7 +712,7 @@ local SHEETS = {
 		field = "when",
 		title = "Conditions for %s",
 		intro = "The game checks these as you press. The first group that holds runs the line, on its unit; when none holds, the line is skipped.",
-		orHeading = "Otherwise, All of These",
+		orWord = "otherwise",
 		orTip = "Add a group the game tries when the ones above don't hold, such as one that casts on you instead.",
 		placeholder = "Always, or Like [harm] or [mod:shift]",
 		guide = { "Conditions", CONDITIONS_GUIDE },
@@ -719,7 +755,10 @@ local function createSheet()
 	local pad = S.metrics.inset
 	S.RefreshFonts()
 	local f = CreateFrame("Frame", "RotationAssistTriggerFrame", UIParent)
-	f:SetWidth(SHEET_W + 2 * (pad - PAD))
+	-- each group's rows sit in a well, wp in from its edges however thick the skin draws it
+	f.wp = 6 + S.metrics.wellInset
+	f.contentW = ROW_W + 2 * f.wp
+	f:SetWidth(f.contentW + 2 * pad)
 	f:SetPoint("TOP", UIParent, "TOP", 0, -140)
 	f:SetFrameStrata("DIALOG")
 	f:SetToplevel(true)
@@ -746,17 +785,18 @@ local function createSheet()
 	f.title = S.Text(f, "large")
 	-- centered on the Edit as Text button beside it, so the two read as one header row
 	f.title:SetPoint("LEFT", f, "TOPLEFT", pad, -(pad + CONTROL_H / 2))
-	f.title:SetWidth(ROW_W - 130)
+	f.title:SetWidth(f.contentW - 130)
 	f.title:SetWordWrap(false)
 	f.mode = S.Button(f, "Edit as Text", "secondary", 120, function() setTextMode(not f.textMode) end,
 		"Switch between the rows and the text they make.")
 	f.mode:SetPoint("TOPRIGHT", -pad, -pad)
 	f.intro = S.Text(f, "small", C.muted)
-	f.intro:SetWidth(ROW_W)
+	f.intro:SetWidth(f.contentW)
 	f.intro:SetJustifyH("LEFT")
 
-	f.rows, f.headings, f.ands = {}, {}, {}
-	f.orButton = S.Button(f, "Or", "secondary", 80, function()
+	-- per group: its heading (with + And), the well its rows sit in, and the divider above it
+	f.rows, f.heads, f.wells, f.dividers = {}, {}, {}, {}
+	f.orButton = S.Button(f, "+ Or", "secondary", 80, function()
 		local last = f.groups[#f.groups]
 		f.groups[#f.groups + 1] = { newTerm(last and last[#last]) }
 		sheetRender()
@@ -768,7 +808,7 @@ local function createSheet()
 	end)
 	f.orButton:HookScript("OnLeave", function() GameTooltip:Hide() end)
 
-	f.text = S.Input(f, "RotationAssistSheetText", ROW_W, "", 255, 4)
+	f.text = S.Input(f, "RotationAssistSheetText", f.contentW, "", 255, 4)
 	f.text:SetScript("OnTextChanged", function(self, userInput)
 		self:UpdatePlaceholder()
 		local action = userInput and sheetAction()
@@ -783,11 +823,11 @@ local function createSheet()
 
 	f.readLabel = label(f, "Reads As")
 	f.readback = S.Wrapped(f, "small")
-	f.readback:SetWidth(ROW_W)
+	f.readback:SetWidth(f.contentW)
 	f.readback:SetJustifyH("LEFT")
 
 	f.note = S.Text(f, "small", C.muted)
-	f.note:SetWidth(ROW_W - 2 * (90 + GAP))
+	f.note:SetWidth(f.contentW - 2 * (90 + GAP))
 	f.note:SetJustifyH("LEFT")
 	f.done = S.Button(f, "Done", "primary", 90, function() f:Hide() end)
 	f.clear = S.Button(f, "Clear", "danger", 90, function()
@@ -827,33 +867,52 @@ sheetRender = function()
 	f.text.placeholder:SetText(def.placeholder)
 	f.mode.label:SetText(f.textMode and "Edit as Conditions" or "Edit as Text")
 
+	-- each group: a divider naming how it joins the one above, its heading with + And, and its rows in a well
 	local used, full = 0, termCount() >= MAX_TERMS
+	local wp, rowH = f.wp, CONTROL_H + 4
 	for gi, group in ipairs(f.textMode and {} or f.groups) do
-		local heading = f.headings[gi] or W.Heading(f, "")
-		f.headings[gi] = heading
-		heading:SetText(gi == 1 and "All of These" or def.orHeading)
-		place(heading, 14 + 4)
+		if gi > 1 then
+			local divider = f.dividers[gi] or Editor.Divider(f, f.contentW)
+			f.dividers[gi] = divider
+			divider.text:SetText(def.orWord)
+			place(divider, 16 + GAP)
+		end
+		local head = f.heads[gi] or section(f, f.contentW, "All of These", "+ And", function()
+			local g = f.groups[gi]
+			g[#g + 1] = newTerm(g[#g])
+			sheetRender()
+		end, "Add a condition that must hold as well.")
+		f.heads[gi] = head
+		if full then head.button:Disable() else head.button:Enable() end
+		place(head, CONTROL_H + 4)
+		local well = f.wells[gi]
+		if not well then
+			well = CreateFrame("Frame", nil, f)
+			S.Well(well)
+			f.wells[gi] = well
+		end
+		well:SetSize(f.contentW, #group * rowH - 4 + 2 * wp)
+		place(well, #group * rowH - 4 + 2 * wp + GAP)
 		for ti, term in ipairs(group) do
 			used = used + 1
 			local row = f.rows[used] or createRow(f)
 			f.rows[used] = row
 			row.group, row.index = gi, ti
+			row:SetParent(well)
+			row:ClearAllPoints()
+			row:SetPoint("TOPLEFT", well, "TOPLEFT", wp, -(wp + (ti - 1) * rowH))
+			row:Show()
 			fillRow(row, term)
-			place(row, CONTROL_H + 4)
 		end
-		local andButton = f.ands[gi] or S.Button(f, "And", "secondary", 80, function()
-			local g = f.groups[gi]
-			g[#g + 1] = newTerm(g[#g])
-			sheetRender()
-		end, "Add a condition that must hold as well.")
-		f.ands[gi] = andButton
-		if full then andButton:Disable() else andButton:Enable() end
-		place(andButton, CONTROL_H + GAP)
 	end
+	local groupsShown = f.textMode and 0 or #f.groups
 	for i = used + 1, #f.rows do f.rows[i]:Hide() end
-	for i = (f.textMode and 0 or #f.groups) + 1, #f.headings do
-		f.headings[i]:Hide()
-		f.ands[i]:Hide()
+	for i = groupsShown + 1, #f.heads do
+		f.heads[i]:Hide()
+		f.wells[i]:Hide()
+	end
+	for i, divider in pairs(f.dividers) do
+		if i > groupsShown then divider:Hide() end
 	end
 	if f.textMode then
 		f.orButton:Hide()
@@ -862,7 +921,7 @@ sheetRender = function()
 	else
 		f.text:Hide()
 		if full then f.orButton:Disable() else f.orButton:Enable() end
-		f.orButton.label:SetText(#f.groups == 0 and "Add" or "Or")
+		f.orButton.label:SetText(#f.groups == 0 and "+ Add" or "+ Or")
 		place(f.orButton, CONTROL_H + PAD)
 	end
 
@@ -1029,8 +1088,8 @@ local function renderDetail(rotation, state, compiled)
 		d.readback.text:SetText(triggered and (RA.Triggers.Describe(action.trigger, true) or S.Hex(C.accent, RA.Spells.Trim(action.trigger)))
 			or S.Hex(C.muted, "None: the spell is tried in its place on every press."))
 		d.readback.full = triggered and (RA.Triggers.Describe(action.trigger) or RA.Spells.Trim(action.trigger)) or nil
-		d.editTrigger.label:SetText(triggered and "Edit Trigger" or "Add Trigger")
-		if placed then d.place:Show() else d.place:Hide() end
+		d.editTrigger.label:SetText(triggered and "Edit" or "Add")
+		d.editWhen.label:SetText(RA.Spells.Trim(action.when) ~= "" and "Edit" or "Add")
 		d.place:SetText(PLACES[action.keep and 2 or 1].text)
 		local jumps = Editor.JumpsAhead(mode.actions, state.action)
 		d.jumps:SetText(action.keep and "While met, it's tried in its place in the list."

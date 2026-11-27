@@ -114,11 +114,12 @@ on the **Modes** tab, drag a mode by the grip beside its number.
 Select an action to change it. **Off the Global Cooldown** lets a line fire alongside whatever else casts on that
 press, which suits trinkets, racials, cooldowns like Combustion, and next-swing attacks like Heroic Strike. With
 Smart Picks, give one a trigger to hold it back: Heroic Strike with `[power>=50]` only queues with rage to spare.
-**Edit Conditions** sets the macro conditions the game checks for the line, as rows like the trigger's: **Cast On**
-Yourself casts a spell on you, like Power Word: Shield, while you have an enemy targeted. With Smart Picks, these
-also go out of combat with nothing targeted, so you can buff before a pull. Rows in a group must all hold, so Cast
-On Yourself with Holding a Key: Shift casts on you only while you hold Shift; **Or** adds a group the game tries
-when the one above doesn't hold, and **Otherwise (Always)** makes a group that always does. The pane reads the
+The **Add** (or **Edit**) button beside **Conditions** sets the macro conditions the game checks for the line, as rows
+like the trigger's: **Cast On** Yourself casts a spell on you, like Power Word: Shield, while you have an enemy
+targeted. With Smart Picks, these also go out of combat with nothing targeted, so you can buff before a pull. Rows in
+a group must all hold, so Cast On Yourself with Holding a Key: Shift casts on you only while you hold Shift; **+ Or**
+adds a group the game tries when the one above doesn't hold, and **Otherwise (Always)** makes a group that always
+does. The pane reads the
 conditions back in plain English, and **Edit as Text** takes macro syntax (`[mod:shift,@player][]`), with the common
 conditions listed when you hover over the box.
 
@@ -141,10 +142,11 @@ attacking for you.
 ### 3. Add Triggers
 
 A plain list can't see buffs or debuffs, so Pyroblast would go off without Hot Streak, and Living Bomb would be
-recast while it's still ticking. A trigger fixes that. Select the spell and press **Add Trigger**: each row picks
-what to check (a buff on you, your debuff on the target, your power and so on), whether it should be there or
-missing, and the name, and the sheet reads the whole trigger back in plain English. **And** adds a condition that
-must hold too; **Or** adds a group that will do instead. **Edit as Text** lets you type it instead:
+recast while it's still ticking. A trigger fixes that. Select the spell and press **Add** beside **Trigger**: each row
+picks what to check (a buff on you, your debuff on the target, your power and so on), whether it should be there or
+missing, and the name, and the sheet reads the whole trigger back in plain English. A group's rows sit in one box
+and must all hold; **+ And** adds one, and **+ Or** adds a box that will do instead. **Edit as Text** lets you type
+it instead:
 
 | Spell       | Trigger                  | Means                                                     |
 |-------------|--------------------------|-----------------------------------------------------------|
