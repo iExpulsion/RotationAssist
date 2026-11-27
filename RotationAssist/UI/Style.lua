@@ -1,4 +1,4 @@
--- Vendored from MaterialCraftUI v1.8.1. Change it there, then run tools/sync_style.py.
+-- Vendored from MaterialCraftUI v1.8.1-2-g77c0331. Change it there, then run tools/sync_style.py.
 -- MIT License, Copyright (c) 2026 Expulsion: https://github.com/iExpulsion/MaterialCraftUI
 -- MaterialCraftUI: a flat dark style kit for WoW 3.3.5 addons on Material 3 color roles: one accent color, 1px
 -- borders, state layers and a few button kinds. Each addon ships its own copy, listed in its .toc, and reads it
@@ -901,9 +901,13 @@ local function showPreview(menu, card)
 	end
 end
 
+-- The height of a heading in a dropdown menu: shorter than an option, since it's only a label.
+S.MENU_HEADING_H = 20
+
 -- Flat dropdown: a button showing the current choice that opens a menu below it. SetOptions takes
 -- { { value, text, tooltip, preview } }, preview() giving a frame shown beside the menu while the item is hovered,
--- in place of its tooltip; picking one calls onSelect(value) and closes the menu. Opening one closes the others.
+-- in place of its tooltip; picking one calls onSelect(value) and closes the menu. An option { heading = text } is a
+-- section label over the options after it, dim with a rule, which can't be picked. Opening one closes the others.
 function S.Dropdown(parent, width, onSelect)
 	local b = S.AddArrow(S.Button(parent, "", "secondary", width))
 
@@ -912,6 +916,8 @@ function S.Dropdown(parent, width, onSelect)
 	menu:SetFrameStrata("FULLSCREEN_DIALOG")
 	menu:SetPoint("TOPLEFT", b, "BOTTOMLEFT", 0, -2)
 	menu:SetWidth(width)
+	-- a long menu near the bottom of the screen moves up rather than running off it
+	menu:SetClampedToScreen(true)
 	S.Frame(menu, "menu")
 	menu:EnableMouse(true)
 	menu:Hide()
@@ -922,18 +928,13 @@ function S.Dropdown(parent, width, onSelect)
 
 	function b:SetText(text) self.label:SetText(text) end
 	function b:SetOptions(options)
+		local m, y = S.metrics.menuInset, S.metrics.menuInset
 		for i, opt in ipairs(options) do
 			local item = self.items[i]
 			if not item then
 				item = CreateFrame("Button", nil, menu)
-				item:SetHeight(S.CONTROL_H)
-				local m = S.metrics.menuInset
-				item:SetPoint("TOPLEFT", m, -m - (i - 1) * S.CONTROL_H)
-				item:SetPoint("TOPRIGHT", -m, -m - (i - 1) * S.CONTROL_H)
 				S.Highlight(item)
 				item.text = S.Text(item, "small")
-				item.text:SetPoint("LEFT", 8, 0)
-				item.text:SetPoint("RIGHT", -8, 0)
 				item:SetScript("OnClick", function(it)
 					menu:Hide()
 					onSelect(it.value)
@@ -953,12 +954,37 @@ function S.Dropdown(parent, width, onSelect)
 				end)
 				self.items[i] = item
 			end
+			local heading = opt.heading ~= nil
+			local h = heading and S.MENU_HEADING_H or S.CONTROL_H
+			item:SetHeight(h)
+			item:ClearAllPoints()
+			item:SetPoint("TOPLEFT", m, -y)
+			item:SetPoint("TOPRIGHT", -m, -y)
+			y = y + h
+			-- a heading takes no mouse, so it never lights up and a click on it leaves the menu open
+			item:EnableMouse(not heading)
 			item.value, item.tooltip, item.preview = opt.value, opt.tooltip, opt.preview
-			item.text:SetText(opt.text)
+			item.text:SetText(heading and opt.heading or opt.text)
+			item.text:SetTextColor(unpack(heading and S.colors.outline or S.colors.text))
+			item.text:ClearAllPoints()
+			item.text:SetPoint("LEFT", 8, heading and -2 or 0)
+			if heading then
+				if not item.rule then
+					local rule, thickness = line(item, "heading")
+					rule:SetHeight(thickness)
+					rule:SetPoint("LEFT", item.text, "RIGHT", 6, 0)
+					rule:SetPoint("RIGHT", item, "RIGHT", -8, 0)
+					item.rule = rule
+				end
+				item.rule:Show()
+			else
+				item.text:SetPoint("RIGHT", -8, 0)
+				if item.rule then item.rule:Hide() end
+			end
 			item:Show()
 		end
 		for i = #options + 1, #self.items do self.items[i]:Hide() end
-		menu:SetHeight(#options * S.CONTROL_H + 2 * S.metrics.menuInset)
+		menu:SetHeight(y + m)
 	end
 	b:SetScript("OnClick", function()
 		local open = menu:IsShown()
