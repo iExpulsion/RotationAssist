@@ -1099,9 +1099,11 @@ local function renderDetail(rotation, state, compiled)
 		d.editWhen.label:SetText(RA.Spells.Trim(action.when) ~= "" and "Edit" or "Add")
 		d.place:SetText(PLACES[action.keep and 2 or 1].text)
 		local jumps = Editor.JumpsAhead(mode.actions, state.action)
+		-- the names of the actions it goes ahead of, colored like the readbacks' names
+		for i, name in ipairs(jumps) do jumps[i] = S.Hex(C.accent, name) end
 		d.jumps:SetText(action.keep and "While met, it's tried in its place in the list."
 			or #jumps == 0 and "While met, it's tried first."
-			or ("While met, it goes ahead of %s."):format(S.Hex(C.text, Editor.NameList(jumps))))
+			or ("While met, it goes ahead of %s."):format(Editor.NameList(jumps)))
 		d.title:SetText(RA.Rotation.ActionText(action))
 		local status = compiled.status[state.action]
 		local kindText = ({ spell = "Spell", sequence = "Sequence", steps = "Steps", macro = "Macro" })[action.kind]
