@@ -138,7 +138,10 @@ attacking for you.
 ### 3. Add Triggers
 
 A plain list can't see buffs or debuffs, so Pyroblast would go off without Hot Streak, and Living Bomb would be
-recast while it's still ticking. A trigger fixes that. Select the spell and fill in **Trigger**:
+recast while it's still ticking. A trigger fixes that. Select the spell and press **Add Trigger**: each row picks
+what to check (a buff on you, your debuff on the target, your power and so on), whether it should be there or
+missing, and the name, and the sheet reads the whole trigger back in plain English. **And** adds a condition that
+must hold too; **Or** adds a group that will do instead. **Edit as Text** lets you type it instead:
 
 | Spell       | Trigger                  | Means                                                     |
 |-------------|--------------------------|-----------------------------------------------------------|
@@ -146,9 +149,11 @@ recast while it's still ticking. A trigger fixes that. Select the spell and fill
 | Living Bomb | `[nodebuff:Living Bomb]` | Only when your Living Bomb isn't on the target            |
 
 While a spell's trigger is met, it jumps the queue and the Rotation Button glows. While it isn't, the spell is
-skipped. A spell with no trigger is always a candidate. To keep a spell where it is in the list and only use the
-trigger to allow it, turn on **Keep Its Place**: Slam with `[buff:Slam!]` then waits below Bloodthirst and
-Whirlwind instead of going first whenever the proc is up. Some more you can use:
+skipped. A spell with no trigger is always a candidate. The pane under the trigger names the spells it jumps
+ahead of. To keep a spell where it is in the list and only use the trigger to allow it, set **When Met** to
+**Stay in Place**: Slam with `[buff:Slam!]` then waits below Bloodthirst and Whirlwind instead of going first
+whenever the proc is up, and a Sunder Armor that stacks with `[debuffstacks:Sunder Armor<5]` only fills the gaps
+between them. Some more you can use:
 
 - `[nodebuff:X<3]`: your debuff is missing or has under 3 seconds left, to refresh before it falls off
 - `[nobuff:X]`: a self-buff is missing
@@ -163,7 +168,7 @@ Whirlwind instead of going first whenever the proc is up. Some more you can use:
 - `[a, b]` means a and b; `[a][b]` means a or b
 - Names ignore capitals, so `[nobuff:Hunger for Blood]` finds Hunger For Blood
 
-Hover over the Trigger box in game for the full list.
+Under **Edit as Text**, hover over the text box for the full list.
 
 ![The Trigger box for Pestilence with its tooltip open, listing every trigger term](docs/images/trigger.png)
 

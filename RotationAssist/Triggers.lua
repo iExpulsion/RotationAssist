@@ -98,77 +98,251 @@ local VALUES = {
 	combo = function() return GetComboPoints("player", "target") or 0 end,
 }
 
--- One term to a test function, or nil and why it isn't understood.
-local function parseTerm(term)
-	local test, problem
+-- The kinds of term, in the order the trigger builder lists them. shape: "aura" (has it or not, and optionally its
+-- time left, or for cast the seconds since), "count" (a name and a count to compare) or "value" (a number).
+Triggers.TERMS = {
+	{ kind = "buff", shape = "aura", label = "Buff on You" },
+	{ kind = "selfdebuff", shape = "aura", label = "Debuff on You" },
+	{ kind = "debuff", shape = "aura", label = "Your Debuff on the Target" },
+	{ kind = "anydebuff", shape = "aura", label = "Anyone's Debuff on the Target" },
+	{ kind = "cast", shape = "aura", label = "Your Cast on the Target" },
+	{ kind = "stacks", shape = "count", label = "Stacks of a Buff on You" },
+	{ kind = "debuffstacks", shape = "count", label = "Stacks of Your Debuff" },
+	{ kind = "anydebuffstacks", shape = "count", label = "Stacks of Anyone's Debuff" },
+	{ kind = "power", shape = "value", label = "Your Power" },
+	{ kind = "hp", shape = "value", label = "Your Health %" },
+	{ kind = "targethp", shape = "value", label = "Target's Health %" },
+	{ kind = "combo", shape = "value", label = "Combo Points" },
+	{ kind = "enemies", shape = "value", label = "Enemies in the Fight" },
+	{ kind = "without", shape = "count", label = "Enemies Without Your Aura" },
+}
+local SHAPES = {}
+for _, t in ipairs(Triggers.TERMS) do SHAPES[t.kind] = t.shape end
+Triggers.SHAPES = SHAPES
+
+-- One term's text to its parts { kind, no, name, op, value }, or nil and why it isn't understood. Aura terms
+-- compare their time with < <= > >= only; "=" there is part of the name, as it always was.
+local function readTerm(term)
+	local parts, problem
 	local no, kind, rest = term:match("^(n?o?)(%a+):%s*(.+)$")
-	local missing, countOp, count = (rest or ""):match("^(.-)%s*([<>=]=?)%s*(%d+%.?%d*)$")
-	if no == "" and kind == "without" and missing and COMPARE[countOp] then
-		local limit = tonumber(count)
-		missing = trim(missing)
-		test = function() return COMPARE[countOp](RA.Enemies.Without(missing), limit) end
+	local name, op, number = (rest or ""):match("^(.-)%s*([<>=]=?)%s*(%d+%.?%d*)$")
+	local shape = SHAPES[kind]
+	if shape == "count" and no == "" and name and COMPARE[op] then
+		parts = { kind = kind, name = trim(name), op = op, value = tonumber(number) }
 	elseif kind == "without" then
 		problem = ("\"%s\" Needs a Count, Like without:Corruption>=1"):format(term)
-	elseif no == "" and STACKS[kind] and missing and COMPARE[countOp] then
-		local limit = tonumber(count)
-		missing = trim(missing)
-		test = function()
-			local can = kind == "stacks" or (UnitExists("target") and UnitCanAttack("player", "target"))
-			return can and COMPARE[countOp](stacks(kind, missing), limit) == true
-		end
-	elseif STACKS[kind] then
+	elseif shape == "count" then
 		problem = ("\"%s\" Needs a Count, Like stacks:Maelstrom Weapon>=5"):format(term)
-	elseif kind == "buff" or kind == "selfdebuff" or kind == "debuff" or kind == "anydebuff" or kind == "cast" then
-		local negate = no == "no"
-		local name, op, number = rest:match("^(.-)%s*([<>]=?)%s*(%d+%.?%d*)$")
-		name = trim(name or rest)
-		if no ~= "" and not negate then
-			problem = ("\"%s\" Isn't a Trigger"):format(term)
-		else
-			local limit = op and tonumber(number)
-			test = function()
-				-- debuff and cast terms need an enemy target, so nodebuff doesn't light up with nothing targeted
-				local can = kind == "buff" or kind == "selfdebuff" or (UnitExists("target") and UnitCanAttack("player", "target"))
-				local present, left = aura(kind, name)
-				local holds = present
-				if limit then holds = present and COMPARE[op](left, limit) end
-				if negate then holds = not present or (limit ~= nil and holds) end
-				return can and holds == true
-			end
-		end
+	elseif shape == "aura" and (no == "" or no == "no") then
+		local timed = name and op ~= "=" and COMPARE[op]
+		parts = { kind = kind, no = no == "no", name = trim(timed and name or rest), op = timed and op or nil, value = timed and tonumber(number) or nil }
 	else
-		local key, op, number = term:match("^(%a+)%s*([<>=]=?)%s*(%d+%.?%d*)$")
-		if key and VALUES[key] and COMPARE[op] then
-			local limit = tonumber(number)
-			test = function() return COMPARE[op](VALUES[key](), limit) end
+		local key, valueOp, valueNumber = term:match("^(%a+)%s*([<>=]=?)%s*(%d+%.?%d*)$")
+		if key and SHAPES[key] == "value" and COMPARE[valueOp] then
+			parts = { kind = key, op = valueOp, value = tonumber(valueNumber) }
 		else
 			problem = ("\"%s\" Isn't a Trigger"):format(term)
 		end
 	end
-	return test, problem
+	return parts, problem
 end
 
--- Trimmed text to { groups = { { test, ... } }, problems = { text } }; text without brackets is one group.
-local function build(text)
-	local parsed = { groups = {}, problems = {} }
+-- A term's parts to its test function.
+local function compile(p)
+	local test
+	local kind, name, op, limit = p.kind, p.name, p.op, p.value
+	if kind == "without" then
+		test = function() return COMPARE[op](RA.Enemies.Without(name), limit) end
+	elseif SHAPES[kind] == "count" then
+		test = function()
+			local can = kind == "stacks" or (UnitExists("target") and UnitCanAttack("player", "target"))
+			return can and COMPARE[op](stacks(kind, name), limit) == true
+		end
+	elseif SHAPES[kind] == "aura" then
+		local negate = p.no
+		test = function()
+			-- debuff and cast terms need an enemy target, so nodebuff doesn't light up with nothing targeted
+			local can = kind == "buff" or kind == "selfdebuff" or (UnitExists("target") and UnitCanAttack("player", "target"))
+			local present, left = aura(kind, name)
+			local holds = present
+			if op then holds = present and COMPARE[op](left, limit) end
+			if negate then holds = not present or (op ~= nil and holds) end
+			return can and holds == true
+		end
+	else
+		test = function() return COMPARE[op](VALUES[kind](), limit) end
+	end
+	return test
+end
+
+local OUTSIDE = "Text Outside the Brackets: [a, b] Means And, [a][b] Means Or"
+
+-- Trimmed text to its bracket groups' bodies, and whether there's text outside them; text without brackets is one
+-- group.
+local function bodiesOf(text)
 	local bodies = {}
 	for body in text:gmatch("%[(.-)%]") do bodies[#bodies + 1] = body end
 	if #bodies == 0 and text ~= "" then bodies[1] = text end
-	if #bodies > 0 and text:gsub("%[.-%]", ""):match("%S") then
-		parsed.problems[#parsed.problems + 1] = "Text Outside the Brackets: [a, b] Means And, [a][b] Means Or"
+	return bodies, #bodies > 0 and text:gsub("%[.-%]", ""):match("%S") ~= nil
+end
+
+-- A group's body to its terms' texts, the leading word in lower case ("Buff:X" reads as buff).
+local function termsOf(body)
+	local terms = {}
+	for term in body:gmatch("[^,]+") do
+		term = trim(term)
+		if term ~= "" then terms[#terms + 1] = (term:gsub("^%a+", string.lower)) end
 	end
+	return terms
+end
+
+-- Trimmed text to { groups = { { test, ... } }, problems = { text } }.
+local function build(text)
+	local parsed = { groups = {}, problems = {} }
+	local bodies, outside = bodiesOf(text)
+	if outside then parsed.problems[#parsed.problems + 1] = OUTSIDE end
 	for _, body in ipairs(bodies) do
 		local group = {}
-		for term in body:gmatch("[^,]+") do
-			term = trim(term)
-			if term ~= "" then
-				local test, problem = parseTerm((term:gsub("^%a+", string.lower)))
-				if test then group[#group + 1] = test else parsed.problems[#parsed.problems + 1] = problem end
-			end
+		for _, term in ipairs(termsOf(body)) do
+			local parts, problem = readTerm(term)
+			if parts then group[#group + 1] = compile(parts) else parsed.problems[#parsed.problems + 1] = problem end
 		end
 		parsed.groups[#parsed.groups + 1] = group
 	end
 	return parsed
+end
+
+-- Trigger text to groups of term parts for the builder ({} for none), or nil and why when it can't be shown that
+-- way: a term it doesn't understand, text outside the brackets, or an empty group (which always holds).
+function Triggers.Read(text)
+	local bodies, outside = bodiesOf(trim(text))
+	local groups, problem = {}, outside and OUTSIDE or nil
+	for _, body in ipairs(bodies) do
+		local group = {}
+		for _, term in ipairs(termsOf(body)) do
+			local parts, why = readTerm(term)
+			if parts then group[#group + 1] = parts else problem = problem or why end
+		end
+		if #group == 0 then problem = problem or "An Empty Group [] Always Holds" end
+		groups[#groups + 1] = group
+	end
+	return (not problem) and groups or nil, problem
+end
+
+local function number(v)
+	return v == math.floor(v) and ("%d"):format(v) or tostring(v)
+end
+
+-- Whether a term has everything it needs to be written: a name where its kind takes one, and a number where it
+-- compares.
+function Triggers.Complete(p)
+	local shape = SHAPES[p.kind]
+	local named = shape == "value" or trim(p.name) ~= ""
+	local counted = (shape == "aura" and not p.op) or (COMPARE[p.op] ~= nil and type(p.value) == "number")
+	return shape ~= nil and named and counted
+end
+
+function Triggers.WriteTerm(p)
+	local shape = SHAPES[p.kind]
+	local compare = p.op and (p.op .. number(p.value)) or ""
+	local text
+	if shape == "value" then
+		text = p.kind .. compare
+	elseif shape == "count" then
+		text = p.kind .. ":" .. trim(p.name) .. compare
+	else
+		text = (p.no and "no" or "") .. p.kind .. ":" .. trim(p.name) .. compare
+	end
+	return text
+end
+
+-- Groups of term parts back to trigger text, leaving out terms that aren't filled in and groups left empty.
+function Triggers.Write(groups)
+	local out = {}
+	for _, group in ipairs(groups or {}) do
+		local terms = {}
+		for _, p in ipairs(group) do
+			if Triggers.Complete(p) then terms[#terms + 1] = Triggers.WriteTerm(p) end
+		end
+		if #terms > 0 then out[#out + 1] = "[" .. table.concat(terms, ", ") .. "]" end
+	end
+	return table.concat(out)
+end
+
+local COUNT_WORDS = {
+	["<"] = "fewer than %s", ["<="] = "%s or fewer", [">"] = "more than %s", [">="] = "%s or more", ["="] = "exactly %s",
+}
+local VALUE_WORDS = {
+	["<"] = "under %s", ["<="] = "%s or less", [">"] = "over %s", [">="] = "%s or more", ["="] = "exactly %s",
+}
+local TIME_WORDS = {
+	["<"] = "under %s seconds", ["<="] = "%s seconds or less", [">"] = "over %s seconds", [">="] = "%s seconds or more",
+}
+
+local AURA_SAYS = {
+	buff = { "you have %s", "you don't have %s" },
+	selfdebuff = { "you have the debuff %s", "you don't have the debuff %s" },
+	debuff = { "the target has your %s", "the target doesn't have your %s" },
+	anydebuff = { "the target has %s from anyone", "the target has no %s from anyone" },
+	cast = { "you've cast %s on this target this fight", "you haven't cast %s on this target this fight" },
+}
+local COUNT_SAYS = {
+	stacks = "you have %s stacks of %s",
+	debuffstacks = "the target has %s stacks of your %s",
+	anydebuffstacks = "the target has %s stacks of %s from anyone",
+	without = "%s enemies in the fight don't have your %s",
+}
+local VALUE_SAYS = {
+	power = "your power is %s",
+	hp = "your health is %s%%",
+	targethp = "the target's health is %s%%",
+	combo = "you have %s combo points",
+	enemies = "%s enemies are in the fight",
+}
+
+-- One term in plain English, starting in lower case.
+function Triggers.DescribeTerm(p)
+	local shape, text = SHAPES[p.kind], nil
+	if shape == "aura" then
+		local time = p.op and TIME_WORDS[p.op]:format(number(p.value))
+		text = AURA_SAYS[p.kind][p.no and 2 or 1]:format(p.name)
+		if time and p.kind == "cast" then
+			text = text .. (p.no and (", or did " .. time .. " ago") or (", " .. time .. " ago"))
+		elseif time then
+			text = text .. (p.no and (", or it has " .. time .. " left") or (" with " .. time .. " left"))
+		end
+	elseif shape == "count" then
+		text = COUNT_SAYS[p.kind]:format(COUNT_WORDS[p.op]:format(number(p.value)), p.name)
+	else
+		text = VALUE_SAYS[p.kind]:format(VALUE_WORDS[p.op]:format(number(p.value)))
+	end
+	return text
+end
+
+local function capital(s)
+	return s:sub(1, 1):upper() .. s:sub(2)
+end
+
+-- A trigger in plain English, from its text or its groups: one sentence, or a line per group when any of several
+-- will do. nil when there's no trigger or it can't be read.
+function Triggers.Describe(trigger)
+	local groups = type(trigger) == "table" and trigger or Triggers.Read(trigger)
+	local lines = {}
+	for _, group in ipairs(groups or {}) do
+		local terms = {}
+		for _, p in ipairs(group) do
+			if Triggers.Complete(p) then terms[#terms + 1] = Triggers.DescribeTerm(p) end
+		end
+		if #terms > 0 then lines[#lines + 1] = table.concat(terms, " and ") end
+	end
+	local text
+	if #lines == 1 then
+		text = "When " .. lines[1] .. "."
+	elseif #lines > 1 then
+		for i, line in ipairs(lines) do lines[i] = "- " .. capital(line) end
+		text = "When any of these holds:\n" .. table.concat(lines, "\n")
+	end
+	return text
 end
 
 -- A trigger as parsed, kept for the next time: the rotation checks the same triggers many times a second.
