@@ -95,11 +95,14 @@ function Editor.NameList(names)
 	return text
 end
 
+-- The guide's title and lines, or a function giving both when they depend on what the box is editing.
 local function guide(owner, title, lines)
 	owner:HookScript("OnEnter", function(self)
+		local heading, list = title, lines
+		if type(title) == "function" then heading, list = title() end
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		GameTooltip:AddLine(title, 1, 1, 1)
-		for _, line in ipairs(lines) do
+		GameTooltip:AddLine(heading, 1, 1, 1)
+		for _, line in ipairs(list) do
 			if type(line) == "table" then
 				GameTooltip:AddLine(S.Hex(C.accent, line[1]) .. "  " .. line[2], 0.8, 0.8, 0.8, true)
 			elseif line:sub(1, 1) == "#" then
@@ -223,22 +226,24 @@ local function createDetail(parent, width, height)
 	d.status:SetPoint("TOPLEFT", d.title, "BOTTOMLEFT", 0, -4)
 	d.status:SetWidth(inner)
 
+	-- a readback that opens its sheet when clicked
+	local function readback(open)
+		local b = CreateFrame("Button", nil, d)
+		b:SetSize(inner, 2 * 14)
+		b.text = S.Text(b, "small")
+		b.text:SetPoint("TOPLEFT")
+		b.text:SetPoint("BOTTOMRIGHT")
+		b.text:SetJustifyH("LEFT")
+		b.text:SetJustifyV("TOP")
+		b:SetScript("OnClick", open)
+		return b
+	end
 	d.whenLabel = label(d, "Conditions")
-	d.when = S.Input(d, "RotationAssistWhen", inner, "Always, or Like [harm] or [mod:shift]", 150, 2)
-	d.when:SetScript("OnTextChanged", function(self, userInput)
-		self:UpdatePlaceholder()
-		if userInput then edit(function(a) a.when = self:GetText() end) end
-	end)
-	guide(d.when, "Conditions", CONDITIONS_GUIDE)
+	d.whenReadback = readback(function() Editor.OpenConditions() end)
+	d.editWhen = S.Button(d, "Edit Conditions", "secondary", 130, function() Editor.OpenConditions() end,
+		"Where the spell is cast and when the game lets this line run: the target, modifier keys, stance and more.")
 	d.triggerLabel = label(d, "Trigger")
-	d.readback = CreateFrame("Button", nil, d)
-	d.readback:SetSize(inner, 3 * 14)
-	d.readback.text = S.Text(d.readback, "small")
-	d.readback.text:SetPoint("TOPLEFT")
-	d.readback.text:SetPoint("BOTTOMRIGHT")
-	d.readback.text:SetJustifyH("LEFT")
-	d.readback.text:SetJustifyV("TOP")
-	d.readback:SetScript("OnClick", function() Editor.OpenTrigger() end)
+	d.readback = readback(function() Editor.OpenTrigger() end)
 	d.triggerRow = CreateFrame("Frame", nil, d)
 	d.triggerRow:SetSize(inner, CONTROL_H)
 	d.editTrigger = S.Button(d.triggerRow, "Edit Trigger", "secondary", 110, function() Editor.OpenTrigger() end,
@@ -304,7 +309,7 @@ end
 -- whose When Met choice matters (not off the global cooldown).
 local function layoutDetail(d, kind, placed)
 	local controls = {
-		{ d.whenLabel, d.when, show = kind == "spell" or kind == "sequence" },
+		{ d.whenLabel, d.whenReadback, d.editWhen, show = kind == "spell" or kind == "sequence" },
 		{ d.triggerLabel, d.readback, d.triggerRow, show = kind == "spell" },
 		{ d.jumps, show = kind == "spell" and placed },
 		{ d.spellsLabel, d.spells, show = kind == "sequence" },
@@ -330,19 +335,24 @@ local function layoutDetail(d, kind, placed)
 	end
 end
 
--- The trigger sheet --------------------------------------------------------------------------------------------
--- Builds the selected spell's trigger from rows of conditions: each group's rows must all hold, and any one group
--- holding is enough. Changes are written to the action as they're made; rows not filled in yet are left out of the
--- text. Edit as Text swaps the rows for the raw box.
+-- The builder sheet ---------------------------------------------------------------------------------------------
+-- Builds the selected action's trigger or conditions from rows: each group's rows must all hold. Changes are written
+-- to the action as they're made; rows not filled in yet are left out of the text. Edit as Text swaps the rows for
+-- the raw box. What differs between the two is in SHEETS below.
 
 local MAX_TERMS = 8
 local COL = { what = 176, has = 96, name = 150, op = 100, value = 48, remove = 28 }
 local ROW_W = COL.what + COL.has + COL.name + COL.op + COL.value + COL.remove + 5 * GAP
 local SHEET_W = ROW_W + 2 * PAD
-local INTRO = "Rotation Assist checks these as you press. While they hold and the spell is ready, the spell can be picked."
 
-local WHAT_OPTIONS = {}
-for i, t in ipairs(RA.Triggers.TERMS) do WHAT_OPTIONS[i] = { value = t.kind, text = t.label } end
+local function options(terms)
+	local out = {}
+	for i, t in ipairs(terms) do out[i] = { value = t.kind, text = t.label } end
+	return out
+end
+local WHAT_OPTIONS = options(RA.Triggers.TERMS)
+local COND_OPTIONS = options(RA.Conditions.TERMS)
+local YES_OPTIONS = { { value = "has", text = "Yes" }, { value = "no", text = "No" } }
 local HAS_OPTIONS = { { value = "has", text = "Has" }, { value = "no", text = "Missing" } }
 local CAST_OPTIONS = { { value = "has", text = "Cast" }, { value = "no", text = "Not Cast" } }
 local TIME_OPTIONS = {
@@ -391,21 +401,38 @@ end
 
 local sheetRender
 
--- Writes the rows to the action's trigger.
+-- Writes the rows to the action's field.
 local function commit()
 	local action = sheetAction()
 	if action then
-		action.trigger = RA.Triggers.Write(sheet.groups)
+		action[sheet.def.field] = sheet.def.write(sheet.groups)
 		RA.Window.Edited()
 	end
 	sheetRender()
 end
 
--- A blank row of the kind the last row was, so a list of buffs is quick to fill in.
-local function newTerm(like)
+-- A blank trigger row of the kind the last row was, so a list of buffs is quick to fill in.
+local function newTrigger(like)
 	local kind = like and like.kind or "buff"
 	local shape = RA.Triggers.SHAPES[kind]
 	return { kind = kind, name = "", op = shape ~= "aura" and ">=" or nil }
+end
+
+-- A condition's arg when its kind is picked: a choice's first option, else empty.
+local function firstArg(kind)
+	local def = RA.Conditions.DEFS[kind]
+	return def.arg == "choice" and def.choices[1].value or ""
+end
+
+-- A blank condition row: the last row's kind, except one that only makes sense once per group.
+local function newCondition(like)
+	local kind = like and like.kind or "harm"
+	if kind == "unit" or kind == "always" then kind = "harm" end
+	return { kind = kind, arg = firstArg(kind) }
+end
+
+local function newTerm(like)
+	return sheet.def.newTerm(like)
 end
 
 -- Names for the aura picker: the auras on the player and the target now, the spellbook, and the names this rotation's
@@ -470,19 +497,24 @@ local function createRow(parent)
 	local row = CreateFrame("Frame", nil, parent)
 	row:SetSize(ROW_W, CONTROL_H)
 	row.what = S.Dropdown(row, COL.what, function(kind)
-		local term, shape = row.term, RA.Triggers.SHAPES[kind]
-		local was = RA.Triggers.SHAPES[term.kind]
-		term.kind = kind
-		if shape ~= was then
-			term.op, term.value = shape ~= "aura" and ">=" or nil, nil
-			if shape == "value" then term.name = nil else term.name = term.name or "" end
-		end
+		sheet.def.changeKind(row.term, kind)
 		commit()
 	end)
-	row.what:SetOptions(WHAT_OPTIONS)
 	row.has = S.Dropdown(row, COL.has, function(value)
 		row.term.no = value == "no" or nil
 		commit()
+	end)
+	row.choice = S.Dropdown(row, COL.name, function(value)
+		row.term.arg = value
+		commit()
+	end)
+	row.arg = S.Input(row, nil, COL.name, "", 60)
+	row.arg:SetScript("OnTextChanged", function(self, userInput)
+		self:UpdatePlaceholder()
+		if userInput then
+			row.term.arg = self:GetText()
+			commit()
+		end
 	end)
 	row.name = S.PickerButton(row, COL.name, function() return pickerSpec(row.term) end)
 	row.op = S.Dropdown(row, COL.op, function(value)
@@ -501,17 +533,23 @@ local function createRow(parent)
 	row.remove = S.Button(row, "X", "secondary", COL.remove, function()
 		local group = sheet.groups[row.group]
 		table.remove(group, row.index)
-		if #group == 0 and #sheet.groups > 1 then table.remove(sheet.groups, row.group) end
-		if #sheet.groups[1] == 0 then sheet.groups[1][1] = newTerm() end
+		if #group == 0 then table.remove(sheet.groups, row.group) end
 		commit()
 	end, "Remove this condition.")
 	return row
 end
 
--- Lays a row's controls left to right, showing only the ones its kind of term uses.
-local function fillRow(row, term)
-	row.term = term
+local function setInput(input, text)
+	if not input.focused then
+		input:SetText(text or "")
+		input:UpdatePlaceholder()
+	end
+end
+
+-- A trigger row's controls: what, has or missing, the name, a comparison and its number.
+local function fillTrigger(row, term)
 	local shape = RA.Triggers.SHAPES[term.kind]
+	row.what:SetOptions(WHAT_OPTIONS)
 	row.what:SetText(optionText(WHAT_OPTIONS, term.kind))
 	local hasOptions = term.kind == "cast" and CAST_OPTIONS or HAS_OPTIONS
 	row.has:SetOptions(hasOptions)
@@ -520,17 +558,50 @@ local function fillRow(row, term)
 	local opOptions = shape == "aura" and TIME_OPTIONS or shape == "count" and COUNT_OPTIONS or VALUE_OPTIONS
 	row.op:SetOptions(opOptions)
 	row.op:SetText(optionText(opOptions, term.op or ""))
-	if not row.value.focused then
-		row.value:SetText(term.value and tostring(term.value) or "")
-		row.value:UpdatePlaceholder()
-	end
-	local controls = {
+	setInput(row.value, term.value and tostring(term.value) or "")
+	return {
 		{ row.what, true },
 		{ row.has, shape == "aura" },
 		{ row.name, shape ~= "value" },
 		{ row.op, true },
 		{ row.value, term.op ~= nil },
 	}
+end
+
+-- A condition row's controls: what, yes or no, and its choice or typed text.
+local function fillCondition(row, term)
+	local def = RA.Conditions.DEFS[term.kind]
+	row.what:SetOptions(COND_OPTIONS)
+	row.what:SetText(optionText(COND_OPTIONS, term.kind))
+	row.has:SetOptions(YES_OPTIONS)
+	row.has:SetText(optionText(YES_OPTIONS, term.no and "no" or "has"))
+	if def.arg == "choice" then
+		local arg = (term.arg or ""):lower()
+		local listed = false
+		for _, c in ipairs(def.choices) do listed = listed or c.value == arg end
+		row.choice:SetOptions(def.choices)
+		row.choice:SetText(listed and optionText(def.choices, arg) or term.arg)
+	end
+	row.arg.placeholder:SetText(def.placeholder or "")
+	setInput(row.arg, term.arg)
+	local typed = def.arg == "text" or def.arg == "required"
+	return {
+		{ row.what, true },
+		{ row.has, not def.fixed },
+		{ row.choice, def.arg == "choice" },
+		{ row.arg, typed },
+	}
+end
+
+-- Lays a row's controls left to right, showing only the ones its kind of term uses.
+local function fillRow(row, term)
+	row.term = term
+	local controls = sheet.def.fill(row, term)
+	local shown = {}
+	for _, c in ipairs(controls) do shown[c[1]] = c[2] end
+	for _, w in ipairs({ row.what, row.has, row.name, row.op, row.value, row.choice, row.arg }) do
+		if not shown[w] then w:Hide() end
+	end
 	local x = 0
 	for _, c in ipairs(controls) do
 		c[1]:ClearAllPoints()
@@ -546,17 +617,64 @@ local function fillRow(row, term)
 	row.remove:SetPoint("RIGHT")
 end
 
+-- What the two sheets differ in: the action field they edit, how they read, write and say it, their rows, and
+-- their words.
+local SHEETS = {
+	trigger = {
+		field = "trigger",
+		title = "Trigger for %s",
+		intro = "Rotation Assist checks these as you press. While they hold and the spell is ready, the spell can be picked.",
+		orHeading = "Or All of These",
+		orTip = "Add a group of conditions that will do instead of the ones above.",
+		placeholder = "None, or Like [buff:Clearcasting]",
+		guide = { "Trigger", TRIGGER_GUIDE },
+		empty = "Nothing yet: the spell is tried on every press.",
+		clearTip = "Remove the trigger: the spell is tried in its place on every press.",
+		read = RA.Triggers.Read, write = RA.Triggers.Write, describe = RA.Triggers.Describe,
+		complete = RA.Triggers.Complete, problems = RA.Triggers.Problems,
+		newTerm = newTrigger, fill = fillTrigger,
+		changeKind = function(term, kind)
+			local shape, was = RA.Triggers.SHAPES[kind], RA.Triggers.SHAPES[term.kind]
+			term.kind = kind
+			if shape ~= was then
+				term.op, term.value = shape ~= "aura" and ">=" or nil, nil
+				if shape == "value" then term.name = nil else term.name = term.name or "" end
+			end
+		end,
+	},
+	conditions = {
+		field = "when",
+		title = "Conditions for %s",
+		intro = "The game checks these as you press. The first group that holds runs the line, on its unit; when none holds, the line is skipped.",
+		orHeading = "Otherwise, All of These",
+		orTip = "Add a group the game tries when the ones above don't hold, such as one that casts on you instead.",
+		placeholder = "Always, or Like [harm] or [mod:shift]",
+		guide = { "Conditions", CONDITIONS_GUIDE },
+		empty = "None: the line always runs, on your target.",
+		clearTip = "Remove the conditions: the line always runs, on your target.",
+		read = RA.Conditions.Read, write = RA.Conditions.Write, describe = RA.Conditions.Describe,
+		complete = RA.Conditions.Complete, problems = function() return {} end,
+		newTerm = newCondition, fill = fillCondition,
+		changeKind = function(term, kind)
+			if kind ~= term.kind then
+				term.kind, term.key, term.arg = kind, nil, firstArg(kind)
+				if RA.Conditions.DEFS[kind].fixed then term.no = nil end
+			end
+		end,
+	},
+}
+
 local function setTextMode(on)
 	if on then
 		local action = sheetAction()
-		sheet.text:SetText(action and action.trigger or "")
+		sheet.text:SetText(action and action[sheet.def.field] or "")
 		sheet.text:UpdatePlaceholder()
 	else
-		local groups, problem = RA.Triggers.Read(sheet.text:GetText())
+		local groups, problem = sheet.def.read(sheet.text:GetText())
 		local count = 0
 		for _, group in ipairs(groups or {}) do count = count + #group end
 		if groups and count <= MAX_TERMS then
-			sheet.groups = #groups > 0 and groups or { { newTerm() } }
+			sheet.groups = groups
 			sheet.problem = nil
 		else
 			on = true
@@ -591,31 +709,37 @@ local function createSheet()
 	f.title:SetWidth(ROW_W - 130)
 	f.title:SetWordWrap(false)
 	f.mode = S.Button(f, "Edit as Text", "secondary", 120, function() setTextMode(not f.textMode) end,
-		"Switch between the condition rows and the trigger's text.")
+		"Switch between the rows and the text they make.")
 	f.mode:SetPoint("TOPRIGHT", -pad, -pad)
 	f.intro = S.Text(f, "small", C.muted)
 	f.intro:SetWidth(ROW_W)
-	f.intro:SetText(INTRO)
+	f.intro:SetJustifyH("LEFT")
 
 	f.rows, f.headings, f.ands = {}, {}, {}
 	f.orButton = S.Button(f, "Or", "secondary", 80, function()
 		local last = f.groups[#f.groups]
-		f.groups[#f.groups + 1] = { newTerm(last[#last]) }
+		f.groups[#f.groups + 1] = { newTerm(last and last[#last]) }
 		sheetRender()
-	end, "Add a group of conditions that will do instead of the ones above.")
+	end)
+	f.orButton:HookScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_TOP")
+		GameTooltip:SetText(f.def.orTip, nil, nil, nil, nil, true)
+		GameTooltip:Show()
+	end)
+	f.orButton:HookScript("OnLeave", function() GameTooltip:Hide() end)
 
-	f.text = S.Input(f, "RotationAssistTriggerText", ROW_W, "None, or Like [buff:Clearcasting]", 255, 4)
+	f.text = S.Input(f, "RotationAssistSheetText", ROW_W, "", 255, 4)
 	f.text:SetScript("OnTextChanged", function(self, userInput)
 		self:UpdatePlaceholder()
 		local action = userInput and sheetAction()
 		if action then
-			action.trigger = self:GetText()
+			action[f.def.field] = self:GetText()
 			RA.Window.Edited()
 			f.problem = nil
 			sheetRender()
 		end
 	end)
-	guide(f.text, "Trigger", TRIGGER_GUIDE)
+	guide(f.text, function() return f.def.guide[1], f.def.guide[2] end)
 
 	f.readLabel = label(f, "Reads As")
 	f.readback = S.Text(f, "small")
@@ -628,10 +752,16 @@ local function createSheet()
 	f.note:SetJustifyH("LEFT")
 	f.done = S.Button(f, "Done", "primary", 90, function() f:Hide() end)
 	f.clear = S.Button(f, "Clear", "danger", 90, function()
-		f.groups = { { newTerm() } }
+		f.groups = {}
 		f.text:SetText("")
 		commit()
-	end, "Remove the trigger: the spell is tried in its place on every press.")
+	end)
+	f.clear:HookScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_TOP")
+		GameTooltip:SetText(f.def.clearTip, nil, nil, nil, nil, true)
+		GameTooltip:Show()
+	end)
+	f.clear:HookScript("OnLeave", function() GameTooltip:Hide() end)
 	f.done:SetPoint("BOTTOMRIGHT", -pad, pad)
 	f.clear:SetPoint("RIGHT", f.done, "LEFT", -GAP, 0)
 	S.OnDismiss(function() f:Hide() end)
@@ -649,17 +779,20 @@ sheetRender = function()
 		region:Show()
 		y = y + h
 	end
-	f.title:SetText("Trigger for " .. (action and RA.Rotation.ActionText(action) or "?"))
+	local def = f.def
+	f.title:SetText(def.title:format(action and RA.Rotation.ActionText(action) or "?"))
 	y = y + 24
-	place(f.intro, 14)
+	f.intro:SetText(def.intro)
+	place(f.intro, 2 * 14)
 	y = y + PAD
+	f.text.placeholder:SetText(def.placeholder)
 	f.mode.label:SetText(f.textMode and "Edit as Conditions" or "Edit as Text")
 
 	local used, full = 0, termCount() >= MAX_TERMS
 	for gi, group in ipairs(f.textMode and {} or f.groups) do
 		local heading = f.headings[gi] or W.Heading(f, "")
 		f.headings[gi] = heading
-		heading:SetText(gi == 1 and "All of These" or "Or All of These")
+		heading:SetText(gi == 1 and "All of These" or def.orHeading)
 		place(heading, 14 + 4)
 		for ti, term in ipairs(group) do
 			used = used + 1
@@ -690,22 +823,23 @@ sheetRender = function()
 	else
 		f.text:Hide()
 		if full then f.orButton:Disable() else f.orButton:Enable() end
+		f.orButton.label:SetText(#f.groups == 0 and "Add" or "Or")
 		place(f.orButton, CONTROL_H + PAD)
 	end
 
-	local trigger = action and action.trigger or ""
-	local said = RA.Triggers.Describe(trigger)
+	local text = RA.Spells.Trim(action and action[def.field])
+	local said = text ~= "" and def.describe(text) or nil
 	local lines = said and select(2, said:gsub("\n", "\n")) + 1 or 1
 	place(f.readLabel, 12 + 4)
-	f.readback:SetText(said or S.Hex(C.muted, RA.Triggers.Has(trigger) and "Edit as Text to see this trigger." or "Nothing yet: the spell is tried on every press."))
+	f.readback:SetText(said or S.Hex(C.muted, text ~= "" and "It can't be read back as it is; fix it as text." or def.empty))
 	f.readback:SetHeight(lines * 14)
 	place(f.readback, lines * 14 + PAD)
 
-	local problems = RA.Triggers.Problems(trigger)
+	local problems = def.problems(text)
 	local incomplete = 0
 	for _, group in ipairs(f.textMode and {} or f.groups) do
 		for _, p in ipairs(group) do
-			if not RA.Triggers.Complete(p) then incomplete = incomplete + 1 end
+			if not def.complete(p) then incomplete = incomplete + 1 end
 		end
 	end
 	local note = f.problem or problems[1]
@@ -717,28 +851,39 @@ sheetRender = function()
 	f:SetHeight(y + CONTROL_H + pad)
 end
 
--- Opens the trigger sheet for the selected spell. A trigger the rows can't show opens as text.
-function Editor.OpenTrigger()
+-- Opens a sheet on the selected action. What the rows can't show opens as text.
+local function openSheet(key, kinds)
 	local rotation = RA.Window.Selected()
 	local action = rotation and selectedAction(rotation, RA.Window.state)
-	if action and action.kind == "spell" then
+	if action and kinds[action.kind] then
 		S.CloseMenus()
 		sheet = sheet or createSheet()
+		sheet.def = SHEETS[key]
+		sheet.key = key
 		sheet.action = action
-		sheet.problem = nil
-		local groups, problem = RA.Triggers.Read(action.trigger)
-		sheet.groups = (groups and #groups > 0) and groups or { { newTerm() } }
+		local groups, problem = sheet.def.read(action[sheet.def.field])
+		sheet.groups = groups or {}
 		sheet.textMode = groups == nil or termCount() > MAX_TERMS
 		sheet.problem = problem
+		if sheet.textMode then sheet.text:SetText(action[sheet.def.field] or "") end
 		sheetRender()
 		sheet:Show()
 		sheet:Raise()
 	end
 end
 
-function Editor.TriggerSheet()
+function Editor.OpenTrigger()
+	openSheet("trigger", { spell = true })
+end
+
+function Editor.OpenConditions()
+	openSheet("conditions", { spell = true, sequence = true })
+end
+
+function Editor.Sheet()
 	return sheet
 end
+Editor.TriggerSheet = Editor.Sheet
 
 function Editor.Create(parent, width, height)
 	local f = CreateFrame("Frame", nil, parent)
@@ -841,7 +986,9 @@ local function renderDetail(rotation, state, compiled)
 			and ("  " .. S.Hex(C.bad, "Skipped: Not Known on This Character")) or status == "partial"
 			and ("  " .. S.Hex(C.warn, "Some Spells Not Known")) or "")
 			.. (#problems > 0 and ("  " .. S.Hex(C.warn, problems[1])) or ""))
-		setText(d.when, action.when)
+		local when = RA.Spells.Trim(action.when)
+		d.whenReadback.text:SetText(when == "" and S.Hex(C.muted, "None: the line always runs, on your target.")
+			or RA.Conditions.Describe(when) or S.Hex(C.accent, when))
 		setText(d.spells, RA.Spells.ListText(action.spells))
 		setText(d.reset, action.reset)
 		d.offGcd:SetChecked(action.offGcd)

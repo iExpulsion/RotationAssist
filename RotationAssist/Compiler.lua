@@ -275,3 +275,201 @@ function Compiler.Compile(rotation, env)
 	end
 	return out
 end
+
+-- Conditions: an action's macro conditions ("[@focus,harm][]"), read into groups of terms for the conditions
+-- builder and written back. Each term is { kind, no, arg, key }: key keeps the word as written ("form" for stance,
+-- "target=" for @), so text read and written back says the same. Terms the builder has no row for read as "other",
+-- kept as typed.
+local Conditions = {}
+RA.Conditions = Conditions
+
+local UNITS = {
+	{ value = "target", text = "Your Target", says = "your target" },
+	{ value = "player", text = "Yourself", says = "you" },
+	{ value = "focus", text = "Your Focus", says = "your focus" },
+	{ value = "mouseover", text = "Unit Under the Mouse", says = "the unit under the mouse" },
+	{ value = "targettarget", text = "Target's Target", says = "your target's target" },
+	{ value = "pet", text = "Your Pet", says = "your pet" },
+	{ value = "playerlocation", text = "Ground at Your Feet", says = "the ground where you stand" },
+	{ value = "cursor", text = "Ground at the Mouse", says = "the ground at the mouse" },
+}
+local UNIT_SAYS = {}
+for _, u in ipairs(UNITS) do UNIT_SAYS[u.value] = u.says end
+
+-- The builder's rows, in its order. arg: nil (none), "choice" (one of choices), "text" (optional) or "required".
+-- yes/no say the term, with %s the unit for unit terms, else the arg; anyYes/anyNo say it with no arg. fixed: can't
+-- be turned around with "no".
+Conditions.TERMS = {
+	{ kind = "unit", label = "Cast On", arg = "choice", choices = UNITS, fixed = true },
+	{ kind = "harm", label = "Unit Is an Enemy", unit = true, yes = "%s is an enemy", no = "%s isn't an enemy" },
+	{ kind = "help", label = "Unit Is Friendly", unit = true, yes = "%s is friendly", no = "%s isn't friendly" },
+	{ kind = "exists", label = "Unit Exists", unit = true, yes = "%s exists", no = "there's no %s" },
+	{ kind = "dead", label = "Unit Is Dead", unit = true, yes = "%s is dead", no = "%s is alive" },
+	{ kind = "combat", label = "In Combat", yes = "you're in combat", no = "you're out of combat" },
+	{ kind = "mod", label = "Holding a Key", arg = "choice", aliases = { "modifier" },
+		choices = { { value = "", text = "Any Key" }, { value = "shift", text = "Shift" }, { value = "ctrl", text = "Ctrl" }, { value = "alt", text = "Alt" } },
+		yes = "you hold %s", no = "you don't hold %s", anyYes = "you hold a modifier key", anyNo = "you hold no modifier key" },
+	{ kind = "stance", label = "Stance or Form", arg = "text", aliases = { "form" }, placeholder = "1, or 1/2",
+		yes = "you're in stance %s", no = "you're not in stance %s", anyYes = "you're in a stance or form", anyNo = "you're in no stance or form" },
+	{ kind = "stealth", label = "Stealthed", yes = "you're stealthed", no = "you're not stealthed" },
+	{ kind = "mounted", label = "Mounted", yes = "you're mounted", no = "you're not mounted" },
+	{ kind = "flying", label = "Flying", yes = "you're flying", no = "you're not flying" },
+	{ kind = "swimming", label = "Swimming", yes = "you're swimming", no = "you're not swimming" },
+	{ kind = "flyable", label = "Can Fly Here", yes = "you can fly here", no = "you can't fly here" },
+	{ kind = "indoors", label = "Indoors", yes = "you're indoors", no = "you're not indoors" },
+	{ kind = "outdoors", label = "Outdoors", yes = "you're outdoors", no = "you're not outdoors" },
+	{ kind = "channeling", label = "Channeling", arg = "text", placeholder = "Any, or a Spell",
+		yes = "you're channeling %s", no = "you're not channeling %s", anyYes = "you're channeling", anyNo = "you're not channeling" },
+	{ kind = "pet", label = "Have a Pet", arg = "text", placeholder = "Any, or a Name",
+		yes = "your pet is %s", no = "your pet isn't %s", anyYes = "you have a pet", anyNo = "you have no pet" },
+	{ kind = "group", label = "In a Group", arg = "choice",
+		choices = { { value = "", text = "Any Group" }, { value = "party", text = "Party" }, { value = "raid", text = "Raid" } },
+		yes = "you're in a %s", no = "you're not in a %s", anyYes = "you're in a group", anyNo = "you're not in a group" },
+	{ kind = "spec", label = "Talent Spec", arg = "choice",
+		choices = { { value = "1", text = "Spec 1" }, { value = "2", text = "Spec 2" } },
+		yes = "you're in talent spec %s", no = "you're not in talent spec %s" },
+	{ kind = "equipped", label = "Equipped", arg = "required", aliases = { "worn" }, placeholder = "Like Shields",
+		yes = "you have %s equipped", no = "you don't have %s equipped" },
+	{ kind = "always", label = "Otherwise (Always)", fixed = true },
+	{ kind = "other", label = "Other (Typed)", arg = "required", fixed = true, placeholder = "Like actionbar:2" },
+}
+local DEFS, ALIASES = {}, {}
+for _, t in ipairs(Conditions.TERMS) do
+	DEFS[t.kind] = t
+	ALIASES[t.kind] = t.kind
+	for _, a in ipairs(t.aliases or {}) do ALIASES[a] = t.kind end
+end
+Conditions.DEFS = DEFS
+
+-- One term's text to its parts. A unit is "@unit" or "target=unit"; anything unknown is kept as "other".
+local function readCondition(term)
+	local at = term:match("^@%s*(%S+)$")
+	local eq = term:lower():match("^target%s*=%s*(%S+)$")
+	local parts
+	if at or eq then
+		parts = { kind = "unit", arg = (at or eq):lower(), key = eq and "target=" or nil }
+	else
+		local word, arg = term:match("^(%a+)%s*:%s*(.-)$")
+		word = (word or term):lower()
+		local no, kind = false, ALIASES[word]
+		if not kind and word:sub(1, 2) == "no" and ALIASES[word:sub(3)] then
+			no, kind, word = true, ALIASES[word:sub(3)], word:sub(3)
+		end
+		local def = DEFS[kind]
+		if def and not def.fixed and (arg == nil or def.arg ~= nil) then
+			parts = { kind = kind, no = no or nil, arg = trim(arg), key = word ~= kind and word or nil }
+		else
+			parts = { kind = "other", arg = term }
+		end
+	end
+	return parts
+end
+
+-- Condition text to groups of terms ({} for none; "[]" is a group holding only "always"), or nil and why when the
+-- builder can't show it: text outside the brackets, which the macro would ignore or misread.
+function Conditions.Read(text)
+	text = trim(text)
+	local groups = {}
+	local problem = text:gsub("%[.-%]", ""):match("%S") and "Text Outside the Brackets: [a,b] Means And, [a][b] Means Or" or nil
+	for body in text:gmatch("%[(.-)%]") do
+		local group = {}
+		for term in body:gmatch("[^,]+") do
+			term = trim(term)
+			if term ~= "" then group[#group + 1] = readCondition(term) end
+		end
+		if #group == 0 then group[1] = { kind = "always" } end
+		groups[#groups + 1] = group
+	end
+	return (not problem) and groups or nil, problem
+end
+
+-- Whether a term has what it needs to be written.
+function Conditions.Complete(p)
+	local def = DEFS[p.kind]
+	local needs = def ~= nil and (def.arg == "required" or p.kind == "unit")
+	return def ~= nil and (not needs or trim(p.arg) ~= "")
+end
+
+function Conditions.WriteTerm(p)
+	local arg, text = trim(p.arg), ""
+	if p.kind == "unit" then
+		text = (p.key == "target=" and "target=" or "@") .. arg
+	elseif p.kind == "other" then
+		text = arg
+	elseif p.kind ~= "always" then
+		text = (p.no and "no" or "") .. (p.key or p.kind) .. (arg ~= "" and (":" .. arg) or "")
+	end
+	return text
+end
+
+-- Groups back to condition text, in row order with no spaces (a macro is short on room). Unfinished terms are left
+-- out; a group left with only "always" is "[]", and one left with nothing is dropped.
+function Conditions.Write(groups)
+	local out = {}
+	for _, group in ipairs(groups or {}) do
+		local terms, always = {}, false
+		for _, p in ipairs(group) do
+			if p.kind == "always" then always = true end
+			if p.kind ~= "always" and Conditions.Complete(p) then terms[#terms + 1] = Conditions.WriteTerm(p) end
+		end
+		if #terms > 0 or always then out[#out + 1] = "[" .. table.concat(terms, ",") .. "]" end
+	end
+	return table.concat(out)
+end
+
+-- One term in plain English, starting in lower case; unit is the unit the group casts on.
+function Conditions.DescribeTerm(p, unit)
+	local def, arg = DEFS[p.kind], trim(p.arg)
+	local text
+	if p.kind == "other" then
+		text = arg
+	elseif def.unit then
+		text = (p.no and def.no or def.yes):format(UNIT_SAYS[unit] or unit)
+	elseif arg == "" and def.anyYes then
+		text = p.no and def.anyNo or def.anyYes
+	elseif def.arg then
+		local shown = arg
+		for _, c in ipairs(def.choices or {}) do
+			if c.value ~= "" and c.value == arg:lower() then shown = c.text end
+		end
+		text = (p.no and def.no or def.yes):format(shown)
+	else
+		text = p.no and def.no or def.yes
+	end
+	return text
+end
+
+local function describeGroup(group)
+	local unit, named, terms = "target", false, {}
+	for _, p in ipairs(group) do
+		if p.kind == "unit" and Conditions.Complete(p) then unit, named = trim(p.arg):lower(), true end
+	end
+	for _, p in ipairs(group) do
+		if p.kind ~= "unit" and p.kind ~= "always" and Conditions.Complete(p) then terms[#terms + 1] = Conditions.DescribeTerm(p, unit) end
+	end
+	local on = named and ("on " .. (UNIT_SAYS[unit] or unit)) or nil
+	local when = #terms > 0 and ("when " .. table.concat(terms, " and ")) or nil
+	return on and when and (on .. ", " .. when) or on or when or "otherwise"
+end
+
+local function capital(s)
+	return s:sub(1, 1):upper() .. s:sub(2)
+end
+
+-- Conditions in plain English, from their text or groups; nil when they can't be read. No conditions always hold.
+function Conditions.Describe(conditions)
+	local groups = conditions
+	if type(conditions) ~= "table" then groups = Conditions.Read(conditions) end
+	local lines = {}
+	for _, group in ipairs(groups or {}) do lines[#lines + 1] = describeGroup(group) end
+	local text
+	if groups and #lines == 0 then
+		text = "Always, on your target."
+	elseif #lines == 1 then
+		text = capital(lines[1]) .. "."
+	elseif #lines > 1 then
+		for i, line in ipairs(lines) do lines[i] = "- " .. capital(line) end
+		text = "The first of these that holds:\n" .. table.concat(lines, "\n")
+	end
+	return text
+end

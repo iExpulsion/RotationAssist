@@ -113,11 +113,14 @@ on the **Modes** tab, drag a mode by the grip beside its number.
 
 Select an action to change it. **Off the Global Cooldown** lets a line fire alongside whatever else casts on that
 press, which suits trinkets, racials, cooldowns like Combustion, and next-swing attacks like Heroic Strike. With
-Smart Picks, give one a trigger to hold it back: Heroic Strike with `[power>=50]` only queues with rage to spare. **Conditions** takes macro conditions; put
-`[@player]` there to cast a spell on yourself, like Power Word: Shield, while you have an enemy targeted. With
-Smart Picks, these also go out of combat with nothing targeted, so you can buff before a pull. Commas join
-conditions that must all hold: `[mod:shift,@player]` casts on yourself only while you hold Shift, while
-`[mod:shift][@player]` means either one. Hover over the Conditions box in game for the common ones.
+Smart Picks, give one a trigger to hold it back: Heroic Strike with `[power>=50]` only queues with rage to spare.
+**Edit Conditions** sets the macro conditions the game checks for the line, as rows like the trigger's: **Cast On**
+Yourself casts a spell on you, like Power Word: Shield, while you have an enemy targeted. With Smart Picks, these
+also go out of combat with nothing targeted, so you can buff before a pull. Rows in a group must all hold, so Cast
+On Yourself with Holding a Key: Shift casts on you only while you hold Shift; **Or** adds a group the game tries
+when the one above doesn't hold, and **Otherwise (Always)** makes a group that always does. The pane reads the
+conditions back in plain English, and **Edit as Text** takes macro syntax (`[mod:shift,@player][]`), with the common
+conditions listed when you hover over the box.
 
 ### 2. Choose How a Press Works
 
