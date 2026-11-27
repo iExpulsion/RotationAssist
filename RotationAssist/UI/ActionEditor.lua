@@ -562,7 +562,7 @@ local function fillTrigger(row, term)
 	return {
 		{ row.what, true },
 		{ row.has, shape == "aura" },
-		{ row.name, shape ~= "value" },
+		{ row.name, shape ~= "value", true },
 		{ row.op, true },
 		{ row.value, term.op ~= nil },
 	}
@@ -588,8 +588,8 @@ local function fillCondition(row, term)
 	return {
 		{ row.what, true },
 		{ row.has, not def.fixed },
-		{ row.choice, def.arg == "choice" },
-		{ row.arg, typed },
+		{ row.choice, def.arg == "choice", true },
+		{ row.arg, typed, true },
 	}
 end
 
@@ -598,7 +598,18 @@ local function fillRow(row, term)
 	row.term = term
 	local controls = sheet.def.fill(row, term)
 	local shown = {}
-	for _, c in ipairs(controls) do shown[c[1]] = c[2] end
+	-- the name (or a condition's argument) takes whatever the shown controls and the remove button leave
+	local spare = ROW_W - COL.remove - GAP
+	for _, c in ipairs(controls) do
+		shown[c[1]] = c[2]
+		if c[2] and not c[3] then spare = spare - c[1]:GetWidth() - GAP end
+	end
+	for _, c in ipairs(controls) do
+		if c[3] then
+			c[1]:SetWidth(spare)
+			if c[1].menu then c[1].menu:SetWidth(spare) end
+		end
+	end
 	for _, w in ipairs({ row.what, row.has, row.name, row.op, row.value, row.choice, row.arg }) do
 		if not shown[w] then w:Hide() end
 	end
@@ -694,6 +705,15 @@ local function createSheet()
 	f:SetFrameStrata("DIALOG")
 	f:SetToplevel(true)
 	f:EnableMouse(true)
+	f:SetMovable(true)
+	f:SetClampedToScreen(true)
+	f:RegisterForDrag("LeftButton")
+	f:SetScript("OnDragStart", f.StartMoving)
+	f:SetScript("OnDragStop", function(self)
+		self:StopMovingOrSizing()
+		-- a named frame moved by hand is saved in layout-local.txt and put back there at login
+		self:SetUserPlaced(false)
+	end)
 	RA.PixelScale(f)
 	S.Frame(f, "popup")
 	tinsert(UISpecialFrames, "RotationAssistTriggerFrame")
