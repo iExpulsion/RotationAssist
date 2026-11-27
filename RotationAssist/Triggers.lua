@@ -98,23 +98,24 @@ local VALUES = {
 	combo = function() return GetComboPoints("player", "target") or 0 end,
 }
 
--- The kinds of term, in the order the trigger builder lists them. shape: "aura" (has it or not, and optionally its
--- time left, or for cast the seconds since), "count" (a name and a count to compare) or "value" (a number).
+-- The kinds of term, in the order the trigger builder lists them, under their group's heading. shape: "aura" (has
+-- it or not, and optionally its time left, or for cast the seconds since), "count" (a name and a count to compare)
+-- or "value" (a number). label is the full name the row shows; short is the name under the heading in the menu.
 Triggers.TERMS = {
-	{ kind = "buff", shape = "aura", label = "Buff on You" },
-	{ kind = "selfdebuff", shape = "aura", label = "Debuff on You" },
-	{ kind = "debuff", shape = "aura", label = "Your Debuff on the Target" },
-	{ kind = "anydebuff", shape = "aura", label = "Anyone's Debuff on the Target" },
-	{ kind = "cast", shape = "aura", label = "Your Cast on the Target" },
-	{ kind = "stacks", shape = "count", label = "Stacks of a Buff on You" },
-	{ kind = "debuffstacks", shape = "count", label = "Stacks of Your Debuff" },
-	{ kind = "anydebuffstacks", shape = "count", label = "Stacks of Anyone's Debuff" },
-	{ kind = "power", shape = "value", label = "Your Power" },
-	{ kind = "hp", shape = "value", label = "Your Health %" },
-	{ kind = "targethp", shape = "value", label = "Target's Health %" },
-	{ kind = "combo", shape = "value", label = "Combo Points" },
-	{ kind = "enemies", shape = "value", label = "Enemies in the Fight" },
-	{ kind = "without", shape = "count", label = "Enemies Without Your Aura" },
+	{ kind = "buff", shape = "aura", group = "On You", label = "Buff on You", short = "Buff" },
+	{ kind = "selfdebuff", shape = "aura", group = "On You", label = "Debuff on You", short = "Debuff" },
+	{ kind = "stacks", shape = "count", group = "On You", label = "Stacks of a Buff on You", short = "Buff Stacks" },
+	{ kind = "power", shape = "value", group = "On You", label = "Your Power", short = "Power" },
+	{ kind = "hp", shape = "value", group = "On You", label = "Your Health %", short = "Health %" },
+	{ kind = "debuff", shape = "aura", group = "On the Target", label = "Your Debuff on the Target", short = "Your Debuff" },
+	{ kind = "anydebuff", shape = "aura", group = "On the Target", label = "Anyone's Debuff on the Target", short = "Anyone's Debuff" },
+	{ kind = "debuffstacks", shape = "count", group = "On the Target", label = "Stacks of Your Debuff", short = "Your Debuff's Stacks" },
+	{ kind = "anydebuffstacks", shape = "count", group = "On the Target", label = "Stacks of Anyone's Debuff", short = "Anyone's Debuff Stacks" },
+	{ kind = "targethp", shape = "value", group = "On the Target", label = "Target's Health %", short = "Health %" },
+	{ kind = "combo", shape = "value", group = "On the Target", label = "Combo Points", short = "Combo Points" },
+	{ kind = "cast", shape = "aura", group = "On the Target", label = "Your Cast on the Target", short = "Your Cast" },
+	{ kind = "enemies", shape = "value", group = "The Fight", label = "Enemies in the Fight", short = "Enemies in the Fight" },
+	{ kind = "without", shape = "count", group = "The Fight", label = "Enemies Without Your Aura", short = "Enemies Without Your Aura" },
 }
 local SHAPES = {}
 for _, t in ipairs(Triggers.TERMS) do SHAPES[t.kind] = t.shape end

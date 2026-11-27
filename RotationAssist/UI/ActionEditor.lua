@@ -355,13 +355,22 @@ local COL = { what = 176, has = 96, name = 150, op = 100, value = 48, remove = 2
 local ROW_W = COL.what + COL.has + COL.name + COL.op + COL.value + COL.remove + 5 * GAP
 local SHEET_W = ROW_W + 2 * PAD
 
+-- A kind menu: each group's heading over its kinds, by their short names. The closed dropdown shows the full label,
+-- so the menu's options go with a list of { value, text = label } for showing the choice.
 local function options(terms)
-	local out = {}
-	for i, t in ipairs(terms) do out[i] = { value = t.kind, text = t.label } end
-	return out
+	local menu, labels, group = {}, {}, nil
+	for _, t in ipairs(terms) do
+		if t.group ~= group then
+			group = t.group
+			menu[#menu + 1] = { heading = group }
+		end
+		menu[#menu + 1] = { value = t.kind, text = t.short or t.label }
+		labels[#labels + 1] = { value = t.kind, text = t.label }
+	end
+	return menu, labels
 end
-local WHAT_OPTIONS = options(RA.Triggers.TERMS)
-local COND_OPTIONS = options(RA.Conditions.TERMS)
+local WHAT_MENU, WHAT_OPTIONS = options(RA.Triggers.TERMS)
+local COND_MENU, COND_OPTIONS = options(RA.Conditions.TERMS)
 local YES_OPTIONS = { { value = "has", text = "Yes" }, { value = "no", text = "No" } }
 local HAS_OPTIONS = { { value = "has", text = "Has" }, { value = "no", text = "Missing" } }
 local CAST_OPTIONS = { { value = "has", text = "Cast" }, { value = "no", text = "Not Cast" } }
@@ -559,7 +568,7 @@ end
 -- A trigger row's controls: what, has or missing, the name, a comparison and its number.
 local function fillTrigger(row, term)
 	local shape = RA.Triggers.SHAPES[term.kind]
-	row.what:SetOptions(WHAT_OPTIONS)
+	row.what:SetOptions(WHAT_MENU)
 	row.what:SetText(optionText(WHAT_OPTIONS, term.kind))
 	local hasOptions = term.kind == "cast" and CAST_OPTIONS or HAS_OPTIONS
 	row.has:SetOptions(hasOptions)
@@ -581,7 +590,7 @@ end
 -- A condition row's controls: what, yes or no, and its choice or typed text.
 local function fillCondition(row, term)
 	local def = RA.Conditions.DEFS[term.kind]
-	row.what:SetOptions(COND_OPTIONS)
+	row.what:SetOptions(COND_MENU)
 	row.what:SetText(optionText(COND_OPTIONS, term.kind))
 	row.has:SetOptions(YES_OPTIONS)
 	row.has:SetText(optionText(YES_OPTIONS, term.no and "no" or "has"))
