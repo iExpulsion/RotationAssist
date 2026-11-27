@@ -1,4 +1,4 @@
--- Vendored from MaterialCraftUI v1.8.1-2-g77c0331. Change it there, then run tools/sync_style.py.
+-- Vendored from MaterialCraftUI v1.8.1-3-ga8807d5. Change it there, then run tools/sync_style.py.
 -- MIT License, Copyright (c) 2026 Expulsion: https://github.com/iExpulsion/MaterialCraftUI
 -- MaterialCraftUI: a flat dark style kit for WoW 3.3.5 addons on Material 3 color roles: one accent color, 1px
 -- borders, state layers and a few button kinds. Each addon ships its own copy, listed in its .toc, and reads it
@@ -904,10 +904,40 @@ end
 -- The height of a heading in a dropdown menu: shorter than an option, since it's only a label.
 S.MENU_HEADING_H = 20
 
+-- Lays a dropdown's items out in as many columns as it takes to keep the menu within `limit` tall (one when it
+-- fits), each column as wide as the dropdown. A column never ends on a heading: it moves to the next column with
+-- the option under it.
+local function layoutMenu(b, limit)
+	local menu, items, count = b.menu, b.items, b.count or 0
+	local m = S.metrics.menuInset
+	local cw = (b:GetWidth() or 0) - 2 * m
+	local total = 0
+	for i = 1, count do total = total + items[i].h end
+	local cols = math.max(1, math.ceil(total / math.max(limit - 2 * m, S.CONTROL_H)))
+	local target = total / cols
+	local x, y, col, tallest = m, m, 1, m
+	for i = 1, count do
+		local item, after = items[i], items[i + 1]
+		local need = item.h + ((item.heading and i < count) and after.h or 0)
+		if col < cols and y > m and y - m + need > target + 0.5 then
+			col, x, y = col + 1, x + cw + m, m
+		end
+		item:ClearAllPoints()
+		item:SetPoint("TOPLEFT", menu, "TOPLEFT", x, -y)
+		item:SetWidth(cw)
+		y = y + item.h
+		tallest = math.max(tallest, y)
+	end
+	b.columns = cols
+	menu:SetSize(2 * m + cols * cw + (cols - 1) * m, tallest + m)
+end
+
 -- Flat dropdown: a button showing the current choice that opens a menu below it. SetOptions takes
 -- { { value, text, tooltip, preview } }, preview() giving a frame shown beside the menu while the item is hovered,
 -- in place of its tooltip; picking one calls onSelect(value) and closes the menu. An option { heading = text } is a
--- section label over the options after it, dim with a rule, which can't be picked. Opening one closes the others.
+-- section label over the options after it, dim with a rule, which can't be picked. A menu too tall for the room
+-- below the dropdown (or half the screen, if that's more) splits into columns as it opens, so long menus fit at any
+-- UI scale. Opening one closes the others.
 function S.Dropdown(parent, width, onSelect)
 	local b = S.AddArrow(S.Button(parent, "", "secondary", width))
 
@@ -928,7 +958,6 @@ function S.Dropdown(parent, width, onSelect)
 
 	function b:SetText(text) self.label:SetText(text) end
 	function b:SetOptions(options)
-		local m, y = S.metrics.menuInset, S.metrics.menuInset
 		for i, opt in ipairs(options) do
 			local item = self.items[i]
 			if not item then
@@ -955,12 +984,8 @@ function S.Dropdown(parent, width, onSelect)
 				self.items[i] = item
 			end
 			local heading = opt.heading ~= nil
-			local h = heading and S.MENU_HEADING_H or S.CONTROL_H
-			item:SetHeight(h)
-			item:ClearAllPoints()
-			item:SetPoint("TOPLEFT", m, -y)
-			item:SetPoint("TOPRIGHT", -m, -y)
-			y = y + h
+			item.h, item.heading = heading and S.MENU_HEADING_H or S.CONTROL_H, heading
+			item:SetHeight(item.h)
 			-- a heading takes no mouse, so it never lights up and a click on it leaves the menu open
 			item:EnableMouse(not heading)
 			item.value, item.tooltip, item.preview = opt.value, opt.tooltip, opt.preview
@@ -984,7 +1009,8 @@ function S.Dropdown(parent, width, onSelect)
 			item:Show()
 		end
 		for i = #options + 1, #self.items do self.items[i]:Hide() end
-		menu:SetHeight(y + m)
+		self.count = #options
+		layoutMenu(self, math.huge)
 	end
 	b:SetScript("OnClick", function()
 		local open = menu:IsShown()
@@ -995,6 +1021,10 @@ function S.Dropdown(parent, width, onSelect)
 			menu:SetParent(UIParent)
 			menu:SetScale(b:GetEffectiveScale() / UIParent:GetEffectiveScale())
 			menu:SetFrameStrata("FULLSCREEN_DIALOG")
+			-- the room below the dropdown and the screen's height, in the dropdown's own units
+			local below = (b:GetBottom() or math.huge) - 2
+			local screen = (UIParent:GetHeight() or 0) * UIParent:GetEffectiveScale() / b:GetEffectiveScale()
+			layoutMenu(b, math.max(below, screen / 2) - 8)
 			menu:Show()
 		end
 	end)
